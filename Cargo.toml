@@ -1,0 +1,10 @@
+[package]
+name = "bbtidy"
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+description = "Formatter and Linter for BitBake"
+repository = "https://github.com/jorisguex/bbtidy"
+publish = true
+
+[dependencies]
