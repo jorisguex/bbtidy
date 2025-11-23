@@ -94,12 +94,20 @@ pub fn format(text: &str) -> String {
             
             match tok {
                 Token::Whitespace => {
-                    // Normalize blank lines
-                    let newlines = slice.chars().filter(|&c| c == '\n').count();
-                    if newlines > 2 {
-                        output.push_str("\n\n");
+                    // Normalize blank lines and collapse spaces
+                    if slice.contains('\n') {
+                        let newlines = slice.chars().filter(|&c| c == '\n').count();
+                        let to_print = if newlines > 2 { 2 } else { newlines };
+                        for _ in 0..to_print {
+                            output.push('\n');
+                        }
+                        // Preserve indentation (text after last newline)
+                        if let Some(last_nl) = slice.rfind('\n') {
+                            output.push_str(&slice[last_nl + 1..]);
+                        }
                     } else {
-                        output.push_str(slice);
+                        // Collapse horizontal whitespace to a single space
+                        output.push(' ');
                     }
                 }
                 Token::Assign | Token::WeakAssign | Token::ConditionalAssign | 
@@ -289,6 +297,7 @@ mod tests {
 
         let input = "VAR  =  \"val\"";
         let expected = "VAR = \"val\"";
+        assert_eq!(format(input), expected);
         // Wait, my logic doesn't collapse spaces, it just ensures *at least* one space.
         // If there are multiple spaces, they are part of Whitespace tokens.
         // My logic: if Whitespace, push it.
