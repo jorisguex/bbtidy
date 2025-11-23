@@ -8,3 +8,4 @@ repository = "https://github.com/jorisguex/bbtidy"
 publish = true
 
 [dependencies]
+logos = "0.15.1"
