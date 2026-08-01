@@ -1,0 +1,39 @@
+name: Python package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheel-smoke-test:
+    name: Build and install Python package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate version metadata
+        run: python scripts/check_release_version.py
+      - name: Test packaging helpers
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Run Rust tests
+        run: cargo test --locked --all-targets
+      - name: Build wheel and verified source distribution
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.11.5
+          manylinux: "2_17"
+          args: >-
+            --release
+            --locked
+            --sdist
+            --compatibility pypi
+            --out dist
+      - name: Install wheel and run bbtidy
+        run: python scripts/smoke_test_package.py --kind wheel dist

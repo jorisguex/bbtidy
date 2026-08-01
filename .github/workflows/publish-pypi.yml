@@ -1,0 +1,139 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate release version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match tag and package versions
+        run: python scripts/check_release_version.py
+      - name: Test packaging helpers
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Run Rust tests
+        run: cargo test --locked --all-targets
+
+  wheels:
+    name: Wheel (${{ matrix.platform.name }})
+    needs: validate
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: manylinux-x86_64
+            runner: ubuntu-24.04
+            target: x86_64
+            manylinux: "2_17"
+            smoke_test: true
+          - name: manylinux-aarch64
+            runner: ubuntu-24.04
+            target: aarch64
+            manylinux: "2_17"
+            smoke_test: false
+          - name: musllinux-x86_64
+            runner: ubuntu-24.04
+            target: x86_64
+            manylinux: musllinux_1_2
+            smoke_test: false
+          - name: musllinux-aarch64
+            runner: ubuntu-24.04
+            target: aarch64
+            manylinux: musllinux_1_2
+            smoke_test: false
+          - name: macos-x86_64
+            runner: macos-15-intel
+            target: x86_64
+            manylinux: "off"
+            smoke_test: true
+          - name: macos-aarch64
+            runner: macos-15
+            target: aarch64
+            manylinux: "off"
+            smoke_test: true
+          - name: windows-x86_64
+            runner: windows-2025
+            target: x64
+            manylinux: "off"
+            smoke_test: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.11.5
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            --locked
+            --compatibility pypi
+            --out dist
+          sccache: ${{ github.ref_type != 'tag' }}
+      - name: Install wheel and run bbtidy
+        if: ${{ matrix.platform.smoke_test }}
+        run: python scripts/smoke_test_package.py --kind wheel dist
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist-${{ matrix.platform.name }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: Source distribution
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build source distribution
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.11.5
+          command: sdist
+          args: --out dist
+      - name: Install source distribution and run bbtidy
+        run: python scripts/smoke_test_package.py --kind sdist dist
+      - name: Upload source distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish distributions
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    needs: [wheels, sdist]
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/bbtidy/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-dist-*
+          path: dist
+          merge-multiple: true
+      - name: Publish with PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

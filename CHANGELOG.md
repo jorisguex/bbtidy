@@ -27,6 +27,15 @@ All notable changes to this project will be documented in this file.
   summaries, `${AUTOREV}` source revisions, and duplicate static inherits.
 - Lint unit and integration coverage, including a clean representative layer
   and malformed-input behavior.
+- Complete PyPI metadata and maturin binary-wheel configuration so installing
+  `bbtidy` places the native executable on the environment path.
+- Python distribution smoke tests that install built wheels and source
+  distributions in isolated environments and execute `bbtidy --version`.
+- CI packaging validation for pull requests and pushes to `main`.
+- A tag-gated PyPI Trusted Publishing workflow for manylinux, musllinux, macOS,
+  and Windows wheels plus a source distribution.
+- Cargo, PEP 440, and release-tag version consistency checks.
+- Unit coverage for packaging version conversion and artifact selection.
 
 ### Changed
 

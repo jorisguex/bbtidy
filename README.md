@@ -28,43 +28,70 @@ top-level metadata assignments, and file-local linting suitable for CI.
 - **Initial linting**: Reports stable rule IDs, severity, line, and column for a
   focused set of reproducibility and metadata hygiene checks.
 
+## Installation
+
+Install the native executable from PyPI with pip:
+
+```bash
+python -m pip install bbtidy
+bbtidy --version
+```
+
+Because bbtidy is a command-line application, `pipx install bbtidy` is also a
+good choice for an isolated global installation. The Python distribution does
+not expose an importable module; it places the `bbtidy` executable in the
+environment's scripts directory, following the same binary-wheel model used by
+Rust-based Python tools such as Ruff.
+
+Release wheels target:
+
+- Linux x86-64 and ARM64 using glibc (`manylinux_2_17`)
+- Linux x86-64 and ARM64 using musl (`musllinux_1_2`)
+- macOS on Intel and Apple silicon
+- Windows on x86-64
+
+The wheels are independent of the Python interpreter implementation and support
+Python 3.8 or newer. Installing a matching wheel does not require Rust. A source
+distribution is also published as a fallback; building it requires Rust 1.85 or
+newer.
+
 ## Usage
 
 To inspect the tokens in a recipe:
 
 ```bash
-cargo run -- lex sample.bb
+bbtidy lex sample.bb
 ```
 
 To print a formatted file without modifying it:
 
 ```bash
-cargo run -- format messy.bb
+bbtidy format messy.bb
 ```
 
 Standard input is accepted as `-`:
 
 ```bash
-printf 'SUMMARY="Example"\n' | cargo run -- format -
+printf 'SUMMARY="Example"\n' | bbtidy format -
 ```
 
 To inspect changes across a file or directory:
 
 ```bash
-cargo run -- format --diff recipes-example/
+bbtidy format --diff recipes-example/
 ```
 
 To check formatting in CI, then explicitly rewrite files when desired:
 
 ```bash
-cargo run -- check recipes-example/
-cargo run -- format --write recipes-example/
+bbtidy check recipes-example/
+bbtidy format --write recipes-example/
 ```
 
 To lint a file, recipe directory, or layer:
 
 ```bash
-cargo run -- lint recipes-example/
+bbtidy lint recipes-example/
 ```
 
 Findings use an editor- and CI-friendly format:
@@ -145,6 +172,18 @@ Run the test suite with:
 cargo test
 ```
 
+Build and verify the Python wheel and source distribution with:
+
+```bash
+maturin build --release --locked --sdist --out dist
+python scripts/smoke_test_package.py --kind wheel dist
+python scripts/smoke_test_package.py --kind sdist dist
+```
+
+`pip install .` uses the same PEP 517 configuration for a local source build.
+The Cargo version is the release source of truth; maturin converts prereleases
+to PEP 440 automatically, for example `0.1.0-alpha.1` becomes `0.1.0a1`.
+
 The integration suite includes a representative fixture layer containing
 `.bb`, `.bbappend`, `.bbclass`, `.inc`, and `.conf` files. It verifies golden
 output, idempotence, byte-for-byte preservation of embedded code, structured
@@ -164,6 +203,26 @@ BBTIDY_BITBAKE_BUILD_DIR="$BUILDDIR" \
 The script is opt-in because BitBake is not a project dependency. It invokes
 `bitbake --parse-only example`, ensuring the corpus recipe is available and
 parseable, and does not edit the selected build configuration.
+
+## Releasing to PyPI
+
+The Python package workflow builds and installs a wheel on every pull request
+and push to `main`. The release workflow can be run manually to inspect all
+platform artifacts without publishing.
+
+To publish a release:
+
+1. Update the version in `Cargo.toml` and finalize the changelog.
+2. Create a tag that exactly matches the Cargo version, such as
+   `v0.1.0-alpha.2`.
+3. Push the tag. The release workflow builds and smoke-tests all wheels and the
+   source distribution, then publishes them through PyPI Trusted Publishing.
+
+Before the first automated publication, configure the `bbtidy` project on PyPI
+with GitHub owner `jorisguex`, repository `bbtidy`, workflow
+`publish-pypi.yml`, and environment `pypi`. No repository API token is needed.
+The version guard rejects mismatched tags before any release artifacts are
+built.
 
 ## License
 
