@@ -1,6 +1,6 @@
 # bbtidy
 
-Formatter and Linter for BitBake.
+Experimental formatter and lexer for BitBake metadata.
 
 ## Description
 
@@ -12,6 +12,9 @@ for top-level metadata assignments.
 
 - **Tokenization**: efficiently breaks down BitBake files into tokens (Identifiers, Strings, Keywords, etc.) using `logos`.
 - **Span Reporting**: Reports the exact location (line and column) of each token.
+- **Modern metadata syntax**: Recognizes all eight assignment operators, colon
+  overrides, key expansion, variable flags, multiline quoted values, and current
+  BitBake directives.
 - **Safe formatting boundaries**: Formats complete, single-line top-level
   assignments while preserving shell functions, Python functions, continued
   statements, and unsupported syntax.
@@ -34,6 +37,24 @@ cargo run -- --format messy.bb
 
 Formatting is intentionally limited while BitBake syntax support is being
 developed. Embedded shell and Python code is kept byte-for-byte unchanged.
+
+## Supported syntax
+
+The `0.1.0-alpha.1` lexer recognizes:
+
+- Assignments using `=`, `:=`, `?=`, `??=`, `+=`, `=+`, `.=` and `=.`
+- Literal and dynamic overrides such as `RDEPENDS:${PN}:class-native`
+- Key expansion such as `A${B}` and variable flags such as
+  `do_fetch[network]`
+- `include`, `include_all`, `require`, `inherit`, `inherit_defer`,
+  `addfragments`, `addpylib`, `addhandler`, `addtask`, `deltask`,
+  `EXPORT_FUNCTIONS`, `export` and `unset`
+- Single- and double-quoted values, including multiline values
+
+Legacy underscore overrides remain lexically accepted as identifier and
+variable-reference components. They are not interpreted as override operations.
+The formatter remains deliberately conservative and only changes complete,
+single-line top-level assignments.
 
 ## Development
 

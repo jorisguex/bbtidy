@@ -1,10 +1,13 @@
 [package]
 name = "bbtidy"
-version = "0.0.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT"
-description = "Formatter and Linter for BitBake"
+description = "Experimental formatter and lexer for BitBake metadata"
 repository = "https://github.com/jorisguex/bbtidy"
+keywords = ["bitbake", "yocto", "formatter", "lexer"]
+categories = ["command-line-utilities", "development-tools"]
 publish = true
 
 [dependencies]

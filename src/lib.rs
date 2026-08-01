@@ -1,22 +1,30 @@
 use logos::Logos;
 use std::fmt;
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Token {
-    #[regex(r"[ \n\t\f]+")]
+    #[regex(r"[ \r\n\t\f]+")]
     Whitespace,
 
     // Comments start with # and go to end of line
-    #[regex(r"#.*")]
+    #[regex(r"#[^\r\n]*")]
     Comment,
 
-    // Include or inherit directives
+    // Metadata sharing directives
     #[token("include")]
     IncludeKw,
+    #[token("include_all")]
+    IncludeAllKw,
     #[token("require")]
     RequireKw,
     #[token("inherit")]
     InheritKw,
+    #[token("inherit_defer")]
+    InheritDeferKw,
+    #[token("addfragments")]
+    AddFragmentsKw,
+
+    // Variable and task directives
     #[token("export")]
     ExportKw,
     #[token("unset")]
@@ -25,24 +33,40 @@ pub enum Token {
     AddtaskKw,
     #[token("deltask")]
     DeltaskKw,
+    #[token("addhandler")]
+    AddHandlerKw,
+    #[token("addpylib")]
+    AddPyLibKw,
+    #[token("EXPORT_FUNCTIONS")]
+    ExportFunctionsKw,
+    #[token("before")]
+    BeforeKw,
+    #[token("after")]
+    AfterKw,
+
+    // Function modifiers
     #[token("python")]
     PythonKw,
     #[token("fakeroot")]
     FakerootKw,
 
-    // Assignment operators: =, :=, ?=, ??=, +=, .=
+    // Assignment operators. The names reflect BitBake evaluation semantics.
     #[token("=")]
     Assign,
     #[token(":=")]
-    WeakAssign,
+    ImmediateAssign,
     #[token("?=")]
-    ConditionalAssign,
+    DefaultAssign,
     #[token("??=")]
-    LazyDefaultAssign,
+    WeakDefaultAssign,
     #[token("+=")]
     AppendAssign,
-    #[token(".=")]
+    #[token("=+")]
     PrependAssign,
+    #[token(".=")]
+    AppendNoSpaceAssign,
+    #[token("=.")]
+    PrependNoSpaceAssign,
 
     // Punctuation
     #[token("(")]
@@ -57,23 +81,84 @@ pub enum Token {
     LBracket,
     #[token("]")]
     RBracket,
+    #[token(":")]
+    Colon,
+    #[token("/")]
+    Slash,
     #[token("\\")]
     LineContinuation,
 
-    // Overrides separated by spaces or in variable names with ':'
-    // Example: SRC_URI[append] or FILES_${PN} or VAR:append
-    #[regex(r"[A-Za-z0-9_]+(:[A-Za-z0-9_]+)?", priority = 2)]
+    // Identifiers include variable, override, flag, directive argument, and
+    // function-name components. Colons and variable references are kept as
+    // separate tokens so any number of dynamic or literal overrides can be
+    // represented without flattening their structure.
+    #[regex(r"[A-Za-z0-9_][A-Za-z0-9_+.\-]*", priority = 2)]
     Ident,
 
     // Variable references like ${VAR} or ${@python}
-    #[regex(r"\$\{[^}]*\}")]
+    #[regex(r"\$\{[^}\r\n]*\}")]
     VarRef,
 
-    // Strings: double-quoted and single-quoted (keep the quotes in slice)
-    #[regex(r#""([^"\\]|\\.)*""#)]
+    // Quoted values can span physical lines through a backslash continuation.
+    // Quotes are retained in the token slice.
+    #[regex(r#"(?s:"([^"\\]|\\.)*")"#)]
     DqString,
-    #[regex(r"'([^'\\]|\\.)*'")]
+    #[regex(r"(?s:'([^'\\]|\\.)*')")]
     SqString,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AssignmentOperator {
+    Assign,
+    Immediate,
+    Default,
+    WeakDefault,
+    AppendWithSpace,
+    PrependWithSpace,
+    AppendWithoutSpace,
+    PrependWithoutSpace,
+}
+
+impl AssignmentOperator {
+    const ALL_BY_LENGTH: [Self; 8] = [
+        Self::WeakDefault,
+        Self::Immediate,
+        Self::Default,
+        Self::AppendWithSpace,
+        Self::PrependWithSpace,
+        Self::AppendWithoutSpace,
+        Self::PrependWithoutSpace,
+        Self::Assign,
+    ];
+
+    pub const fn lexeme(self) -> &'static str {
+        match self {
+            Self::Assign => "=",
+            Self::Immediate => ":=",
+            Self::Default => "?=",
+            Self::WeakDefault => "??=",
+            Self::AppendWithSpace => "+=",
+            Self::PrependWithSpace => "=+",
+            Self::AppendWithoutSpace => ".=",
+            Self::PrependWithoutSpace => "=.",
+        }
+    }
+}
+
+impl Token {
+    pub const fn assignment_operator(self) -> Option<AssignmentOperator> {
+        match self {
+            Self::Assign => Some(AssignmentOperator::Assign),
+            Self::ImmediateAssign => Some(AssignmentOperator::Immediate),
+            Self::DefaultAssign => Some(AssignmentOperator::Default),
+            Self::WeakDefaultAssign => Some(AssignmentOperator::WeakDefault),
+            Self::AppendAssign => Some(AssignmentOperator::AppendWithSpace),
+            Self::PrependAssign => Some(AssignmentOperator::PrependWithSpace),
+            Self::AppendNoSpaceAssign => Some(AssignmentOperator::AppendWithoutSpace),
+            Self::PrependNoSpaceAssign => Some(AssignmentOperator::PrependWithoutSpace),
+            _ => None,
+        }
+    }
 }
 
 pub fn get_line_col(text: &str, index: usize) -> (usize, usize) {
@@ -438,7 +523,8 @@ fn format_top_level_assignment(
         return Ok(None);
     }
 
-    let right = &content[operator_start + operator.len()..];
+    let operator_lexeme = operator.lexeme();
+    let right = &content[operator_start + operator_lexeme.len()..];
     if !has_balanced_quotes(right) {
         return Err(FormatError::new(
             line_number,
@@ -450,7 +536,7 @@ fn format_top_level_assignment(
     let mut formatted = String::with_capacity(line.len() + 2);
     formatted.push_str(left);
     formatted.push(' ');
-    formatted.push_str(operator);
+    formatted.push_str(operator_lexeme);
     if !right.is_empty() {
         formatted.push(' ');
         formatted.push_str(right);
@@ -459,9 +545,7 @@ fn format_top_level_assignment(
     Ok(Some(formatted))
 }
 
-fn find_assignment_operator(content: &str) -> Option<(usize, &'static str)> {
-    const OPERATORS: [&str; 8] = ["??=", ":=", "?=", "+=", ".=", "=+", "=.", "="];
-
+fn find_assignment_operator(content: &str) -> Option<(usize, AssignmentOperator)> {
     let bytes = content.as_bytes();
     let mut quote = None;
     let mut escaped = false;
@@ -495,9 +579,9 @@ fn find_assignment_operator(content: &str) -> Option<(usize, &'static str)> {
             return None;
         }
 
-        if let Some(operator) = OPERATORS
+        if let Some(operator) = AssignmentOperator::ALL_BY_LENGTH
             .iter()
-            .find(|operator| bytes[index..].starts_with(operator.as_bytes()))
+            .find(|operator| bytes[index..].starts_with(operator.lexeme().as_bytes()))
         {
             return Some((index, *operator));
         }
@@ -508,31 +592,78 @@ fn find_assignment_operator(content: &str) -> Option<(usize, &'static str)> {
 }
 
 fn is_assignment_left_hand_side(left: &str) -> bool {
-    let name = left
-        .strip_prefix("export ")
-        .or_else(|| left.strip_prefix("export\t"))
-        .unwrap_or(left);
-    if name.is_empty()
-        || name.starts_with(char::is_whitespace)
-        || name.bytes().any(|byte| byte.is_ascii_whitespace())
-    {
-        return false;
-    }
+    let name = if let Some(rest) = left.strip_prefix("export") {
+        if rest.starts_with(char::is_whitespace) {
+            rest.trim_start()
+        } else {
+            left
+        }
+    } else {
+        left
+    };
+    is_variable_name(name)
+}
 
-    let Some(first) = name.bytes().next() else {
+fn is_variable_name(name: &str) -> bool {
+    let bytes = name.as_bytes();
+    let Some(first) = bytes.first() else {
         return false;
     };
-    if !(first.is_ascii_alphabetic() || first == b'_') {
+    if !(first.is_ascii_alphanumeric() || matches!(first, b'_' | b'$')) {
         return false;
     }
 
-    name.bytes().all(|byte| {
-        byte.is_ascii_alphanumeric()
-            || matches!(
-                byte,
-                b'_' | b':' | b'-' | b'+' | b'.' | b'$' | b'{' | b'}' | b'@' | b'[' | b']'
-            )
-    })
+    let mut index = 0;
+    let mut component_has_content = false;
+
+    while index < bytes.len() {
+        match bytes[index] {
+            byte if byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'+' | b'.') => {
+                component_has_content = true;
+                index += 1;
+            }
+            b'$' => {
+                let Some(reference_end) = variable_reference_end(bytes, index) else {
+                    return false;
+                };
+                component_has_content = true;
+                index = reference_end;
+            }
+            b':' if component_has_content => {
+                component_has_content = false;
+                index += 1;
+            }
+            b'[' if component_has_content => {
+                return variable_flag_is_valid(&bytes[index..]);
+            }
+            _ => return false,
+        }
+    }
+
+    component_has_content
+}
+
+fn variable_reference_end(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes.get(start..start + 2)? != b"${" {
+        return None;
+    }
+    let relative_end = bytes[start + 2..].iter().position(|&byte| byte == b'}')?;
+    let end = start + 2 + relative_end;
+    let contents = &bytes[start + 2..end];
+    if contents.is_empty() || contents.iter().any(|byte| byte.is_ascii_whitespace()) {
+        return None;
+    }
+    Some(end + 1)
+}
+
+fn variable_flag_is_valid(flag: &[u8]) -> bool {
+    if flag.len() < 3 || flag.last() != Some(&b']') {
+        return false;
+    }
+
+    flag[1..flag.len() - 1]
+        .iter()
+        .all(|&byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'+' | b'.'))
 }
 
 fn has_balanced_quotes(text: &str) -> bool {
@@ -565,6 +696,24 @@ fn has_balanced_quotes(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn lex_tokens(text: &str) -> Vec<(Token, String)> {
+        let mut lexer = Token::lexer(text);
+        let mut tokens = Vec::new();
+        while let Some(result) = lexer.next() {
+            let token = result.unwrap_or_else(|_| {
+                panic!(
+                    "unexpected lexer error at {:?}: {:?}",
+                    lexer.span(),
+                    lexer.slice()
+                )
+            });
+            if token != Token::Whitespace {
+                tokens.push((token, lexer.slice().to_owned()));
+            }
+        }
+        tokens
+    }
 
     #[test]
     fn test_get_line_col() {
@@ -618,25 +767,152 @@ mod tests {
 
     #[test]
     fn test_keywords() {
-        let mut lex =
-            Token::lexer("include require inherit export unset addtask deltask python fakeroot");
-        assert_eq!(lex.next(), Some(Ok(Token::IncludeKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::RequireKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::InheritKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::ExportKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::UnsetKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::AddtaskKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::DeltaskKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::PythonKw)));
-        assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::FakerootKw)));
+        let tokens = lex_tokens(
+            "include include_all require inherit inherit_defer addfragments \
+             export unset addtask deltask addhandler addpylib EXPORT_FUNCTIONS \
+             before after python fakeroot",
+        );
+        let actual: Vec<Token> = tokens.into_iter().map(|(token, _)| token).collect();
+        let expected = vec![
+            Token::IncludeKw,
+            Token::IncludeAllKw,
+            Token::RequireKw,
+            Token::InheritKw,
+            Token::InheritDeferKw,
+            Token::AddFragmentsKw,
+            Token::ExportKw,
+            Token::UnsetKw,
+            Token::AddtaskKw,
+            Token::DeltaskKw,
+            Token::AddHandlerKw,
+            Token::AddPyLibKw,
+            Token::ExportFunctionsKw,
+            Token::BeforeKw,
+            Token::AfterKw,
+            Token::PythonKw,
+            Token::FakerootKw,
+        ];
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_assignment_operator_tokens_and_semantics() {
+        let tokens = lex_tokens("= := ?= ??= += =+ .= =.");
+        let actual: Vec<(Token, AssignmentOperator, String)> = tokens
+            .into_iter()
+            .map(|(token, slice)| {
+                let operator = token.assignment_operator().unwrap();
+                (token, operator, slice)
+            })
+            .collect();
+        let expected = vec![
+            (Token::Assign, AssignmentOperator::Assign, "=".into()),
+            (
+                Token::ImmediateAssign,
+                AssignmentOperator::Immediate,
+                ":=".into(),
+            ),
+            (
+                Token::DefaultAssign,
+                AssignmentOperator::Default,
+                "?=".into(),
+            ),
+            (
+                Token::WeakDefaultAssign,
+                AssignmentOperator::WeakDefault,
+                "??=".into(),
+            ),
+            (
+                Token::AppendAssign,
+                AssignmentOperator::AppendWithSpace,
+                "+=".into(),
+            ),
+            (
+                Token::PrependAssign,
+                AssignmentOperator::PrependWithSpace,
+                "=+".into(),
+            ),
+            (
+                Token::AppendNoSpaceAssign,
+                AssignmentOperator::AppendWithoutSpace,
+                ".=".into(),
+            ),
+            (
+                Token::PrependNoSpaceAssign,
+                AssignmentOperator::PrependWithoutSpace,
+                "=.".into(),
+            ),
+        ];
+
+        assert_eq!(actual, expected);
+        for (_, operator, slice) in actual {
+            assert_eq!(operator.lexeme(), slice);
+        }
+    }
+
+    #[test]
+    fn test_override_key_expansion_and_varflag_tokens() {
+        let tokens = lex_tokens(
+            "RDEPENDS:${PN}:class-native += \"foo\"\n\
+             do_fetch[network] = \"1\"\n\
+             RDEPENDS_${PN} += \"legacy\"",
+        );
+        let actual: Vec<(Token, &str)> = tokens
+            .iter()
+            .map(|(token, slice)| (*token, slice.as_str()))
+            .collect();
+        let expected = vec![
+            (Token::Ident, "RDEPENDS"),
+            (Token::Colon, ":"),
+            (Token::VarRef, "${PN}"),
+            (Token::Colon, ":"),
+            (Token::Ident, "class-native"),
+            (Token::AppendAssign, "+="),
+            (Token::DqString, "\"foo\""),
+            (Token::Ident, "do_fetch"),
+            (Token::LBracket, "["),
+            (Token::Ident, "network"),
+            (Token::RBracket, "]"),
+            (Token::Assign, "="),
+            (Token::DqString, "\"1\""),
+            (Token::Ident, "RDEPENDS_"),
+            (Token::VarRef, "${PN}"),
+            (Token::AppendAssign, "+="),
+            (Token::DqString, "\"legacy\""),
+        ];
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_directive_paths_and_multiline_values_lex_without_errors() {
+        let input = concat!(
+            "include_all conf/distro/include/maintainers.inc\n",
+            "inherit_defer ${VARNAME}\n",
+            "addpylib ${LAYERDIR}/lib oeqa\n",
+            "SRC_URI = \" \\\n",
+            "    file://one.patch \\\n",
+            "    file://two.patch \\\n",
+            "\"\n",
+        );
+        let tokens = lex_tokens(input);
+
+        assert!(tokens.contains(&(Token::IncludeAllKw, "include_all".into())));
+        assert!(tokens.contains(&(Token::InheritDeferKw, "inherit_defer".into())));
+        assert!(tokens.contains(&(Token::AddPyLibKw, "addpylib".into())));
+        assert!(
+            tokens
+                .iter()
+                .filter(|(token, _)| *token == Token::Slash)
+                .count()
+                >= 4
+        );
+        assert!(tokens.iter().any(|(token, slice)| {
+            *token == Token::DqString
+                && slice.contains("file://one.patch")
+                && slice.contains("file://two.patch")
+        }));
     }
 
     #[test]
@@ -655,7 +931,7 @@ mod tests {
         assert_eq!(lex.next(), Some(Ok(Token::Ident)));
         assert_eq!(lex.slice(), "VAR");
         assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
-        assert_eq!(lex.next(), Some(Ok(Token::LazyDefaultAssign)));
+        assert_eq!(lex.next(), Some(Ok(Token::WeakDefaultAssign)));
         assert_eq!(lex.next(), Some(Ok(Token::Whitespace)));
         assert_eq!(lex.next(), Some(Ok(Token::DqString)));
 
@@ -711,6 +987,57 @@ mod tests {
         let input = "VAR=\"val\"";
         let expected = "VAR = \"val\"";
         assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_all_assignment_operators() {
+        let input = concat!(
+            "A=\"assign\"\n",
+            "B:=\"immediate\"\n",
+            "C?=\"default\"\n",
+            "D??=\"weak default\"\n",
+            "E+=\"append with space\"\n",
+            "F=+\"prepend with space\"\n",
+            "G.=\"append without space\"\n",
+            "H=.\"prepend without space\"\n",
+        );
+        let expected = concat!(
+            "A = \"assign\"\n",
+            "B := \"immediate\"\n",
+            "C ?= \"default\"\n",
+            "D ??= \"weak default\"\n",
+            "E += \"append with space\"\n",
+            "F =+ \"prepend with space\"\n",
+            "G .= \"append without space\"\n",
+            "H =. \"prepend without space\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_modern_overrides_key_expansion_and_varflags() {
+        let input = concat!(
+            "RDEPENDS:${PN}:class-native+=\"package\"\n",
+            "do_fetch[network]=\"1\"\n",
+            "A${B}:machine:append.=\"suffix\"\n",
+            "export PATH:prepend=\"${STAGING_BINDIR_NATIVE}:\"\n",
+        );
+        let expected = concat!(
+            "RDEPENDS:${PN}:class-native += \"package\"\n",
+            "do_fetch[network] = \"1\"\n",
+            "A${B}:machine:append .= \"suffix\"\n",
+            "export PATH:prepend = \"${STAGING_BINDIR_NATIVE}:\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_preserves_invalid_variable_shapes() {
+        let input = "FOO[flag:override]=\"unchanged\"\nFOO::append=\"unchanged\"\n";
+
+        assert_eq!(format(input).unwrap(), input);
     }
 
     #[test]
