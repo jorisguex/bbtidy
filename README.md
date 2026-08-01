@@ -64,6 +64,25 @@ Run the test suite with:
 cargo test
 ```
 
+The integration suite includes a representative fixture layer containing
+`.bb`, `.bbappend`, `.bbclass`, `.inc`, and `.conf` files. It verifies golden
+output, idempotence, byte-for-byte preservation of embedded code, structured
+errors, and the CLI no-write guarantee for malformed input.
+
+To validate the formatted corpus with a real BitBake parser, use a disposable
+build whose environment has already been initialized:
+
+```bash
+bbtidy_repository=/absolute/path/to/bbtidy
+bitbake-layers add-layer "$bbtidy_repository/tests/fixtures/corpus/expected"
+BBTIDY_BITBAKE_BUILD_DIR="$BUILDDIR" \
+    "$bbtidy_repository/scripts/check-bitbake-parser.sh"
+```
+
+The script is opt-in because BitBake is not a project dependency. It invokes
+`bitbake --parse-only example`, ensuring the corpus recipe is available and
+parseable, and does not edit the selected build configuration.
+
 ## License
 
 This project is licensed under the MIT License.

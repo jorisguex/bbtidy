@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- A representative, interconnected fixture layer covering `.bb`, `.bbappend`,
+  `.bbclass`, `.inc`, and `.conf` metadata.
+- Corpus-wide golden, idempotence, and byte-for-byte opaque-region tests.
+- Malformed-input integration tests that verify structured errors and ensure
+  the CLI never partially rewrites a file.
+- An opt-in real-BitBake parse check for the formatted fixture layer.
+
 ## [0.1.0-alpha.1] - 2026-08-01
 
 ### Added
