@@ -1,87 +1,374 @@
-use bbtidy::{Token, format, get_line_col};
-use clap::Parser;
+use bbtidy::{Token, format as format_source, get_line_col};
+use clap::{Args, Parser, Subcommand};
 use logos::Logos;
+use similar::TextDiff;
+use std::collections::BTreeSet;
 use std::fs;
 use std::fs::OpenOptions;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process;
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    /// Files to process
-    #[arg(required = true)]
-    files: Vec<PathBuf>,
+const EXIT_DIFFERENCES: i32 = 1;
+const EXIT_ERROR: i32 = 2;
+const BITBAKE_EXTENSIONS: &[&str] = &["bb", "bbappend", "bbclass", "conf", "inc"];
 
-    /// Format the files
-    #[arg(short, long)]
-    format: bool,
+#[derive(Parser)]
+#[command(
+    author,
+    version,
+    about = "Format and inspect BitBake metadata",
+    long_about = None
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Format BitBake metadata
+    Format(FormatArgs),
+
+    /// Check whether BitBake metadata is already formatted
+    Check(InputArgs),
+
+    /// Print the lexer token stream
+    Lex(InputArgs),
+}
+
+#[derive(Args)]
+struct FormatArgs {
+    /// Rewrite files in place
+    #[arg(long, conflicts_with = "diff")]
+    write: bool,
+
+    /// Print a unified diff instead of formatted source
+    #[arg(long, conflicts_with = "write")]
+    diff: bool,
+
+    #[command(flatten)]
+    inputs: InputArgs,
+}
+
+#[derive(Args)]
+struct InputArgs {
+    /// Files or directories to process; use '-' to read standard input
+    #[arg(required = true, value_name = "PATH")]
+    paths: Vec<PathBuf>,
+}
+
+#[derive(Debug)]
+enum Input {
+    Stdin,
+    File(PathBuf),
+}
+
+struct FormattedInput {
+    label: String,
+    path: Option<PathBuf>,
+    original: String,
+    formatted: String,
 }
 
 fn main() {
     let cli = Cli::parse();
+    let exit_code = match cli.command {
+        Command::Format(args) => run_format(args),
+        Command::Check(args) => run_check(args),
+        Command::Lex(args) => run_lex(args),
+    };
+
+    if exit_code != 0 {
+        process::exit(exit_code);
+    }
+}
+
+fn run_format(args: FormatArgs) -> i32 {
+    let inputs = match resolve_inputs(&args.inputs.paths) {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+
+    if !args.write && !args.diff && inputs.len() != 1 {
+        eprintln!(
+            "error: formatting to standard output requires exactly one input; use --diff or --write for multiple inputs"
+        );
+        return EXIT_ERROR;
+    }
+
+    if args.write && inputs.iter().any(|input| matches!(input, Input::Stdin)) {
+        eprintln!("error: --write cannot be used with standard input");
+        return EXIT_ERROR;
+    }
+
+    let formatted_inputs = match format_inputs(&inputs) {
+        Ok(formatted_inputs) => formatted_inputs,
+        Err(()) => return EXIT_ERROR,
+    };
+
+    if args.write {
+        write_inputs(&formatted_inputs)
+    } else if args.diff {
+        print_diffs(&formatted_inputs)
+    } else {
+        let mut stdout = io::stdout().lock();
+        match stdout.write_all(formatted_inputs[0].formatted.as_bytes()) {
+            Ok(()) => 0,
+            Err(error) if error.kind() == io::ErrorKind::BrokenPipe => 0,
+            Err(error) => {
+                eprintln!("error: could not write standard output: {error}");
+                EXIT_ERROR
+            }
+        }
+    }
+}
+
+fn run_check(args: InputArgs) -> i32 {
+    let inputs = match resolve_inputs(&args.paths) {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+    let formatted_inputs = match format_inputs(&inputs) {
+        Ok(formatted_inputs) => formatted_inputs,
+        Err(()) => return EXIT_ERROR,
+    };
+
+    let mut differences = false;
+    for input in formatted_inputs {
+        if input.original != input.formatted {
+            println!("would reformat: {}", input.label);
+            differences = true;
+        }
+    }
+
+    if differences { EXIT_DIFFERENCES } else { 0 }
+}
+
+fn run_lex(args: InputArgs) -> i32 {
+    let inputs = match resolve_inputs(&args.paths) {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+    let multiple_inputs = inputs.len() > 1;
     let mut had_error = false;
 
-    for file_path in cli.files {
-        println!("Processing file: {:?}", file_path);
-        match fs::read_to_string(&file_path) {
-            Ok(text) => {
-                if cli.format {
-                    match format(&text) {
-                        Ok(formatted) if formatted == text => {
-                            println!("Already formatted {:?}", file_path);
-                        }
-                        Ok(formatted) => {
-                            if let Err(error) = write_atomically(&file_path, formatted.as_bytes()) {
-                                eprintln!("Error writing file {:?}: {}", file_path, error);
-                                had_error = true;
-                            } else {
-                                println!("Formatted {:?}", file_path);
-                            }
-                        }
-                        Err(error) => {
-                            eprintln!("Error formatting {:?}: {}", file_path, error);
-                            had_error = true;
-                        }
-                    }
-                } else {
-                    let mut lex = Token::lexer(&text);
-                    while let Some(tok) = lex.next() {
-                        let span = lex.span();
-                        let (line, col) = get_line_col(&text, span.start);
-                        match tok {
-                            Ok(token) => println!(
-                                "{:<20} {:?} {}:{} {:?}",
-                                format!("{:?}", token),
-                                span,
-                                line,
-                                col,
-                                lex.slice()
-                            ),
-                            Err(_) => println!(
-                                "{:<20} {:?} {}:{} {:?}",
-                                "Error",
-                                span,
-                                line,
-                                col,
-                                lex.slice()
-                            ),
-                        }
-                    }
+    for (index, input) in inputs.iter().enumerate() {
+        let (label, text) = match read_input(input) {
+            Ok(source) => source,
+            Err(error) => {
+                eprintln!("error: {error}");
+                had_error = true;
+                continue;
+            }
+        };
+
+        if multiple_inputs {
+            if index > 0 {
+                println!();
+            }
+            println!("==> {label} <==");
+        }
+
+        let mut lexer = Token::lexer(&text);
+        while let Some(token) = lexer.next() {
+            let span = lexer.span();
+            let (line, column) = get_line_col(&text, span.start);
+            match token {
+                Ok(token) => println!(
+                    "{:<20} {:?} {}:{} {:?}",
+                    format!("{token:?}"),
+                    span,
+                    line,
+                    column,
+                    lexer.slice()
+                ),
+                Err(_) => {
+                    println!(
+                        "{:<20} {:?} {}:{} {:?}",
+                        "Error",
+                        span,
+                        line,
+                        column,
+                        lexer.slice()
+                    );
+                    had_error = true;
                 }
             }
+        }
+    }
+
+    if had_error { EXIT_ERROR } else { 0 }
+}
+
+fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
+    let stdin_count = paths.iter().filter(|path| path.as_os_str() == "-").count();
+    if stdin_count > 1 {
+        return Err("standard input ('-') may only be specified once".to_owned());
+    }
+    if stdin_count == 1 && paths.len() > 1 {
+        return Err("standard input ('-') cannot be combined with other inputs".to_owned());
+    }
+    if stdin_count == 1 {
+        return Ok(vec![Input::Stdin]);
+    }
+
+    let mut files = BTreeSet::new();
+    for path in paths {
+        let metadata = fs::metadata(path)
+            .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
+        if metadata.is_dir() {
+            collect_directory(path, &mut files)?;
+        } else if metadata.is_file() {
+            files.insert(path.clone());
+        } else {
+            return Err(format!(
+                "{} is not a regular file or directory",
+                path.display()
+            ));
+        }
+    }
+
+    if files.is_empty() {
+        return Err("no BitBake files found in the supplied directories".to_owned());
+    }
+
+    Ok(files.into_iter().map(Input::File).collect())
+}
+
+fn collect_directory(directory: &Path, files: &mut BTreeSet<PathBuf>) -> Result<(), String> {
+    let entries = fs::read_dir(directory)
+        .map_err(|error| format!("could not read directory {}: {error}", directory.display()))?;
+    let mut entries = entries
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("could not read directory {}: {error}", directory.display()))?;
+    entries.sort_by_key(|entry| entry.file_name());
+
+    for entry in entries {
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
+        if file_type.is_dir() {
+            collect_directory(&path, files)?;
+        } else if file_type.is_file() && is_bitbake_file(&path) {
+            files.insert(path);
+        }
+    }
+
+    Ok(())
+}
+
+fn is_bitbake_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| BITBAKE_EXTENSIONS.contains(&extension))
+}
+
+fn format_inputs(inputs: &[Input]) -> Result<Vec<FormattedInput>, ()> {
+    let mut formatted_inputs = Vec::with_capacity(inputs.len());
+    let mut had_error = false;
+
+    for input in inputs {
+        let (label, original) = match read_input(input) {
+            Ok(source) => source,
             Err(error) => {
-                eprintln!("Error reading file {:?}: {}", file_path, error);
+                eprintln!("error: {error}");
+                had_error = true;
+                continue;
+            }
+        };
+        match format_source(&original) {
+            Ok(formatted) => formatted_inputs.push(FormattedInput {
+                label,
+                path: match input {
+                    Input::Stdin => None,
+                    Input::File(path) => Some(path.clone()),
+                },
+                original,
+                formatted,
+            }),
+            Err(error) => {
+                eprintln!("error: could not format {label}: {error}");
                 had_error = true;
             }
         }
-        println!();
     }
 
     if had_error {
-        process::exit(1);
+        Err(())
+    } else {
+        Ok(formatted_inputs)
     }
+}
+
+fn read_input(input: &Input) -> Result<(String, String), String> {
+    match input {
+        Input::Stdin => {
+            let mut text = String::new();
+            io::stdin()
+                .read_to_string(&mut text)
+                .map_err(|error| format!("could not read standard input: {error}"))?;
+            Ok(("<stdin>".to_owned(), text))
+        }
+        Input::File(path) => fs::read_to_string(path)
+            .map(|text| (path.display().to_string(), text))
+            .map_err(|error| format!("could not read {}: {error}", path.display())),
+    }
+}
+
+fn write_inputs(inputs: &[FormattedInput]) -> i32 {
+    for input in inputs {
+        if input.original == input.formatted {
+            continue;
+        }
+        let path = input
+            .path
+            .as_deref()
+            .expect("write mode rejects standard input");
+        if let Err(error) = write_atomically(path, input.formatted.as_bytes()) {
+            eprintln!("error: could not write {}: {error}", input.label);
+            return EXIT_ERROR;
+        }
+        println!("formatted: {}", input.label);
+    }
+
+    0
+}
+
+fn print_diffs(inputs: &[FormattedInput]) -> i32 {
+    let mut stdout = io::stdout().lock();
+
+    for input in inputs {
+        if input.original == input.formatted {
+            continue;
+        }
+
+        let old_label = format!("a/{}", input.label);
+        let new_label = format!("b/{}", input.label);
+        let diff = TextDiff::from_lines(&input.original, &input.formatted)
+            .unified_diff()
+            .header(&old_label, &new_label)
+            .to_string();
+        if let Err(error) = stdout.write_all(diff.as_bytes()) {
+            if error.kind() == io::ErrorKind::BrokenPipe {
+                return 0;
+            }
+            eprintln!("error: could not write standard output: {error}");
+            return EXIT_ERROR;
+        }
+    }
+
+    0
 }
 
 fn write_atomically(path: &Path, contents: &[u8]) -> io::Result<()> {

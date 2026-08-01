@@ -73,18 +73,16 @@ fn corpus_covers_each_supported_bitbake_file_type() {
 #[test]
 fn cli_formats_the_corpus_tree_to_golden_output() {
     let temporary_directory = create_temporary_directory("corpus");
-    let mut temporary_files = Vec::new();
 
     for relative_path in FIXTURES {
         let temporary_file = temporary_directory.join(relative_path);
         fs::create_dir_all(temporary_file.parent().unwrap()).unwrap();
         fs::write(&temporary_file, read_fixture("input", relative_path)).unwrap();
-        temporary_files.push(temporary_file);
     }
 
     let output = Command::new(env!("CARGO_BIN_EXE_bbtidy"))
-        .arg("--format")
-        .args(&temporary_files)
+        .args(["format", "--write"])
+        .arg(&temporary_directory)
         .output()
         .unwrap();
     assert!(

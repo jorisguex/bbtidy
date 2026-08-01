@@ -55,7 +55,7 @@ fn cli_never_partially_writes_malformed_files() {
         fs::write(&temporary_file, &original).unwrap();
 
         let output = Command::new(env!("CARGO_BIN_EXE_bbtidy"))
-            .arg("--format")
+            .args(["format", "--write"])
             .arg(&temporary_file)
             .output()
             .unwrap();

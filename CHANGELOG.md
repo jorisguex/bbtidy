@@ -12,6 +12,22 @@ All notable changes to this project will be documented in this file.
 - Malformed-input integration tests that verify structured errors and ensure
   the CLI never partially rewrites a file.
 - An opt-in real-BitBake parse check for the formatted fixture layer.
+- Explicit `format`, `check`, and `lex` commands with stable exit-code
+  semantics.
+- Standard-input formatting and lexing through the `-` input.
+- Unified diff output through `format --diff`.
+- Deterministic recursive discovery of `.bb`, `.bbappend`, `.bbclass`, `.conf`,
+  and `.inc` files.
+- CLI integration tests covering every mode, recursive filtering, input
+  ordering, and batch failure safety.
+
+### Changed
+
+- Formatting now writes to standard output by default and only modifies files
+  when `format --write` is explicitly selected.
+- Batch writes validate every input before modifying the first file.
+- Replaced the original positional lexer and `--format` interface with
+  subcommands.
 
 ## [0.1.0-alpha.1] - 2026-08-01
 
