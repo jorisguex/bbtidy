@@ -1,4 +1,4 @@
-use bbtidy::{Token, format as format_source, get_line_col};
+use bbtidy::{Token, format as format_source, get_line_col, lint as lint_source};
 use clap::{Args, Parser, Subcommand};
 use logos::Logos;
 use similar::TextDiff;
@@ -32,6 +32,9 @@ enum Command {
 
     /// Check whether BitBake metadata is already formatted
     Check(InputArgs),
+
+    /// Check BitBake metadata for lint findings
+    Lint(InputArgs),
 
     /// Print the lexer token stream
     Lex(InputArgs),
@@ -76,6 +79,7 @@ fn main() {
     let exit_code = match cli.command {
         Command::Format(args) => run_format(args),
         Command::Check(args) => run_check(args),
+        Command::Lint(args) => run_lint(args),
         Command::Lex(args) => run_lex(args),
     };
 
@@ -149,6 +153,65 @@ fn run_check(args: InputArgs) -> i32 {
     }
 
     if differences { EXIT_DIFFERENCES } else { 0 }
+}
+
+fn run_lint(args: InputArgs) -> i32 {
+    let inputs = match resolve_inputs(&args.paths) {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+    let mut had_findings = false;
+    let mut had_error = false;
+    let mut stdout = io::stdout().lock();
+
+    for input in &inputs {
+        let (label, text) = match read_input(input) {
+            Ok(source) => source,
+            Err(error) => {
+                eprintln!("error: {error}");
+                had_error = true;
+                continue;
+            }
+        };
+        match lint_source(&text) {
+            Ok(diagnostics) => {
+                had_findings |= !diagnostics.is_empty();
+                for diagnostic in diagnostics {
+                    if let Err(error) = writeln!(
+                        stdout,
+                        "{}:{}:{}: {}[{}]: {}",
+                        label,
+                        diagnostic.line(),
+                        diagnostic.column(),
+                        diagnostic.severity(),
+                        diagnostic.rule_id(),
+                        diagnostic.message()
+                    ) {
+                        if error.kind() == io::ErrorKind::BrokenPipe {
+                            return 0;
+                        }
+                        eprintln!("error: could not write standard output: {error}");
+                        return EXIT_ERROR;
+                    }
+                }
+            }
+            Err(error) => {
+                eprintln!("error: could not lint {label}: {error}");
+                had_error = true;
+            }
+        }
+    }
+
+    if had_error {
+        EXIT_ERROR
+    } else if had_findings {
+        EXIT_DIFFERENCES
+    } else {
+        0
+    }
 }
 
 fn run_lex(args: InputArgs) -> i32 {

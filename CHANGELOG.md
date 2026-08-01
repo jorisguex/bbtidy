@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file.
   and `.inc` files.
 - CLI integration tests covering every mode, recursive filtering, input
   ordering, and batch failure safety.
+- A reusable lint API with stable rule metadata, severities, source locations,
+  and deterministic diagnostics.
+- A `lint` command supporting files, recursive directories, and standard input.
+- Initial rules for trailing whitespace, missing final newlines, long literal
+  summaries, `${AUTOREV}` source revisions, and duplicate static inherits.
+- Lint unit and integration coverage, including a clean representative layer
+  and malformed-input behavior.
 
 ### Changed
 
@@ -28,6 +35,10 @@ All notable changes to this project will be documented in this file.
 - Batch writes validate every input before modifying the first file.
 - Replaced the original positional lexer and `--format` interface with
   subcommands.
+- Exit code `1` now also represents lint findings; lint analysis failures use
+  exit code `2`.
+- Line and column reporting now counts Unicode characters rather than UTF-8
+  bytes.
 
 ## [0.1.0-alpha.1] - 2026-08-01
 

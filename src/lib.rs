@@ -1,6 +1,10 @@
 use logos::Logos;
 use std::fmt;
 
+mod lint;
+
+pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules};
+
 #[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Token {
     #[regex(r"[ \r\n\t\f]+")]
@@ -165,7 +169,7 @@ pub fn get_line_col(text: &str, index: usize) -> (usize, usize) {
     let prefix = &text[..index];
     let line = prefix.chars().filter(|&c| c == '\n').count() + 1;
     let last_newline = prefix.rfind('\n').map(|i| i + 1).unwrap_or(0);
-    let col = index - last_newline + 1;
+    let col = prefix[last_newline..].chars().count() + 1;
     (line, col)
 }
 
@@ -723,6 +727,9 @@ mod tests {
         assert_eq!(get_line_col(text, 6), (2, 1));
         assert_eq!(get_line_col(text, 11), (2, 6)); // newline char
         assert_eq!(get_line_col(text, 12), (3, 1));
+
+        let utf8 = "éx\nå β";
+        assert_eq!(get_line_col(utf8, utf8.find('β').unwrap()), (2, 3));
     }
 
     #[test]

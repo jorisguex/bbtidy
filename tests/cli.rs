@@ -129,6 +129,74 @@ fn lex_accepts_standard_input_and_reports_lexer_errors() {
     assert!(String::from_utf8(invalid.stdout).unwrap().contains("Error"));
 }
 
+#[test]
+fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
+    let directory = TemporaryDirectory::new("lint");
+    let file = directory.write(
+        "example.bb",
+        concat!(
+            "SUMMARY = \"demo\"  \n",
+            "SRCREV = \"${AUTOREV}\"\n",
+            "inherit cmake\n",
+            "inherit cmake\n",
+        ),
+    );
+
+    let output = run(["lint", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let findings = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(findings.len(), 3);
+    assert!(findings[0].contains(":1:17: warning[BBT001]:"));
+    assert!(findings[1].contains(":2:11: warning[BBT004]:"));
+    assert!(findings[2].contains(":4:9: warning[BBT005]:"));
+    assert!(output.stderr.is_empty());
+
+    fs::write(&file, "SUMMARY = \"demo\"\n").unwrap();
+    let clean = run(["lint", file.to_str().unwrap()]);
+    assert_success(&clean);
+    assert!(clean.stdout.is_empty());
+}
+
+#[test]
+fn lint_accepts_standard_input() {
+    let output = run_with_stdin(["lint", "-"], "SUMMARY = \"demo\"");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "<stdin>:1:17: warning[BBT002]: file does not end with a newline\n"
+    );
+}
+
+#[test]
+fn lint_directories_are_deterministic_and_malformed_input_is_an_error() {
+    let directory = TemporaryDirectory::new("lint-directory");
+    let nested = directory.write("nested/a.conf", "A = \"a\"");
+    let root = directory.write("z.bb", "Z = \"z\"");
+    directory.write("ignored.txt", "IGNORED = \"value\"");
+
+    let output = run(["lint", directory.path().to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        stdout.find(&nested.display().to_string()).unwrap()
+            < stdout.find(&root.display().to_string()).unwrap()
+    );
+    assert!(!stdout.contains("ignored.txt"));
+
+    fs::write(&nested, "BROKEN = \"value\n").unwrap();
+    let malformed = run(["lint", directory.path().to_str().unwrap()]);
+    assert_eq!(malformed.status.code(), Some(2));
+    assert!(
+        String::from_utf8(malformed.stderr)
+            .unwrap()
+            .contains("top-level assignment contains an unclosed quote")
+    );
+}
+
 fn run<const N: usize>(arguments: [&str; N]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_bbtidy"))
         .args(arguments)

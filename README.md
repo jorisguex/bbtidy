@@ -1,12 +1,12 @@
 # bbtidy
 
-Experimental formatter and lexer for BitBake metadata.
+Experimental formatter, linter, and lexer for BitBake metadata.
 
 ## Description
 
 `bbtidy` is an experimental tool for formatting and inspecting BitBake recipes
 and configuration files. It provides a lexer, a conservative formatter for
-top-level metadata assignments, and a formatting check suitable for CI.
+top-level metadata assignments, and file-local linting suitable for CI.
 
 ## Features
 
@@ -20,10 +20,13 @@ top-level metadata assignments, and a formatting check suitable for CI.
   statements, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
-- **Automation-friendly CLI**: Provides explicit `format`, `check`, and `lex`
-  commands, standard-input support, unified diffs, and documented exit codes.
+- **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`, and
+  `lex` commands, standard-input support, unified diffs, and documented exit
+  codes.
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order.
+- **Initial linting**: Reports stable rule IDs, severity, line, and column for a
+  focused set of reproducibility and metadata hygiene checks.
 
 ## Usage
 
@@ -58,6 +61,18 @@ cargo run -- check recipes-example/
 cargo run -- format --write recipes-example/
 ```
 
+To lint a file, recipe directory, or layer:
+
+```bash
+cargo run -- lint recipes-example/
+```
+
+Findings use an editor- and CI-friendly format:
+
+```text
+recipes-example/example.bb:12:11: warning[BBT004]: SRCREV uses ${AUTOREV}; pin a source revision for reproducible builds
+```
+
 Formatting is intentionally limited while BitBake syntax support is being
 developed. Embedded shell and Python code is kept byte-for-byte unchanged.
 
@@ -68,21 +83,41 @@ before processing. Standard input must be the only input, and `--write` cannot
 be used with it.
 
 `format` writes formatted source to standard output and requires one input
-unless `--diff` or `--write` is selected. `format --diff` and `lex` can process
-multiple inputs without changing them. Before `format --write` changes any
-files, every input is read and formatted successfully; each changed file is
+unless `--diff` or `--write` is selected. `format --diff`, `lint`, and `lex` can
+process multiple inputs without changing them. Before `format --write` changes
+any files, every input is read and formatted successfully; each changed file is
 then replaced atomically.
 
 ### Exit codes
 
 - `0`: the command completed successfully.
-- `1`: `check` found files that would be reformatted.
-- `2`: command usage, input/output, lexing, or formatting failed.
+- `1`: `check` found formatting differences or `lint` found diagnostics.
+- `2`: command usage, input/output, lexing, formatting, or lint analysis failed.
 
 Operational diagnostics are written to standard error. Lexer error tokens
 remain part of the token stream on standard output and cause exit code `2`.
 `format --diff` returns `0` when it successfully reports differences; use
 `check` when differences should fail a CI job.
+
+## Initial lint rules
+
+| Rule | Name | Detects |
+| --- | --- | --- |
+| `BBT001` | `trailing-whitespace` | Spaces or tabs at the end of a line |
+| `BBT002` | `final-newline` | A non-empty file without a final newline |
+| `BBT003` | `summary-length` | A static, literal `SUMMARY` longer than 80 characters |
+| `BBT004` | `autorev` | `SRCREV` variants that use `${AUTOREV}` |
+| `BBT005` | `duplicate-inherit` | A static class inherited more than once in one file |
+
+All initial rules are warnings. Diagnostics are sorted by source location and
+exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintRule`,
+and `LintSeverity` Rust APIs. Structurally incomplete input is reported as an
+operational error instead of producing potentially misleading findings.
+
+The semantic rules are intentionally conservative: they inspect top-level
+metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
+values or class names. Cross-file inheritance, configuration, suppression, and
+release-specific analysis remain future work.
 
 ## Supported syntax
 
@@ -113,8 +148,8 @@ cargo test
 The integration suite includes a representative fixture layer containing
 `.bb`, `.bbappend`, `.bbclass`, `.inc`, and `.conf` files. It verifies golden
 output, idempotence, byte-for-byte preservation of embedded code, structured
-errors, CLI modes and exit codes, deterministic directory handling, and the
-no-write guarantee for malformed input.
+errors, lint rule behavior, CLI modes and exit codes, deterministic directory
+handling, and the no-write guarantee for malformed input.
 
 To validate the formatted corpus with a real BitBake parser, use a disposable
 build whose environment has already been initialized:
