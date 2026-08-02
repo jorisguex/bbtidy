@@ -1,4 +1,7 @@
-use bbtidy::{AssignmentOperator, DirectiveKeyword, FunctionKind, SyntaxKind, parse};
+use bbtidy::{
+    AssignmentOperator, DirectiveKeyword, FunctionKind, SyntaxKind, format_syntax, lint_syntax,
+    parse,
+};
 
 #[test]
 fn public_tree_is_lossless_and_exposes_source_ranges() {
@@ -15,6 +18,8 @@ fn public_tree_is_lossless_and_exposes_source_ranges() {
     let tree = parse(source).unwrap();
     let rebuilt: String = tree.nodes().iter().map(|node| node.text()).collect();
     assert_eq!(rebuilt, source);
+    assert_eq!(format_syntax(&tree), bbtidy::format(source).unwrap());
+    assert_eq!(lint_syntax(&tree), bbtidy::lint(source).unwrap());
 
     let SyntaxKind::Assignment(assignment) = tree.nodes()[1].kind() else {
         panic!("expected assignment");

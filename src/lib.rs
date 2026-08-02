@@ -4,7 +4,7 @@ use std::fmt;
 mod lint;
 mod syntax;
 
-pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules};
+pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules, lint_syntax};
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
     PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
@@ -209,68 +209,49 @@ impl fmt::Display for FormatError {
 
 impl std::error::Error for FormatError {}
 
+/// An error encountered while building a structurally complete syntax tree.
+///
+/// This alias preserves the formatter's original public error type while
+/// giving parsing clients terminology appropriate to the CST API.
+pub type SyntaxError = FormatError;
+
 /// Formats the subset of BitBake syntax that can be changed safely.
 ///
 /// Embedded shell and Python function bodies, Python `def` blocks, continued
 /// statements, and unsupported top-level syntax are preserved byte-for-byte.
 /// Structurally incomplete input produces an error instead of partial output.
 pub fn format(text: &str) -> Result<String, FormatError> {
+    let tree = parse(text)?;
+    Ok(format_syntax(&tree))
+}
+
+/// Formats a previously parsed syntax tree without reparsing its source.
+pub fn format_syntax(tree: &SyntaxTree<'_>) -> String {
     let mut output = String::new();
-    let mut offset = 0;
-    let mut line_number = 1;
 
-    while offset < text.len() {
-        let line_end = next_line_end(text, offset);
-        let line = &text[offset..line_end];
+    for node in tree.nodes() {
+        match node.kind() {
+            SyntaxKind::Blank => append_normalized_blank_line(&mut output, node.text()),
+            SyntaxKind::Assignment(assignment) if !assignment.is_continued() => {
+                let relative_operator = assignment.operator_range().start() - node.range().start();
+                let left = node.text()[..relative_operator].trim_end();
+                let right = assignment.value().trim_start_matches([' ', '\t']);
+                let (_, line_ending) = split_line_ending(node.text());
 
-        if let Some((opening_brace, function_kind)) = function_opening_brace(line) {
-            let block_end = find_brace_block_end(text, offset + opening_brace, function_kind)
-                .ok_or_else(|| {
-                    FormatError::new(line_number, "function body has no closing brace")
-                })?;
-            let block = &text[offset..block_end];
-            output.push_str(block);
-            line_number += count_newlines(block);
-            offset = block_end;
-            continue;
+                output.push_str(left);
+                output.push(' ');
+                output.push_str(assignment.operator().lexeme());
+                if !right.is_empty() {
+                    output.push(' ');
+                    output.push_str(right);
+                }
+                output.push_str(line_ending);
+            }
+            _ => output.push_str(node.text()),
         }
-
-        if is_python_def_start(line) {
-            let block_end = find_python_def_end(text, line_end);
-            let block = &text[offset..block_end];
-            output.push_str(block);
-            line_number += count_newlines(block);
-            offset = block_end;
-            continue;
-        }
-
-        if has_line_continuation(line) {
-            let block_end = find_continuation_end(text, offset).ok_or_else(|| {
-                FormatError::new(
-                    line_number,
-                    "statement ends with an unterminated continuation",
-                )
-            })?;
-            let block = &text[offset..block_end];
-            output.push_str(block);
-            line_number += count_newlines(block);
-            offset = block_end;
-            continue;
-        }
-
-        if is_blank_line(line) {
-            append_normalized_blank_line(&mut output, line);
-        } else if let Some(formatted) = format_top_level_assignment(line, line_number)? {
-            output.push_str(&formatted);
-        } else {
-            output.push_str(line);
-        }
-
-        line_number += count_newlines(line);
-        offset = line_end;
     }
 
-    Ok(output)
+    output
 }
 
 fn next_line_end(text: &str, start: usize) -> usize {
@@ -278,10 +259,6 @@ fn next_line_end(text: &str, start: usize) -> usize {
         .find('\n')
         .map(|relative| start + relative + 1)
         .unwrap_or(text.len())
-}
-
-fn count_newlines(text: &str) -> usize {
-    text.bytes().filter(|&byte| byte == b'\n').count()
 }
 
 fn split_line_ending(line: &str) -> (&str, &str) {
@@ -547,45 +524,6 @@ fn find_continuation_end(text: &str, start: usize) -> Option<usize> {
         }
         offset = line_end;
     }
-}
-
-fn format_top_level_assignment(
-    line: &str,
-    line_number: usize,
-) -> Result<Option<String>, FormatError> {
-    let (content, line_ending) = split_line_ending(line);
-    if content.starts_with(char::is_whitespace) {
-        return Ok(None);
-    }
-
-    let Some((operator_start, operator)) = find_assignment_operator(content) else {
-        return Ok(None);
-    };
-    let left = content[..operator_start].trim_end();
-    if !is_assignment_left_hand_side(left) {
-        return Ok(None);
-    }
-
-    let operator_lexeme = operator.lexeme();
-    let right = &content[operator_start + operator_lexeme.len()..];
-    if !has_balanced_quotes(right) {
-        return Err(FormatError::new(
-            line_number,
-            "top-level assignment contains an unclosed quote",
-        ));
-    }
-
-    let right = right.trim_start_matches([' ', '\t']);
-    let mut formatted = String::with_capacity(line.len() + 2);
-    formatted.push_str(left);
-    formatted.push(' ');
-    formatted.push_str(operator_lexeme);
-    if !right.is_empty() {
-        formatted.push(' ');
-        formatted.push_str(right);
-    }
-    formatted.push_str(line_ending);
-    Ok(Some(formatted))
 }
 
 fn find_assignment_operator(content: &str) -> Option<(usize, AssignmentOperator)> {

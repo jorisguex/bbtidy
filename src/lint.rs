@@ -1,8 +1,6 @@
 use crate::{
-    FormatError, comment_start, find_assignment_operator, find_brace_block_end,
-    find_continuation_end, find_python_def_end, format, function_opening_brace, get_line_col,
-    has_line_continuation, is_assignment_left_hand_side, is_python_def_start, next_line_end,
-    split_line_ending,
+    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, comment_start,
+    get_line_col, parse, split_line_ending,
 };
 use std::collections::HashSet;
 use std::fmt;
@@ -155,20 +153,23 @@ pub fn lint_rules() -> &'static [LintRule] {
 /// returns the same [`FormatError`] used by the formatter instead of producing
 /// potentially misleading findings.
 pub fn lint(text: &str) -> Result<Vec<LintDiagnostic>, FormatError> {
-    let _ = format(text)?;
+    let tree = parse(text)?;
+    Ok(lint_syntax(&tree))
+}
 
+/// Checks a previously parsed syntax tree without reparsing its source.
+pub fn lint_syntax(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
+    let text = tree.source();
     let mut diagnostics = Vec::new();
     check_trailing_whitespace(text, &mut diagnostics);
     check_final_newline(text, &mut diagnostics);
-
-    let statements = top_level_statements(text);
-    check_assignments(&statements, &mut diagnostics);
-    check_duplicate_inherits(&statements, &mut diagnostics);
+    check_assignments(tree, &mut diagnostics);
+    check_duplicate_inherits(tree, &mut diagnostics);
 
     diagnostics.sort_by(|left, right| {
         (left.line, left.column, left.rule_id).cmp(&(right.line, right.column, right.rule_id))
     });
-    Ok(diagnostics)
+    diagnostics
 }
 
 fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -206,27 +207,27 @@ fn check_final_newline(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
     ));
 }
 
-fn check_assignments(statements: &[TopLevelStatement<'_>], diagnostics: &mut Vec<LintDiagnostic>) {
-    for statement in statements {
-        let Some(assignment) = parse_assignment(statement.text) else {
+fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
             continue;
         };
 
-        if assignment.name == "SUMMARY" {
-            check_summary(statement, &assignment, diagnostics);
+        if assignment.name() == "SUMMARY" {
+            check_summary(tree.source(), assignment, diagnostics);
         }
-        if is_srcrev_name(assignment.name) {
-            check_autorev(statement, &assignment, diagnostics);
+        if is_srcrev_name(assignment.name()) {
+            check_autorev(tree.source(), assignment, diagnostics);
         }
     }
 }
 
 fn check_summary(
-    statement: &TopLevelStatement<'_>,
-    assignment: &Assignment<'_>,
+    source: &str,
+    assignment: &AssignmentSyntax<'_>,
     diagnostics: &mut Vec<LintDiagnostic>,
 ) {
-    let Some((summary, _)) = simple_quoted_value(assignment.value) else {
+    let Some((summary, _)) = simple_quoted_value(assignment.value()) else {
         return;
     };
     if summary.contains(['\r', '\n', '$']) {
@@ -239,7 +240,7 @@ fn check_summary(
     }
 
     let rule = &LINT_RULES[2];
-    let (line, column) = get_line_col(statement.source, statement.start + assignment.name_offset);
+    let (line, column) = get_line_col(source, assignment.name_range().start());
     diagnostics.push(LintDiagnostic::new(
         rule,
         line,
@@ -249,50 +250,48 @@ fn check_summary(
 }
 
 fn check_autorev(
-    statement: &TopLevelStatement<'_>,
-    assignment: &Assignment<'_>,
+    source: &str,
+    assignment: &AssignmentSyntax<'_>,
     diagnostics: &mut Vec<LintDiagnostic>,
 ) {
-    let value =
-        &assignment.value[..comment_start(assignment.value).unwrap_or(assignment.value.len())];
+    let value = assignment.value();
+    let value = &value[..comment_start(value).unwrap_or(value.len())];
     let Some(relative_offset) = value.find("${AUTOREV}") else {
         return;
     };
 
     let rule = &LINT_RULES[3];
-    let (line, column) = get_line_col(
-        statement.source,
-        statement.start + assignment.value_offset + relative_offset,
-    );
+    let (line, column) = get_line_col(source, assignment.value_range().start() + relative_offset);
     diagnostics.push(LintDiagnostic::new(
         rule,
         line,
         column,
         format!(
             "{} uses ${{AUTOREV}}; pin a source revision for reproducible builds",
-            assignment.name
+            assignment.name()
         ),
     ));
 }
 
-fn check_duplicate_inherits(
-    statements: &[TopLevelStatement<'_>],
-    diagnostics: &mut Vec<LintDiagnostic>,
-) {
+fn check_duplicate_inherits(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
     let rule = &LINT_RULES[4];
     let mut inherited = HashSet::new();
 
-    for statement in statements {
-        let Some(arguments_offset) = inherit_arguments_offset(statement.text) else {
+    for node in tree.nodes() {
+        let SyntaxKind::Directive(directive) = node.kind() else {
             continue;
         };
-        let code_end = comment_start(statement.text).unwrap_or(statement.text.len());
-        if arguments_offset >= code_end {
+        if !matches!(
+            directive.keyword(),
+            DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer
+        ) {
             continue;
         }
 
+        let arguments = directive.arguments();
+        let code_end = comment_start(arguments).unwrap_or(arguments.len());
         let mut dynamic_expression = false;
-        for (relative_offset, class) in words(&statement.text[arguments_offset..code_end]) {
+        for (relative_offset, class) in words(&arguments[..code_end]) {
             if dynamic_expression {
                 dynamic_expression = !class.contains('}');
                 continue;
@@ -308,8 +307,8 @@ fn check_duplicate_inherits(
                 continue;
             }
 
-            let offset = statement.start + arguments_offset + relative_offset;
-            let (line, column) = get_line_col(statement.source, offset);
+            let offset = directive.arguments_range().start() + relative_offset;
+            let (line, column) = get_line_col(tree.source(), offset);
             diagnostics.push(LintDiagnostic::new(
                 rule,
                 line,
@@ -318,22 +317,6 @@ fn check_duplicate_inherits(
             ));
         }
     }
-}
-
-fn inherit_arguments_offset(statement: &str) -> Option<usize> {
-    let leading = statement.len() - statement.trim_start_matches([' ', '\t']).len();
-    let trimmed = &statement[leading..];
-    for keyword in ["inherit_defer", "inherit"] {
-        let Some(rest) = trimmed.strip_prefix(keyword) else {
-            continue;
-        };
-        if rest.is_empty() || !rest.starts_with(char::is_whitespace) {
-            continue;
-        }
-        let whitespace = rest.len() - rest.trim_start().len();
-        return Some(leading + keyword.len() + whitespace);
-    }
-    None
 }
 
 fn words(text: &str) -> impl Iterator<Item = (usize, &str)> {
@@ -378,87 +361,6 @@ fn simple_quoted_value(value: &str) -> Option<(&str, usize)> {
         }
     }
     None
-}
-
-struct Assignment<'a> {
-    name: &'a str,
-    name_offset: usize,
-    value: &'a str,
-    value_offset: usize,
-}
-
-fn parse_assignment(statement: &str) -> Option<Assignment<'_>> {
-    let (content, _) = split_line_ending(statement);
-    let (operator_start, operator) = find_assignment_operator(content)?;
-    let left = content[..operator_start].trim_end();
-    if !is_assignment_left_hand_side(left) {
-        return None;
-    }
-
-    let (name, name_offset) = if let Some(rest) = left.strip_prefix("export") {
-        if rest.starts_with(char::is_whitespace) {
-            let whitespace = rest.len() - rest.trim_start().len();
-            (rest.trim_start(), "export".len() + whitespace)
-        } else {
-            (left, 0)
-        }
-    } else {
-        (left, 0)
-    };
-    let value_offset = operator_start + operator.lexeme().len();
-
-    Some(Assignment {
-        name,
-        name_offset,
-        value: &content[value_offset..],
-        value_offset,
-    })
-}
-
-struct TopLevelStatement<'a> {
-    source: &'a str,
-    start: usize,
-    text: &'a str,
-}
-
-fn top_level_statements(text: &str) -> Vec<TopLevelStatement<'_>> {
-    let mut statements = Vec::new();
-    let mut offset = 0;
-
-    while offset < text.len() {
-        let line_end = next_line_end(text, offset);
-        let line = &text[offset..line_end];
-
-        if let Some((opening_brace, function_kind)) = function_opening_brace(line) {
-            let Some(block_end) = find_brace_block_end(text, offset + opening_brace, function_kind)
-            else {
-                break;
-            };
-            offset = block_end;
-            continue;
-        }
-        if is_python_def_start(line) {
-            offset = find_python_def_end(text, line_end);
-            continue;
-        }
-
-        let statement_end = if has_line_continuation(line) {
-            let Some(block_end) = find_continuation_end(text, offset) else {
-                break;
-            };
-            block_end
-        } else {
-            line_end
-        };
-        statements.push(TopLevelStatement {
-            source: text,
-            start: offset,
-            text: &text[offset..statement_end],
-        });
-        offset = statement_end;
-    }
-
-    statements
 }
 
 #[cfg(test)]

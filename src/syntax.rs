@@ -1,8 +1,9 @@
 use crate::{
-    AssignmentOperator, FormatError, ScannerFunctionKind, comment_start, find_assignment_operator,
-    find_brace_block_end, find_continuation_end, find_python_def_end, function_opening_brace,
-    has_balanced_quotes, has_line_continuation, is_assignment_left_hand_side, is_blank_line,
-    is_python_def_start, next_line_end, split_line_ending,
+    AssignmentOperator, FormatError, ScannerFunctionKind, SyntaxError, comment_start,
+    find_assignment_operator, find_brace_block_end, find_continuation_end, find_python_def_end,
+    function_opening_brace, has_balanced_quotes, has_line_continuation,
+    is_assignment_left_hand_side, is_blank_line, is_python_def_start, next_line_end,
+    split_line_ending,
 };
 
 /// A half-open byte range in the original source text.
@@ -255,7 +256,7 @@ impl<'a> PythonDefinitionSyntax<'a> {
 ///
 /// Every byte of `source` belongs to exactly one node. Unsupported syntax and
 /// embedded function bodies are retained verbatim instead of being discarded.
-pub fn parse(source: &str) -> Result<SyntaxTree<'_>, FormatError> {
+pub fn parse(source: &str) -> Result<SyntaxTree<'_>, SyntaxError> {
     let mut nodes = Vec::new();
     let mut offset = 0;
     let mut line_number = 1;
