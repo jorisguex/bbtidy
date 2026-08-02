@@ -1,0 +1,59 @@
+name: Upstream compatibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/upstream-compatibility.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "scripts/check_upstream_corpus.py"
+      - "src/**"
+      - "tests/upstream-corpus.json"
+      - "tests/test_upstream_corpus.py"
+  pull_request:
+    paths:
+      - ".github/workflows/upstream-compatibility.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "scripts/check_upstream_corpus.py"
+      - "src/**"
+      - "tests/upstream-corpus.json"
+      - "tests/test_upstream_corpus.py"
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  corpus:
+    name: Format, lint, and parse pinned layers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install BitBake host tools
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install --yes
+          chrpath cpio diffstat gawk iputils-ping libacl1 liblz4-tool locales
+          python3-git python3-jinja2 python3-pexpect python3-subunit socat
+          texinfo zstd &&
+          sudo locale-gen en_US.UTF-8
+      - name: Build bbtidy
+        run: cargo build --locked --release
+      - name: Test compatibility harness
+        run: python -m unittest discover -s tests -p "test_upstream_corpus.py"
+      - name: Check pinned upstream corpus
+        run: python scripts/check_upstream_corpus.py
+        env:
+          LANG: en_US.UTF-8

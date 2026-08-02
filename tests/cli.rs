@@ -68,7 +68,7 @@ fn check_and_write_have_stable_exit_codes() {
 #[test]
 fn directories_are_recursive_filtered_and_deterministic() {
     let directory = TemporaryDirectory::new("directory");
-    let nested = directory.write("nested/a.conf", UNFORMATTED);
+    let nested = directory.write("nested/a.bb", UNFORMATTED);
     let root = directory.write("z.bb", UNFORMATTED);
     let ignored = directory.write("notes.txt", UNFORMATTED);
 
@@ -90,10 +90,31 @@ fn directories_are_recursive_filtered_and_deterministic() {
 }
 
 #[test]
+fn directory_discovery_skips_recipe_payload_files() {
+    let directory = TemporaryDirectory::new("payload-files");
+    let layer_configuration = directory.write("conf/layer.conf", UNFORMATTED);
+    let metadata_include = directory.write("recipes-example/example/example.inc", UNFORMATTED);
+    let payload_configuration =
+        directory.write("recipes-example/example/example/runtime.conf", UNFORMATTED);
+    let files_include = directory.write("recipes-example/example/files/template.inc", UNFORMATTED);
+
+    let output = run(["format", "--write", directory.path().to_str().unwrap()]);
+
+    assert_success(&output);
+    assert_eq!(fs::read_to_string(layer_configuration).unwrap(), FORMATTED);
+    assert_eq!(fs::read_to_string(metadata_include).unwrap(), FORMATTED);
+    assert_eq!(
+        fs::read_to_string(payload_configuration).unwrap(),
+        UNFORMATTED
+    );
+    assert_eq!(fs::read_to_string(files_include).unwrap(), UNFORMATTED);
+}
+
+#[test]
 fn a_batch_format_error_prevents_all_writes() {
     let directory = TemporaryDirectory::new("batch-error");
     let valid = directory.write("valid.bb", UNFORMATTED);
-    let malformed = directory.write("malformed.conf", "BROKEN = \"value\n");
+    let malformed = directory.write("malformed.bb", "BROKEN = \"value\n");
 
     let output = run(["format", "--write", directory.path().to_str().unwrap()]);
 
@@ -173,7 +194,7 @@ fn lint_accepts_standard_input() {
 #[test]
 fn lint_directories_are_deterministic_and_malformed_input_is_an_error() {
     let directory = TemporaryDirectory::new("lint-directory");
-    let nested = directory.write("nested/a.conf", "A = \"a\"");
+    let nested = directory.write("nested/a.bb", "A = \"a\"");
     let root = directory.write("z.bb", "Z = \"z\"");
     directory.write("ignored.txt", "IGNORED = \"value\"");
 

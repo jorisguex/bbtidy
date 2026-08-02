@@ -103,11 +103,12 @@ recipes-example/example.bb:12:11: warning[BBT004]: SRCREV uses ${AUTOREV}; pin a
 Formatting is intentionally limited while BitBake syntax support is being
 developed. Embedded shell and Python code is kept byte-for-byte unchanged.
 
-Directory inputs are traversed recursively. Only `.bb`, `.bbappend`, `.bbclass`,
-`.conf`, and `.inc` files discovered inside directories are processed; an
-explicit file input is always processed. Paths are sorted and deduplicated
-before processing. Standard input must be the only input, and `--write` cannot
-be used with it.
+Directory inputs are traversed recursively. `.bb`, `.bbappend`, `.bbclass`, and
+`.inc` metadata files are discovered automatically, except beneath recipe
+payload directories named `files`. `.conf` files are discovered inside a
+layer's `conf` directory, identified by its `layer.conf`. An explicit file input
+is always processed. Paths are sorted and deduplicated before processing.
+Standard input must be the only input, and `--write` cannot be used with it.
 
 `format` writes formatted source to standard output and requires one input
 unless `--diff` or `--write` is selected. `format --diff`, `lint`, and `lex` can
@@ -189,6 +190,42 @@ The integration suite includes a representative fixture layer containing
 output, idempotence, byte-for-byte preservation of embedded code, structured
 errors, lint rule behavior, CLI modes and exit codes, deterministic directory
 handling, and the no-write guarantee for malformed input.
+
+### Upstream compatibility corpus
+
+The extended compatibility check uses commit-pinned snapshots of
+OpenEmbedded-Core and the `meta-oe`, `meta-python`, and `meta-networking`
+layers. The revisions and minimum corpus sizes are recorded in
+`tests/upstream-corpus.json`; upstream repositories are downloaded into a
+temporary workspace and are not vendored in this repository.
+
+On a supported Linux build host with the standard Yocto host packages
+installed, run the complete check with:
+
+```bash
+cargo build --release --locked
+python scripts/check_upstream_corpus.py
+```
+
+The harness scans more than 3,300 real metadata files, formats a disposable
+copy, verifies idempotence, exercises lint analysis, checks that embedded
+functions and Python blocks remain byte-for-byte unchanged, and confirms that
+recipe payload files were not touched. It then initializes a disposable Poky
+build and parses `core-image-minimal` with all four formatted layers.
+
+Existing pinned checkouts can be reused, and the BitBake parse can be omitted
+on a non-Linux development machine:
+
+```bash
+python scripts/check_upstream_corpus.py \
+    --source-root /path/containing/poky-and-meta-openembedded \
+    --skip-bitbake
+```
+
+The upstream compatibility workflow runs for relevant pull requests and pushes
+to `main`, as well as on a weekly schedule. A compatibility failure should be
+reduced to a focused local regression test before the pinned snapshot is
+advanced.
 
 To validate the formatted corpus with a real BitBake parser, use a disposable
 build whose environment has already been initialized:

@@ -36,6 +36,13 @@ All notable changes to this project will be documented in this file.
   and Windows wheels plus a source distribution.
 - Cargo, PEP 440, and release-tag version consistency checks.
 - Unit coverage for packaging version conversion and artifact selection.
+- A commit-pinned compatibility corpus covering more than 3,300
+  OpenEmbedded-Core, `meta-oe`, `meta-python`, and `meta-networking` files.
+- Automated upstream formatting, idempotence, lint, opaque-region preservation,
+  payload protection, and real BitBake parse checks.
+- Weekly and change-triggered upstream compatibility CI.
+- Support for triple-quoted strings and combined `fakeroot python` modifiers
+  when preserving embedded Python functions.
 
 ### Changed
 
@@ -48,6 +55,8 @@ All notable changes to this project will be documented in this file.
   exit code `2`.
 - Line and column reporting now counts Unicode characters rather than UTF-8
   bytes.
+- Directory discovery now skips recipe payload directories and only discovers
+  `.conf` files within an identifiable layer configuration tree.
 
 ## [0.1.0-alpha.1] - 2026-08-01
 

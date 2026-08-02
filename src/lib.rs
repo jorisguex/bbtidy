@@ -311,6 +311,12 @@ enum FunctionKind {
     Python,
 }
 
+#[derive(Clone, Copy)]
+enum FunctionQuote {
+    Single(u8),
+    Triple(u8),
+}
+
 fn function_opening_brace(line: &str) -> Option<(usize, FunctionKind)> {
     let (content, _) = split_line_ending(line);
     let code = &content[..comment_start(content).unwrap_or(content.len())];
@@ -325,13 +331,18 @@ fn function_opening_brace(line: &str) -> Option<(usize, FunctionKind)> {
     }
 
     let declaration = closing_paren[..opening_paren].trim();
-    let (kind, name) = if let Some(name) = strip_keyword(declaration, "python") {
-        (FunctionKind::Python, name)
-    } else if let Some(name) = strip_keyword(declaration, "fakeroot") {
-        (FunctionKind::Shell, name)
-    } else {
-        (FunctionKind::Shell, declaration)
-    };
+    let mut kind = FunctionKind::Shell;
+    let mut name = declaration;
+    loop {
+        if let Some(rest) = strip_keyword(name, "python") {
+            kind = FunctionKind::Python;
+            name = rest;
+        } else if let Some(rest) = strip_keyword(name, "fakeroot") {
+            name = rest;
+        } else {
+            break;
+        }
+    }
 
     if name.is_empty() && !matches!(kind, FunctionKind::Python) {
         return None;
@@ -397,7 +408,7 @@ fn find_brace_block_end(
 ) -> Option<usize> {
     let bytes = text.as_bytes();
     let mut depth = 0usize;
-    let mut quote = None;
+    let mut quote: Option<FunctionQuote> = None;
     let mut escaped = false;
     let mut comment = false;
     let mut index = opening_brace;
@@ -422,15 +433,34 @@ fn find_brace_block_end(
             continue;
         }
         if let Some(active_quote) = quote {
-            if byte == active_quote {
-                quote = None;
+            match active_quote {
+                FunctionQuote::Single(delimiter) if byte == delimiter => {
+                    quote = None;
+                }
+                FunctionQuote::Triple(delimiter)
+                    if bytes[index..].starts_with(&[delimiter, delimiter, delimiter]) =>
+                {
+                    quote = None;
+                    index += 3;
+                    continue;
+                }
+                _ => {}
             }
             index += 1;
             continue;
         }
 
+        if matches!(function_kind, FunctionKind::Python)
+            && matches!(byte, b'\'' | b'"')
+            && bytes[index..].starts_with(&[byte, byte, byte])
+        {
+            quote = Some(FunctionQuote::Triple(byte));
+            index += 3;
+            continue;
+        }
+
         match byte {
-            b'\'' | b'"' => quote = Some(byte),
+            b'\'' | b'"' => quote = Some(FunctionQuote::Single(byte)),
             b'#' if is_comment_start_in_function(bytes, index, function_kind) => comment = true,
             b'{' => depth += 1,
             b'}' => {
@@ -1148,6 +1178,54 @@ mod tests {
             "    return result\n",
             "\n",
             "VAR = \"formatted\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_preserves_triple_quoted_python_function_body() {
+        let input = concat!(
+            "python __anonymous() {\n",
+            "    script = \"\"\"#!/bin/sh\n",
+            "echo \"\n",
+            "${VALUE}\n",
+            "\"\"\"\n",
+            "}\n",
+            "SUMMARY=\"Example\"\n",
+        );
+        let expected = concat!(
+            "python __anonymous() {\n",
+            "    script = \"\"\"#!/bin/sh\n",
+            "echo \"\n",
+            "${VALUE}\n",
+            "\"\"\"\n",
+            "}\n",
+            "SUMMARY = \"Example\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_preserves_combined_function_modifiers() {
+        let input = concat!(
+            "fakeroot python do_example() {\n",
+            "    first = d.getVar('FIRST')\n",
+            "\n",
+            "\n",
+            "    second = d.getVar('SECOND')\n",
+            "}\n",
+            "SUMMARY=\"Example\"\n",
+        );
+        let expected = concat!(
+            "fakeroot python do_example() {\n",
+            "    first = d.getVar('FIRST')\n",
+            "\n",
+            "\n",
+            "    second = d.getVar('SECOND')\n",
+            "}\n",
+            "SUMMARY = \"Example\"\n",
         );
 
         assert_eq!(format(input).unwrap(), expected);

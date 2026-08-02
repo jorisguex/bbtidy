@@ -290,7 +290,7 @@ fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
         let metadata = fs::metadata(path)
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
         if metadata.is_dir() {
-            collect_directory(path, &mut files)?;
+            collect_directory(path, path, &mut files)?;
         } else if metadata.is_file() {
             files.insert(path.clone());
         } else {
@@ -308,7 +308,11 @@ fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
     Ok(files.into_iter().map(Input::File).collect())
 }
 
-fn collect_directory(directory: &Path, files: &mut BTreeSet<PathBuf>) -> Result<(), String> {
+fn collect_directory(
+    directory: &Path,
+    root: &Path,
+    files: &mut BTreeSet<PathBuf>,
+) -> Result<(), String> {
     let entries = fs::read_dir(directory)
         .map_err(|error| format!("could not read directory {}: {error}", directory.display()))?;
     let mut entries = entries
@@ -322,8 +326,8 @@ fn collect_directory(directory: &Path, files: &mut BTreeSet<PathBuf>) -> Result<
             .file_type()
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
         if file_type.is_dir() {
-            collect_directory(&path, files)?;
-        } else if file_type.is_file() && is_bitbake_file(&path) {
+            collect_directory(&path, root, files)?;
+        } else if file_type.is_file() && is_bitbake_file(&path, root) {
             files.insert(path);
         }
     }
@@ -331,10 +335,29 @@ fn collect_directory(directory: &Path, files: &mut BTreeSet<PathBuf>) -> Result<
     Ok(())
 }
 
-fn is_bitbake_file(path: &Path) -> bool {
-    path.extension()
+fn is_bitbake_file(path: &Path, root: &Path) -> bool {
+    let extension = path
+        .extension()
         .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| BITBAKE_EXTENSIONS.contains(&extension))
+        .filter(|extension| BITBAKE_EXTENSIONS.contains(extension));
+    let Some(extension) = extension else {
+        return false;
+    };
+
+    let relative = path.strip_prefix(root).unwrap_or(path);
+    if root.file_name().is_some_and(|name| name == "files")
+        || relative
+            .components()
+            .any(|component| component.as_os_str() == "files")
+    {
+        return false;
+    }
+
+    extension != "conf"
+        || path.ancestors().skip(1).any(|ancestor| {
+            ancestor.file_name().is_some_and(|name| name == "conf")
+                && ancestor.join("layer.conf").is_file()
+        })
 }
 
 fn format_inputs(inputs: &[Input]) -> Result<Vec<FormattedInput>, ()> {
