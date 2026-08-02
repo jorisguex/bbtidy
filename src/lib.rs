@@ -17,7 +17,7 @@ pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
     PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
 };
-pub use workspace::WorkspaceIndex;
+pub use workspace::{WorkspaceCandidate, WorkspaceIndex};
 
 #[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Token {

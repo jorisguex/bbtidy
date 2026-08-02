@@ -1,4 +1,7 @@
-use bbtidy::{LintOptions, LintSeverity, lint, lint_rules, lint_with_options};
+use bbtidy::{
+    LintOptions, LintSeverity, WorkspaceIndex, lint, lint_rules, lint_with_options,
+    lint_with_workspace,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 7);
+    assert_eq!(rules.len(), 9);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -57,6 +60,83 @@ fn public_lint_options_filter_rules_and_override_severity() {
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].rule_id(), "BBT005");
     assert_eq!(diagnostics[0].severity(), LintSeverity::Error);
+}
+
+#[test]
+fn workspace_lint_reports_same_priority_ambiguities() {
+    let first = TemporaryLayer::new("lint-ambiguity-first");
+    let second = TemporaryLayer::new("lint-ambiguity-second");
+    let consumer = TemporaryLayer::new("lint-ambiguity-consumer");
+    let first_conf = first.write("conf/layer.conf", "BBFILE_PRIORITY_first = \"5\"\n");
+    let second_conf = second.write("conf/layer.conf", "BBFILE_PRIORITY_second = \"5\"\n");
+    let consumer_conf = consumer.write("conf/layer.conf", "BBFILE_PRIORITY_consumer = \"1\"\n");
+    let first_class = first.write("classes/base.bbclass", "BASE = \"first\"\n");
+    let second_class = second.write("classes/base.bbclass", "BASE = \"second\"\n");
+    let first_include = first.write("recipes-example/common.inc", "COMMON = \"first\"\n");
+    let second_include = second.write("recipes-example/common.inc", "COMMON = \"second\"\n");
+    let recipe = consumer.write(
+        "recipes-example/example.bb",
+        "require common.inc\ninherit base\n",
+    );
+    let index = WorkspaceIndex::from_paths([
+        first_conf,
+        second_conf,
+        consumer_conf,
+        first_class,
+        second_class,
+        first_include,
+        second_include,
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let diagnostics = lint_with_workspace(
+        "require common.inc\ninherit base\n",
+        &recipe,
+        &index,
+        &LintOptions::default(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.rule_id())
+            .collect::<Vec<_>>(),
+        ["BBT008", "BBT009"]
+    );
+    assert!(diagnostics[0].message().contains("priority 5"));
+    assert!(diagnostics[1].message().contains("priority 5"));
+}
+
+struct TemporaryLayer {
+    root: PathBuf,
+}
+
+impl TemporaryLayer {
+    fn new(label: &str) -> Self {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root =
+            std::env::temp_dir().join(format!("bbtidy-{label}-{}-{timestamp}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        Self { root }
+    }
+
+    fn write(&self, relative: &str, contents: &str) -> PathBuf {
+        let path = self.root.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, contents).unwrap();
+        path
+    }
+}
+
+impl Drop for TemporaryLayer {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.root);
+    }
 }
 
 fn corpus_root() -> PathBuf {

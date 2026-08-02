@@ -184,6 +184,8 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT005` | `duplicate-inherit` | A static class inherited more than once in one file |
 | `BBT006` | `unresolved-require` | A static `require` target missing from the indexed layers |
 | `BBT007` | `unresolved-inherit` | A static inherited class missing from the indexed layers |
+| `BBT008` | `ambiguous-require` | A static `require` target matches multiple highest-priority files |
+| `BBT009` | `ambiguous-inherit` | A static inherited class has multiple highest-priority definitions |
 
 All initial rules are warnings. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintRule`,
@@ -194,8 +196,11 @@ The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. When `lint` receives a complete layer directory, it
 indexes the supplied metadata and uses that context for static `require` and
-`inherit` checks. Single-file and standard-input linting remain file-local, and
-dynamic references are skipped.
+`inherit` checks. Layer priorities are read from `BBFILE_PRIORITY_*`
+assignments in `conf/layer.conf`; local files take precedence, followed by
+descending layer priority. Same-priority matches produce the ambiguity rules
+above instead of being silently resolved by path order. Single-file and
+standard-input linting remain file-local, and dynamic references are skipped.
 
 ## Lossless syntax tree
 

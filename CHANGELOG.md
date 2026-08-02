@@ -37,6 +37,8 @@ All notable changes to this project will be documented in this file.
 - Immutable commit pins for the release-critical GitHub Actions.
 - Linux release binaries are smoke-tested under matching glibc and musl
   containers, and GitHub Releases include a `SHA256SUMS` manifest.
+- Workspace-aware linting now respects `BBFILE_PRIORITY_*` and reports
+  same-priority `require` and `inherit` ambiguities.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

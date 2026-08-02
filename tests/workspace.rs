@@ -40,6 +40,50 @@ fn incomplete_file_contexts_do_not_appear_complete() {
     assert!(index.resolve_class("base").is_none());
 }
 
+#[test]
+fn resolves_classes_by_layer_priority_and_retains_candidates() {
+    let low = TemporaryLayer::new("workspace-low-priority");
+    let high = TemporaryLayer::new("workspace-high-priority");
+    let low_conf = low.write("conf/layer.conf", "BBFILE_PRIORITY_low = \"5\"\n");
+    let high_conf = high.write("conf/layer.conf", "BBFILE_PRIORITY_high = \"10\"\n");
+    let low_class = low.write("classes/base.bbclass", "BASE = \"low\"\n");
+    let high_class = high.write("classes/base.bbclass", "BASE = \"high\"\n");
+    let low_include = low.write("recipes-example/common.inc", "COMMON = \"low\"\n");
+    let high_include = high.write("recipes-example/common.inc", "COMMON = \"high\"\n");
+    let consumer = TemporaryLayer::new("workspace-consumer");
+    let consumer_conf = consumer.write("conf/layer.conf", "BBFILE_PRIORITY_consumer = \"1\"\n");
+    let consumer_recipe = consumer.write("recipes-example/example.bb", "inherit base\n");
+
+    let index = WorkspaceIndex::from_paths([
+        low_conf,
+        high_conf,
+        low_class.clone(),
+        high_class.clone(),
+        low_include,
+        high_include.clone(),
+        consumer_conf,
+        consumer_recipe.clone(),
+    ])
+    .unwrap();
+    let canonical_high = fs::canonicalize(high_class).unwrap();
+    let canonical_low = fs::canonicalize(low_class).unwrap();
+
+    assert_eq!(index.resolve_class("base"), Some(canonical_high.as_path()));
+    let canonical_high_include = fs::canonicalize(high_include).unwrap();
+    assert_eq!(
+        index.resolve_file(&consumer_recipe, "common.inc"),
+        Some(canonical_high_include.as_path())
+    );
+    assert_eq!(
+        index
+            .class_candidates("base")
+            .iter()
+            .map(|candidate| (candidate.path(), candidate.priority()))
+            .collect::<Vec<_>>(),
+        vec![(canonical_high.as_path(), 10), (canonical_low.as_path(), 5),]
+    );
+}
+
 struct TemporaryLayer {
     root: PathBuf,
 }

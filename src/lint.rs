@@ -1,6 +1,6 @@
 use crate::{
-    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceIndex,
-    comment_start, get_line_col, parse, split_line_ending,
+    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceCandidate,
+    WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -50,6 +50,18 @@ static LINT_RULES: &[LintRule] = &[
         "unresolved-inherit",
         LintSeverity::Warning,
         "A static inherited class must resolve within the indexed layers.",
+    ),
+    LintRule::new(
+        "BBT008",
+        "ambiguous-require",
+        LintSeverity::Warning,
+        "A static require target must resolve to one highest-priority file.",
+    ),
+    LintRule::new(
+        "BBT009",
+        "ambiguous-inherit",
+        LintSeverity::Warning,
+        "A static inherited class must resolve to one highest-priority definition.",
     ),
 ];
 
@@ -318,40 +330,84 @@ fn check_workspace_references(
         let arguments = &arguments[..code_end];
         match directive.keyword() {
             DirectiveKeyword::Require => {
-                let rule = &LINT_RULES[5];
                 for (relative_offset, target) in static_words(arguments) {
-                    if workspace.resolve_file(path, target).is_some() {
+                    let candidates = workspace.file_candidates(path, target);
+                    if candidates.is_empty() {
+                        let rule = &LINT_RULES[5];
+                        let offset = directive.arguments_range().start() + relative_offset;
+                        let (line, column) = get_line_col(tree.source(), offset);
+                        diagnostics.push(LintDiagnostic::new(
+                            rule,
+                            line,
+                            column,
+                            format!("required file '{target}' was not found in indexed layers"),
+                        ));
                         continue;
                     }
-                    let offset = directive.arguments_range().start() + relative_offset;
-                    let (line, column) = get_line_col(tree.source(), offset);
-                    diagnostics.push(LintDiagnostic::new(
-                        rule,
-                        line,
-                        column,
-                        format!("required file '{target}' was not found in indexed layers"),
-                    ));
+                    if let Some(message) = ambiguity_message(&candidates) {
+                        let rule = &LINT_RULES[7];
+                        let offset = directive.arguments_range().start() + relative_offset;
+                        let (line, column) = get_line_col(tree.source(), offset);
+                        diagnostics.push(LintDiagnostic::new(
+                            rule,
+                            line,
+                            column,
+                            format!("required file '{target}' {message}"),
+                        ));
+                    }
                 }
             }
             DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
-                let rule = &LINT_RULES[6];
                 for (relative_offset, class) in static_words(arguments) {
-                    if workspace.resolve_class(class).is_some() {
+                    let candidates = workspace.class_candidates(class);
+                    if candidates.is_empty() {
+                        let rule = &LINT_RULES[6];
+                        let offset = directive.arguments_range().start() + relative_offset;
+                        let (line, column) = get_line_col(tree.source(), offset);
+                        diagnostics.push(LintDiagnostic::new(
+                            rule,
+                            line,
+                            column,
+                            format!("inherited class '{class}' was not found in indexed layers"),
+                        ));
                         continue;
                     }
-                    let offset = directive.arguments_range().start() + relative_offset;
-                    let (line, column) = get_line_col(tree.source(), offset);
-                    diagnostics.push(LintDiagnostic::new(
-                        rule,
-                        line,
-                        column,
-                        format!("inherited class '{class}' was not found in indexed layers"),
-                    ));
+                    if let Some(message) = ambiguity_message(&candidates) {
+                        let rule = &LINT_RULES[8];
+                        let offset = directive.arguments_range().start() + relative_offset;
+                        let (line, column) = get_line_col(tree.source(), offset);
+                        diagnostics.push(LintDiagnostic::new(
+                            rule,
+                            line,
+                            column,
+                            format!("inherited class '{class}' {message}"),
+                        ));
+                    }
                 }
             }
             _ => {}
         }
     }
+}
+
+fn ambiguity_message(candidates: &[WorkspaceCandidate<'_>]) -> Option<String> {
+    let priority = candidates.first()?.priority();
+    let highest_priority = candidates
+        .iter()
+        .filter(|candidate| candidate.priority() == priority)
+        .collect::<Vec<_>>();
+    if highest_priority.len() < 2 {
+        return None;
+    }
+
+    let paths = highest_priority
+        .iter()
+        .map(|candidate| candidate.path().display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    Some(format!(
+        "matches multiple candidates at layer priority {priority}: {paths}"
+    ))
 }
 
 fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -572,7 +628,8 @@ mod tests {
         assert_eq!(
             lint_rules().iter().map(LintRule::id).collect::<Vec<_>>(),
             [
-                "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007",
+                "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007", "BBT008",
+                "BBT009",
             ]
         );
         assert!(
