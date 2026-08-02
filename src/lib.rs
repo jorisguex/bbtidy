@@ -1,12 +1,17 @@
 use logos::Logos;
 use std::fmt;
 
+mod config;
 mod formatter;
 mod lint;
 mod syntax;
 
-pub use formatter::format_syntax;
-pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules, lint_syntax};
+pub use config::{Config, ConfigError, discover_config, load_config};
+pub use formatter::{FormatOptions, format_syntax, format_syntax_with_options};
+pub use lint::{
+    LintDiagnostic, LintOptions, LintRule, LintSeverity, lint, lint_rules, lint_syntax,
+    lint_syntax_with_options, lint_with_options,
+};
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
     PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
@@ -226,6 +231,12 @@ pub type SyntaxError = FormatError;
 pub fn format(text: &str) -> Result<String, FormatError> {
     let tree = parse(text)?;
     Ok(format_syntax(&tree))
+}
+
+/// Formats source with caller-provided top-level formatting options.
+pub fn format_with_options(text: &str, options: &FormatOptions) -> Result<String, FormatError> {
+    let tree = parse(text)?;
+    Ok(format_syntax_with_options(&tree, options))
 }
 
 fn next_line_end(text: &str, start: usize) -> usize {

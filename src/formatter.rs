@@ -2,17 +2,38 @@ use crate::{
     AssignmentSyntax, DirectiveSyntax, SyntaxKind, SyntaxNode, SyntaxTree, split_line_ending,
 };
 
+/// Controls formatting behavior that is safe to apply at the top-level
+/// metadata boundary.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FormatOptions {
+    /// Maximum number of consecutive blank lines between top-level nodes.
+    pub max_top_level_blank_lines: usize,
+}
+
+impl Default for FormatOptions {
+    fn default() -> Self {
+        Self {
+            max_top_level_blank_lines: 1,
+        }
+    }
+}
+
 /// Formats a previously parsed syntax tree without reparsing its source.
 ///
 /// Assignment operators and directive keywords are normalized at the
 /// top-level boundary. Continuation tails, comments, unsupported syntax, and
 /// embedded shell or Python bodies remain byte-for-byte unchanged.
 pub fn format_syntax(tree: &SyntaxTree<'_>) -> String {
+    format_syntax_with_options(tree, &FormatOptions::default())
+}
+
+/// Formats a previously parsed syntax tree with caller-provided options.
+pub fn format_syntax_with_options(tree: &SyntaxTree<'_>, options: &FormatOptions) -> String {
     let mut output = String::new();
 
     for node in tree.nodes() {
         match node.kind() {
-            SyntaxKind::Blank => append_normalized_blank_line(&mut output, node.text()),
+            SyntaxKind::Blank => append_normalized_blank_line(&mut output, node.text(), options),
             SyntaxKind::Assignment(assignment) => format_assignment(&mut output, node, assignment),
             SyntaxKind::Directive(directive) => format_directive(&mut output, node, directive),
             _ => output.push_str(node.text()),
@@ -57,19 +78,29 @@ fn format_directive(output: &mut String, node: &SyntaxNode<'_>, directive: &Dire
     output.push_str(line_ending);
 }
 
-fn append_normalized_blank_line(output: &mut String, line: &str) {
+fn append_normalized_blank_line(output: &mut String, line: &str, options: &FormatOptions) {
     let (_, line_ending) = split_line_ending(line);
-    if line_ending.is_empty() {
+    if line_ending.is_empty() || trailing_blank_lines(output) >= options.max_top_level_blank_lines {
         return;
     }
 
-    if !output.ends_with("\n\n") && !output.ends_with("\r\n\r\n") {
-        output.push_str(line_ending);
-    }
+    output.push_str(line_ending);
+}
+
+fn trailing_blank_lines(output: &str) -> usize {
+    output
+        .split_inclusive('\n')
+        .rev()
+        .take_while(|line| {
+            let (content, _) = split_line_ending(line);
+            content.trim_matches([' ', '\t', '\r']).is_empty()
+        })
+        .count()
 }
 
 #[cfg(test)]
 mod tests {
+    use super::{FormatOptions, format_syntax_with_options};
     use crate::format;
 
     #[test]
@@ -148,5 +179,21 @@ mod tests {
         );
 
         assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn configurable_top_level_blank_line_limit_is_idempotent() {
+        let source = "A=\"a\"\n\n\nB=\"b\"\n";
+        let tree = crate::parse(source).unwrap();
+        let options = FormatOptions {
+            max_top_level_blank_lines: 2,
+        };
+        let formatted = format_syntax_with_options(&tree, &options);
+
+        assert_eq!(formatted, "A = \"a\"\n\n\nB = \"b\"\n");
+        assert_eq!(
+            format_syntax_with_options(&crate::parse(&formatted).unwrap(), &options),
+            formatted
+        );
     }
 }

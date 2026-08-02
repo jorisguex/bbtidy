@@ -66,6 +66,110 @@ fn check_and_write_have_stable_exit_codes() {
 }
 
 #[test]
+fn config_controls_formatter_blank_lines() {
+    let directory = TemporaryDirectory::new("config-format");
+    let config = directory.write(".bbtidy.toml", "[format]\nmax_top_level_blank_lines = 0\n");
+    let file = directory.write("example.bb", "A=\"a\"\n\n\nB=\"b\"\n");
+
+    let output = run([
+        "format",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_success(&output);
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "A = \"a\"\nB = \"b\"\n"
+    );
+}
+
+#[test]
+fn config_filters_lint_rules_and_overrides_severity() {
+    let directory = TemporaryDirectory::new("config-lint");
+    let config = directory.write(
+        ".bbtidy.toml",
+        concat!(
+            "[lint]\n",
+            "disable = [\"BBT001\", \"BBT004\"]\n",
+            "\n",
+            "[lint.severity]\n",
+            "BBT005 = \"error\"\n",
+        ),
+    );
+    let file = directory.write(
+        "example.bb",
+        concat!(
+            "SUMMARY = \"demo\"  \n",
+            "SRCREV = \"${AUTOREV}\"\n",
+            "inherit cmake\n",
+            "inherit cmake\n",
+        ),
+    );
+
+    let output = run([
+        "lint",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!(
+            "{}:4:9: error[BBT005]: class 'cmake' is inherited more than once\n",
+            file.display()
+        )
+    );
+}
+
+#[test]
+fn config_excludes_paths_from_directory_processing() {
+    let directory = TemporaryDirectory::new("config-exclude");
+    let config = directory.write(".bbtidy.toml", "[paths]\nexclude = [\"ignored/**\"]\n");
+    let kept = directory.write("kept.bb", UNFORMATTED);
+    let ignored = directory.write("ignored/example.bb", UNFORMATTED);
+
+    let output = run([
+        "format",
+        "--write",
+        "--config",
+        config.to_str().unwrap(),
+        directory.path().to_str().unwrap(),
+    ]);
+
+    assert_success(&output);
+    assert_eq!(fs::read_to_string(&kept).unwrap(), FORMATTED);
+    assert_eq!(fs::read_to_string(&ignored).unwrap(), UNFORMATTED);
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains(&kept.display().to_string()));
+    assert!(!stdout.contains("ignored/example.bb"));
+}
+
+#[test]
+fn invalid_config_is_an_operational_error() {
+    let directory = TemporaryDirectory::new("config-invalid");
+    let config = directory.write(".bbtidy.toml", "[lint]\ndisable = [\"BBT999\"]\n");
+    let file = directory.write("example.bb", UNFORMATTED);
+
+    let output = run([
+        "check",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("unknown lint rule 'BBT999'")
+    );
+}
+
+#[test]
 fn directories_are_recursive_filtered_and_deterministic() {
     let directory = TemporaryDirectory::new("directory");
     let nested = directory.write("nested/a.bb", UNFORMATTED);

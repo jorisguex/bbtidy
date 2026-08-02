@@ -26,6 +26,8 @@ top-level metadata assignments, and file-local linting suitable for CI.
 - **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`, and
   `lex` commands, standard-input support, unified diffs, and documented exit
   codes.
+- **Project configuration**: Loads an optional `.bbtidy.toml` with formatter
+  settings, lint rule selection, severity overrides, and path exclusions.
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order.
 - **Initial linting**: Reports stable rule IDs, severity, line, and column for a
@@ -125,6 +127,37 @@ unless `--diff` or `--write` is selected. `format --diff`, `lint`, and `lex` can
 process multiple inputs without changing them. Before `format --write` changes
 any files, every input is read and formatted successfully; each changed file is
 then replaced atomically.
+
+### Configuration
+
+By default, bbtidy searches for `.bbtidy.toml` in the current directory and
+then each parent directory. Use `--config PATH` to select a specific file or
+`--no-config` to disable configuration discovery. An explicit config file takes
+precedence over automatic discovery. If no file is found, built-in defaults are
+used and behavior remains unchanged.
+
+The supported configuration keys are:
+
+```toml
+[format]
+max_top_level_blank_lines = 1
+
+[lint]
+disable = ["BBT003"]
+
+[lint.severity]
+BBT001 = "error"
+BBT004 = "info"
+
+[paths]
+exclude = ["vendor/**", "**/files/**"]
+```
+
+Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
+are `info`, `warning`, or `error`. Exclusion globs are relative to the
+configuration file’s directory and apply to explicit files and recursively
+discovered files. Standard input is never excluded. Unknown keys, rule IDs,
+severity values, malformed TOML, and invalid globs are operational errors.
 
 ### Exit codes
 

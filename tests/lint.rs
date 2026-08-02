@@ -1,4 +1,4 @@
-use bbtidy::{LintSeverity, lint, lint_rules};
+use bbtidy::{LintOptions, LintSeverity, lint, lint_rules, lint_with_options};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -40,6 +40,23 @@ fn formatted_fixture_layer_is_clean_under_default_rules() {
             path.display()
         );
     }
+}
+
+#[test]
+fn public_lint_options_filter_rules_and_override_severity() {
+    let mut options = LintOptions::default();
+    options.disable_rule("BBT004");
+    options.set_severity("BBT005", LintSeverity::Error);
+
+    let diagnostics = lint_with_options(
+        "SRCREV = \"${AUTOREV}\"\ninherit cmake\ninherit cmake\n",
+        &options,
+    )
+    .unwrap();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].rule_id(), "BBT005");
+    assert_eq!(diagnostics[0].severity(), LintSeverity::Error);
 }
 
 fn corpus_root() -> PathBuf {

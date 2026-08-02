@@ -1,4 +1,4 @@
-use bbtidy::{Token, format as format_source, get_line_col, lint as lint_source};
+use bbtidy::{Config, Token, format_with_options, get_line_col, lint_with_options, load_config};
 use clap::{Args, Parser, Subcommand};
 use logos::Logos;
 use similar::TextDiff;
@@ -21,6 +21,14 @@ const BITBAKE_EXTENSIONS: &[&str] = &["bb", "bbappend", "bbclass", "conf", "inc"
     long_about = None
 )]
 struct Cli {
+    /// Read configuration from an explicit TOML file.
+    #[arg(long, global = true, conflicts_with = "no_config", value_name = "PATH")]
+    config: Option<PathBuf>,
+
+    /// Do not discover or load a project configuration file.
+    #[arg(long, global = true, conflicts_with = "config")]
+    no_config: bool,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -76,11 +84,18 @@ struct FormattedInput {
 
 fn main() {
     let cli = Cli::parse();
+    let config = match load_config(cli.config.as_deref(), cli.no_config) {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("error: {error}");
+            process::exit(EXIT_ERROR);
+        }
+    };
     let exit_code = match cli.command {
-        Command::Format(args) => run_format(args),
-        Command::Check(args) => run_check(args),
-        Command::Lint(args) => run_lint(args),
-        Command::Lex(args) => run_lex(args),
+        Command::Format(args) => run_format(args, &config),
+        Command::Check(args) => run_check(args, &config),
+        Command::Lint(args) => run_lint(args, &config),
+        Command::Lex(args) => run_lex(args, &config),
     };
 
     if exit_code != 0 {
@@ -88,8 +103,8 @@ fn main() {
     }
 }
 
-fn run_format(args: FormatArgs) -> i32 {
-    let inputs = match resolve_inputs(&args.inputs.paths) {
+fn run_format(args: FormatArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.inputs.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
@@ -109,7 +124,7 @@ fn run_format(args: FormatArgs) -> i32 {
         return EXIT_ERROR;
     }
 
-    let formatted_inputs = match format_inputs(&inputs) {
+    let formatted_inputs = match format_inputs(&inputs, &config.format) {
         Ok(formatted_inputs) => formatted_inputs,
         Err(()) => return EXIT_ERROR,
     };
@@ -131,15 +146,15 @@ fn run_format(args: FormatArgs) -> i32 {
     }
 }
 
-fn run_check(args: InputArgs) -> i32 {
-    let inputs = match resolve_inputs(&args.paths) {
+fn run_check(args: InputArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
             return EXIT_ERROR;
         }
     };
-    let formatted_inputs = match format_inputs(&inputs) {
+    let formatted_inputs = match format_inputs(&inputs, &config.format) {
         Ok(formatted_inputs) => formatted_inputs,
         Err(()) => return EXIT_ERROR,
     };
@@ -155,8 +170,8 @@ fn run_check(args: InputArgs) -> i32 {
     if differences { EXIT_DIFFERENCES } else { 0 }
 }
 
-fn run_lint(args: InputArgs) -> i32 {
-    let inputs = match resolve_inputs(&args.paths) {
+fn run_lint(args: InputArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
@@ -176,7 +191,7 @@ fn run_lint(args: InputArgs) -> i32 {
                 continue;
             }
         };
-        match lint_source(&text) {
+        match lint_with_options(&text, &config.lint) {
             Ok(diagnostics) => {
                 had_findings |= !diagnostics.is_empty();
                 for diagnostic in diagnostics {
@@ -214,8 +229,8 @@ fn run_lint(args: InputArgs) -> i32 {
     }
 }
 
-fn run_lex(args: InputArgs) -> i32 {
-    let inputs = match resolve_inputs(&args.paths) {
+fn run_lex(args: InputArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
@@ -273,7 +288,7 @@ fn run_lex(args: InputArgs) -> i32 {
     if had_error { EXIT_ERROR } else { 0 }
 }
 
-fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
+fn resolve_inputs(paths: &[PathBuf], config: &Config) -> Result<Vec<Input>, String> {
     let stdin_count = paths.iter().filter(|path| path.as_os_str() == "-").count();
     if stdin_count > 1 {
         return Err("standard input ('-') may only be specified once".to_owned());
@@ -290,8 +305,8 @@ fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
         let metadata = fs::metadata(path)
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
         if metadata.is_dir() {
-            collect_directory(path, path, &mut files)?;
-        } else if metadata.is_file() {
+            collect_directory(path, path, config, &mut files)?;
+        } else if metadata.is_file() && !config.is_excluded(path) {
             files.insert(path.clone());
         } else {
             return Err(format!(
@@ -311,6 +326,7 @@ fn resolve_inputs(paths: &[PathBuf]) -> Result<Vec<Input>, String> {
 fn collect_directory(
     directory: &Path,
     root: &Path,
+    config: &Config,
     files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), String> {
     let entries = fs::read_dir(directory)
@@ -322,11 +338,14 @@ fn collect_directory(
 
     for entry in entries {
         let path = entry.path();
+        if config.is_excluded(&path) {
+            continue;
+        }
         let file_type = entry
             .file_type()
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
         if file_type.is_dir() {
-            collect_directory(&path, root, files)?;
+            collect_directory(&path, root, config, files)?;
         } else if file_type.is_file() && is_bitbake_file(&path, root) {
             files.insert(path);
         }
@@ -360,7 +379,10 @@ fn is_bitbake_file(path: &Path, root: &Path) -> bool {
         })
 }
 
-fn format_inputs(inputs: &[Input]) -> Result<Vec<FormattedInput>, ()> {
+fn format_inputs(
+    inputs: &[Input],
+    options: &bbtidy::FormatOptions,
+) -> Result<Vec<FormattedInput>, ()> {
     let mut formatted_inputs = Vec::with_capacity(inputs.len());
     let mut had_error = false;
 
@@ -373,7 +395,7 @@ fn format_inputs(inputs: &[Input]) -> Result<Vec<FormattedInput>, ()> {
                 continue;
             }
         };
-        match format_source(&original) {
+        match format_with_options(&original, options) {
             Ok(formatted) => formatted_inputs.push(FormattedInput {
                 label,
                 path: match input {

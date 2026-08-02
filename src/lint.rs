@@ -2,8 +2,9 @@ use crate::{
     AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, comment_start,
     get_line_col, parse, split_line_ending,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
+use std::str::FromStr;
 
 const SUMMARY_LIMIT: usize = 80;
 
@@ -45,6 +46,21 @@ pub enum LintSeverity {
     Info,
     Warning,
     Error,
+}
+
+impl FromStr for LintSeverity {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "info" => Ok(Self::Info),
+            "warning" => Ok(Self::Warning),
+            "error" => Ok(Self::Error),
+            _ => Err(format!(
+                "invalid lint severity '{value}'; expected info, warning, or error"
+            )),
+        }
+    }
 }
 
 impl fmt::Display for LintSeverity {
@@ -94,6 +110,46 @@ impl LintRule {
 
     pub const fn description(&self) -> &'static str {
         self.description
+    }
+}
+
+/// Configuration for selecting lint rules and overriding their severities.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct LintOptions {
+    disabled_rules: BTreeSet<String>,
+    severity_overrides: BTreeMap<String, LintSeverity>,
+}
+
+impl LintOptions {
+    /// Disables diagnostics for a stable lint rule ID.
+    pub fn disable_rule(&mut self, rule_id: impl Into<String>) {
+        self.disabled_rules.insert(rule_id.into());
+    }
+
+    /// Overrides the severity for a stable lint rule ID.
+    pub fn set_severity(&mut self, rule_id: impl Into<String>, severity: LintSeverity) {
+        self.severity_overrides.insert(rule_id.into(), severity);
+    }
+
+    pub(crate) fn from_parts(
+        disabled_rules: BTreeSet<String>,
+        severity_overrides: BTreeMap<String, LintSeverity>,
+    ) -> Self {
+        Self {
+            disabled_rules,
+            severity_overrides,
+        }
+    }
+
+    fn is_enabled(&self, rule_id: &str) -> bool {
+        !self.disabled_rules.contains(rule_id)
+    }
+
+    fn severity_for(&self, diagnostic: &LintDiagnostic) -> LintSeverity {
+        self.severity_overrides
+            .get(diagnostic.rule_id())
+            .copied()
+            .unwrap_or_else(|| diagnostic.severity())
     }
 }
 
@@ -157,14 +213,36 @@ pub fn lint(text: &str) -> Result<Vec<LintDiagnostic>, FormatError> {
     Ok(lint_syntax(&tree))
 }
 
+/// Checks source with caller-provided rule selection and severity settings.
+pub fn lint_with_options(
+    text: &str,
+    options: &LintOptions,
+) -> Result<Vec<LintDiagnostic>, FormatError> {
+    let tree = parse(text)?;
+    Ok(lint_syntax_with_options(&tree, options))
+}
+
 /// Checks a previously parsed syntax tree without reparsing its source.
 pub fn lint_syntax(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
+    lint_syntax_with_options(tree, &LintOptions::default())
+}
+
+/// Checks a previously parsed syntax tree with caller-provided options.
+pub fn lint_syntax_with_options(
+    tree: &SyntaxTree<'_>,
+    options: &LintOptions,
+) -> Vec<LintDiagnostic> {
     let text = tree.source();
     let mut diagnostics = Vec::new();
     check_trailing_whitespace(text, &mut diagnostics);
     check_final_newline(text, &mut diagnostics);
     check_assignments(tree, &mut diagnostics);
     check_duplicate_inherits(tree, &mut diagnostics);
+
+    diagnostics.retain(|diagnostic| options.is_enabled(diagnostic.rule_id()));
+    for diagnostic in &mut diagnostics {
+        diagnostic.severity = options.severity_for(diagnostic);
+    }
 
     diagnostics.sort_by(|left, right| {
         (left.line, left.column, left.rule_id).cmp(&(right.line, right.column, right.rule_id))
