@@ -1,9 +1,11 @@
 use logos::Logos;
 use std::fmt;
 
+mod formatter;
 mod lint;
 mod syntax;
 
+pub use formatter::format_syntax;
 pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules, lint_syntax};
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
@@ -217,41 +219,13 @@ pub type SyntaxError = FormatError;
 
 /// Formats the subset of BitBake syntax that can be changed safely.
 ///
-/// Embedded shell and Python function bodies, Python `def` blocks, continued
-/// statements, and unsupported top-level syntax are preserved byte-for-byte.
-/// Structurally incomplete input produces an error instead of partial output.
+/// Embedded shell and Python function bodies, Python `def` blocks, continuation
+/// tails, comments, and unsupported top-level syntax are preserved
+/// byte-for-byte. Structurally incomplete input produces an error instead of
+/// partial output.
 pub fn format(text: &str) -> Result<String, FormatError> {
     let tree = parse(text)?;
     Ok(format_syntax(&tree))
-}
-
-/// Formats a previously parsed syntax tree without reparsing its source.
-pub fn format_syntax(tree: &SyntaxTree<'_>) -> String {
-    let mut output = String::new();
-
-    for node in tree.nodes() {
-        match node.kind() {
-            SyntaxKind::Blank => append_normalized_blank_line(&mut output, node.text()),
-            SyntaxKind::Assignment(assignment) if !assignment.is_continued() => {
-                let relative_operator = assignment.operator_range().start() - node.range().start();
-                let left = node.text()[..relative_operator].trim_end();
-                let right = assignment.value().trim_start_matches([' ', '\t']);
-                let (_, line_ending) = split_line_ending(node.text());
-
-                output.push_str(left);
-                output.push(' ');
-                output.push_str(assignment.operator().lexeme());
-                if !right.is_empty() {
-                    output.push(' ');
-                    output.push_str(right);
-                }
-                output.push_str(line_ending);
-            }
-            _ => output.push_str(node.text()),
-        }
-    }
-
-    output
 }
 
 fn next_line_end(text: &str, start: usize) -> usize {
@@ -274,17 +248,6 @@ fn split_line_ending(line: &str) -> (&str, &str) {
 fn is_blank_line(line: &str) -> bool {
     let (content, _) = split_line_ending(line);
     content.trim_matches([' ', '\t', '\r']).is_empty()
-}
-
-fn append_normalized_blank_line(output: &mut String, line: &str) {
-    let (_, line_ending) = split_line_ending(line);
-    if line_ending.is_empty() {
-        return;
-    }
-
-    if !output.ends_with("\n\n") && !output.ends_with("\r\n\r\n") {
-        output.push_str(line_ending);
-    }
 }
 
 #[derive(Clone, Copy)]

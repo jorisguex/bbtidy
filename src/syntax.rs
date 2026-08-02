@@ -377,14 +377,14 @@ fn parse_assignment<'a>(
     };
     let operator_end = operator_start + operator.lexeme().len();
 
-    if !continued && !has_balanced_quotes(&first_content[operator_end..]) {
+    let content_end = text_without_final_line_ending(text).len();
+    if !has_balanced_quotes(&text[operator_end..content_end]) {
         return Err(FormatError::new(
             line_number,
             "top-level assignment contains an unclosed quote",
         ));
     }
 
-    let content_end = text_without_final_line_ending(text).len();
     let value_start = operator_end;
     Ok(Some(AssignmentSyntax {
         name: &source[start + name_offset..start + name_offset + name.len()],

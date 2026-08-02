@@ -10,7 +10,7 @@ struct MalformedCase {
     message: &'static str,
 }
 
-const CASES: [MalformedCase; 3] = [
+const CASES: [MalformedCase; 4] = [
     MalformedCase {
         file_name: "unclosed-function.bb",
         line: 2,
@@ -25,6 +25,11 @@ const CASES: [MalformedCase; 3] = [
         file_name: "unterminated-continuation.inc",
         line: 1,
         message: "statement ends with an unterminated continuation",
+    },
+    MalformedCase {
+        file_name: "unclosed-continued-quote.bb",
+        line: 1,
+        message: "top-level assignment contains an unclosed quote",
     },
 ];
 

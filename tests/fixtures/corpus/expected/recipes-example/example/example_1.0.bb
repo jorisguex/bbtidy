@@ -8,12 +8,10 @@ inherit example
 RDEPENDS:${PN} += ""
 do_fetch[network] = "1"
 
-# bbtidy-corpus:opaque-start recipe-sources
 SRC_URI = " \
     file://example.patch \
     git://example.invalid/example.git;branch=main \
 "
-# bbtidy-corpus:opaque-end recipe-sources
 
 # bbtidy-corpus:opaque-start recipe-shell
 do_configure() {
