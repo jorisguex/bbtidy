@@ -32,6 +32,9 @@ All notable changes to this project will be documented in this file.
   (`manylinux_2_17_armv7l`).
 - GitHub Release assets containing standalone binaries for every Python-wheel
   platform, extracted from and validated against the release wheel set.
+- A tag-gated crates.io Trusted Publishing workflow with validation-only manual
+  runs.
+- Immutable commit pins for the release-critical GitHub Actions.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

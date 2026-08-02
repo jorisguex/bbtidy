@@ -9,8 +9,46 @@ permissions:
   contents: read
 
 jobs:
+  validate:
+    name: Validate crate release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Match tag and package version
+        run: python scripts/check_release_version.py
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check clippy
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
+
+      - name: Check repository diff
+        run: git diff --check
+
+      - name: Run Rust tests
+        run: cargo test --all-targets --locked
+
+      - name: Run layer-analysis benchmark
+        run: cargo bench --locked --bench layer_analysis
+
+  package:
+    name: Validate Cargo package
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Validate package
+        run: cargo publish --locked --dry-run
+
   publish:
     name: Publish crate
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    needs: package
     runs-on: ubuntu-24.04
     environment:
       name: crates-io-release
@@ -20,17 +58,14 @@ jobs:
       id-token: write
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Match tag and package version
         run: python scripts/check_release_version.py
 
-      - name: Validate package
-        run: cargo publish --locked --dry-run
-
       - name: Authenticate with crates.io
         id: auth
-        uses: rust-lang/crates-io-auth-action@v1
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
 
       - name: Publish crate
         run: cargo publish --locked

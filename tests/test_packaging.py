@@ -102,5 +102,24 @@ class ReleaseBinaryTests(unittest.TestCase):
                 prepare_release_binaries(wheels, root / "release-binaries", "v1.2.3")
 
 
+class ReleaseWorkflowTests(unittest.TestCase):
+    def test_crates_publication_is_tag_gated_with_manual_validation(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "publish-crates.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('tags: ["v*"]', workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn(
+            "if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}",
+            workflow,
+        )
+        self.assertIn("needs: package", workflow)
+        self.assertIn("cargo publish --locked --dry-run", workflow)
+
+
 if __name__ == "__main__":
     unittest.main()

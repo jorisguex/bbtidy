@@ -343,11 +343,12 @@ The script is opt-in because BitBake is not a project dependency. It invokes
 `bitbake --parse-only example`, ensuring the corpus recipe is available and
 parseable, and does not edit the selected build configuration.
 
-## Releasing to PyPI
+## Releasing
 
 The Python package workflow builds and installs a wheel on every pull request
 and push to `main`. The release workflow can be run manually to inspect all
-platform artifacts without publishing.
+platform artifacts without publishing. The crates.io workflow also supports
+manual validation, but its publication job only runs for a pushed `v*` tag.
 
 Tag releases also create a GitHub Release with standalone `bbtidy` binaries
 for every Python-wheel platform: Linux glibc x86-64, ARM64, and ARMv7;
@@ -360,14 +361,20 @@ To publish a release:
 1. Update the version in `Cargo.toml` and finalize the changelog.
 2. Create a tag that exactly matches the Cargo version, such as
    `v0.1.0-alpha.3`.
-3. Push the tag. The release workflow builds and smoke-tests all wheels and the
-   source distribution, then publishes them through PyPI Trusted Publishing.
+3. Push the tag. The release workflows run their validation gates. The Python
+   workflow builds and smoke-tests the wheels and source distribution, then
+   publishes through PyPI Trusted Publishing and creates the GitHub Release.
+   The crates.io workflow validates the Cargo package and publishes it through
+   crates.io Trusted Publishing.
 
 Before the first automated publication, configure the `bbtidy` project on PyPI
 with GitHub owner `jorisguex`, repository `bbtidy`, workflow
 `publish-pypi.yml`, and environment `pypi`. No repository API token is needed.
-The version guard rejects mismatched tags before any release artifacts are
-built.
+For crates.io, configure the `bbtidy` crate with owner `jorisguex`, repository
+`bbtidy`, workflow `publish-crates.yml`, and environment `crates-io-release`.
+No repository API token is needed for either publisher. The version guard
+rejects mismatched tags before release artifacts are built, and manual workflow
+runs never publish to either registry.
 
 ## License
 
