@@ -6,7 +6,8 @@ Experimental formatter, linter, and lexer for BitBake metadata.
 
 `bbtidy` is an experimental tool for formatting and inspecting BitBake recipes
 and configuration files. It provides a lexer, a conservative formatter for
-top-level metadata assignments, and file-local linting suitable for CI.
+top-level metadata assignments, and file-local or layer-aware linting suitable
+for CI.
 
 ## Features
 
@@ -29,7 +30,8 @@ top-level metadata assignments, and file-local linting suitable for CI.
 - **Project configuration**: Loads an optional `.bbtidy.toml` with formatter
   settings, lint rule selection, severity overrides, and path exclusions.
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
-  deterministic path order.
+  deterministic path order and indexes complete supplied layers for semantic
+  checks.
 - **Initial linting**: Reports stable rule IDs, severity, line, and column for a
   focused set of reproducibility and metadata hygiene checks.
 
@@ -252,6 +254,17 @@ Run the test suite with:
 ```bash
 cargo test
 ```
+
+Measure the main layer-analysis paths on a repeatable synthetic 1,000-recipe
+fixture with:
+
+```bash
+cargo bench --locked --bench layer_analysis
+```
+
+The benchmark reports workspace index construction, single-file formatting,
+and batch workspace-aware linting. It is intended for comparing changes across
+the same machine rather than enforcing a wall-clock threshold in CI.
 
 Build and verify the Python wheel and source distribution with:
 

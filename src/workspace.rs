@@ -33,7 +33,7 @@ impl WorkspaceIndex {
             .collect::<io::Result<BTreeSet<_>>>()?;
         let roots = files
             .iter()
-            .filter_map(|path| layer_root_for(path))
+            .filter_map(|path| supplied_layer_root_for(path))
             .collect::<BTreeSet<_>>();
 
         let layers = roots
@@ -160,19 +160,27 @@ impl LayerIndex {
     }
 
     fn find_candidate<'a>(&'a self, candidate: &Path) -> Option<&'a Path> {
+        if let Some(path) = self.files.get(candidate) {
+            return Some(path.as_path());
+        }
         let candidate = fs::canonicalize(candidate).ok()?;
         self.files.get(&candidate).map(PathBuf::as_path)
     }
 }
 
-fn layer_root_for(path: &Path) -> Option<PathBuf> {
-    let mut current = path.parent()?.to_path_buf();
-    loop {
-        if current.join("conf/layer.conf").is_file() {
-            return Some(current);
-        }
-        current = current.parent()?.to_path_buf();
+fn supplied_layer_root_for(path: &Path) -> Option<PathBuf> {
+    if path.file_name().and_then(|name| name.to_str()) != Some("layer.conf") {
+        return None;
     }
+    let configuration_directory = path.parent()?;
+    if configuration_directory
+        .file_name()
+        .and_then(|name| name.to_str())
+        != Some("conf")
+    {
+        return None;
+    }
+    configuration_directory.parent().map(Path::to_path_buf)
 }
 
 fn canonicalize_for_lookup(path: &Path) -> PathBuf {

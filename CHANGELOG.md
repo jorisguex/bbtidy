@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
   selection, severity overrides, and path exclusions.
 - A conservative layer-aware workspace index for complete supplied layers,
   including static unresolved `require` and `inherit` diagnostics.
+- In-memory workspace lookup fast paths and a dependency-free benchmark harness
+  covering indexing, formatting, and batch semantic linting at layer scale.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 
@@ -117,5 +119,7 @@ All notable changes to this project will be documented in this file.
 - Formatting is limited to complete, single-line top-level assignments.
 - Continued assignments and embedded functions are preserved rather than
   reformatted.
-- The project does not yet provide lint rules or semantic BitBake validation.
+- Layer-aware semantic checks only resolve files and classes supplied in the
+  indexed input set; external BitBake classes and dynamic references are not
+  evaluated.
 - Legacy underscore overrides are tokenized but not interpreted.

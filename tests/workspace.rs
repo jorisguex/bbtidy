@@ -32,6 +32,7 @@ fn indexes_complete_layers_and_resolves_classes_and_files() {
 #[test]
 fn incomplete_file_contexts_do_not_appear_complete() {
     let layer = TemporaryLayer::new("workspace-incomplete");
+    layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
     let recipe = layer.write("recipes-example/example.bb", "inherit base\n");
     let index = WorkspaceIndex::from_paths([recipe.clone()]).unwrap();
 
