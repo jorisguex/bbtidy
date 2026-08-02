@@ -5,17 +5,19 @@ mod config;
 mod formatter;
 mod lint;
 mod syntax;
+mod workspace;
 
 pub use config::{Config, ConfigError, discover_config, load_config};
 pub use formatter::{FormatOptions, format_syntax, format_syntax_with_options};
 pub use lint::{
     LintDiagnostic, LintOptions, LintRule, LintSeverity, lint, lint_rules, lint_syntax,
-    lint_syntax_with_options, lint_with_options,
+    lint_syntax_with_options, lint_syntax_with_workspace, lint_with_options, lint_with_workspace,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
     PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
 };
+pub use workspace::WorkspaceIndex;
 
 #[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Token {

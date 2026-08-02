@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
   legacy underscore overrides.
 - A typed `.bbtidy.toml` configuration layer with formatter options, lint rule
   selection, severity overrides, and path exclusions.
+- A conservative layer-aware workspace index for complete supplied layers,
+  including static unresolved `require` and `inherit` diagnostics.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

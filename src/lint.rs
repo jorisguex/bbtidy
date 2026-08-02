@@ -1,6 +1,6 @@
 use crate::{
-    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, comment_start,
-    get_line_col, parse, split_line_ending,
+    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceIndex,
+    comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -38,6 +38,18 @@ static LINT_RULES: &[LintRule] = &[
         "duplicate-inherit",
         LintSeverity::Warning,
         "A class must not be inherited more than once in one file.",
+    ),
+    LintRule::new(
+        "BBT006",
+        "unresolved-require",
+        LintSeverity::Warning,
+        "A static require target must resolve within the indexed layers.",
+    ),
+    LintRule::new(
+        "BBT007",
+        "unresolved-inherit",
+        LintSeverity::Warning,
+        "A static inherited class must resolve within the indexed layers.",
     ),
 ];
 
@@ -222,6 +234,21 @@ pub fn lint_with_options(
     Ok(lint_syntax_with_options(&tree, options))
 }
 
+/// Checks source with caller-provided rule settings and an indexed workspace.
+///
+/// Workspace-aware rules are enabled only when `path` belongs to a complete
+/// indexed layer. Dynamic references and incomplete single-file contexts are
+/// intentionally ignored to avoid pretending to evaluate BitBake metadata.
+pub fn lint_with_workspace(
+    text: &str,
+    path: &std::path::Path,
+    workspace: &WorkspaceIndex,
+    options: &LintOptions,
+) -> Result<Vec<LintDiagnostic>, FormatError> {
+    let tree = parse(text)?;
+    Ok(lint_syntax_with_workspace(&tree, path, workspace, options))
+}
+
 /// Checks a previously parsed syntax tree without reparsing its source.
 pub fn lint_syntax(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
     lint_syntax_with_options(tree, &LintOptions::default())
@@ -232,13 +259,35 @@ pub fn lint_syntax_with_options(
     tree: &SyntaxTree<'_>,
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
+    finalize_diagnostics(collect_lint_diagnostics(tree), options)
+}
+
+/// Checks a previously parsed syntax tree with an indexed workspace.
+pub fn lint_syntax_with_workspace(
+    tree: &SyntaxTree<'_>,
+    path: &std::path::Path,
+    workspace: &WorkspaceIndex,
+    options: &LintOptions,
+) -> Vec<LintDiagnostic> {
+    let mut diagnostics = collect_lint_diagnostics(tree);
+    check_workspace_references(tree, path, workspace, &mut diagnostics);
+    finalize_diagnostics(diagnostics, options)
+}
+
+fn collect_lint_diagnostics(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
     let text = tree.source();
     let mut diagnostics = Vec::new();
     check_trailing_whitespace(text, &mut diagnostics);
     check_final_newline(text, &mut diagnostics);
     check_assignments(tree, &mut diagnostics);
     check_duplicate_inherits(tree, &mut diagnostics);
+    diagnostics
+}
 
+fn finalize_diagnostics(
+    mut diagnostics: Vec<LintDiagnostic>,
+    options: &LintOptions,
+) -> Vec<LintDiagnostic> {
     diagnostics.retain(|diagnostic| options.is_enabled(diagnostic.rule_id()));
     for diagnostic in &mut diagnostics {
         diagnostic.severity = options.severity_for(diagnostic);
@@ -248,6 +297,61 @@ pub fn lint_syntax_with_options(
         (left.line, left.column, left.rule_id).cmp(&(right.line, right.column, right.rule_id))
     });
     diagnostics
+}
+
+fn check_workspace_references(
+    tree: &SyntaxTree<'_>,
+    path: &std::path::Path,
+    workspace: &WorkspaceIndex,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    if !workspace.is_complete_for(path) {
+        return;
+    }
+
+    for node in tree.nodes() {
+        let SyntaxKind::Directive(directive) = node.kind() else {
+            continue;
+        };
+        let arguments = directive.arguments();
+        let code_end = comment_start(arguments).unwrap_or(arguments.len());
+        let arguments = &arguments[..code_end];
+        match directive.keyword() {
+            DirectiveKeyword::Require => {
+                let rule = &LINT_RULES[5];
+                for (relative_offset, target) in static_words(arguments) {
+                    if workspace.resolve_file(path, target).is_some() {
+                        continue;
+                    }
+                    let offset = directive.arguments_range().start() + relative_offset;
+                    let (line, column) = get_line_col(tree.source(), offset);
+                    diagnostics.push(LintDiagnostic::new(
+                        rule,
+                        line,
+                        column,
+                        format!("required file '{target}' was not found in indexed layers"),
+                    ));
+                }
+            }
+            DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
+                let rule = &LINT_RULES[6];
+                for (relative_offset, class) in static_words(arguments) {
+                    if workspace.resolve_class(class).is_some() {
+                        continue;
+                    }
+                    let offset = directive.arguments_range().start() + relative_offset;
+                    let (line, column) = get_line_col(tree.source(), offset);
+                    diagnostics.push(LintDiagnostic::new(
+                        rule,
+                        line,
+                        column,
+                        format!("inherited class '{class}' was not found in indexed layers"),
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -411,6 +515,24 @@ fn words(text: &str) -> impl Iterator<Item = (usize, &str)> {
     })
 }
 
+fn static_words(text: &str) -> impl Iterator<Item = (usize, &str)> {
+    let mut dynamic_expression = false;
+    words(text).filter_map(move |(offset, word)| {
+        if dynamic_expression {
+            dynamic_expression = !word.contains('}');
+            return None;
+        }
+        if word.contains('$') || word.contains('{') {
+            dynamic_expression = !word.contains('}');
+            return None;
+        }
+        if word == "\\" || word.contains('}') {
+            return None;
+        }
+        Some((offset, word))
+    })
+}
+
 fn is_srcrev_name(name: &str) -> bool {
     name == "SRCREV" || name.starts_with("SRCREV:") || name.starts_with("SRCREV_")
 }
@@ -449,7 +571,9 @@ mod tests {
     fn exposes_stable_rule_metadata() {
         assert_eq!(
             lint_rules().iter().map(LintRule::id).collect::<Vec<_>>(),
-            ["BBT001", "BBT002", "BBT003", "BBT004", "BBT005"]
+            [
+                "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007",
+            ]
         );
         assert!(
             lint_rules()

@@ -285,6 +285,37 @@ fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
 }
 
 #[test]
+fn lint_directories_report_unresolved_static_layer_references() {
+    let directory = TemporaryDirectory::new("lint-semantic");
+    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    directory.write("classes/base.bbclass", "BASE = \"1\"\n");
+    directory.write("recipes-example/common.inc", "COMMON = \"1\"\n");
+    let recipe = directory.write(
+        "recipes-example/example.bb",
+        concat!(
+            "inherit base missing\n",
+            "require common.inc\n",
+            "require missing.inc\n",
+            "inherit ${DYNAMIC}\n",
+            "require ${DYNAMIC}\n",
+        ),
+    );
+
+    let output = run(["lint", directory.path().to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stderr, b"");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let findings = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(findings.len(), 2);
+    assert!(findings[0].contains(":1:14: warning[BBT007]:"));
+    assert!(findings[0].contains("inherited class 'missing'"));
+    assert!(findings[1].contains(":3:9: warning[BBT006]:"));
+    assert!(findings[1].contains("required file 'missing.inc'"));
+    assert!(stdout.contains(&recipe.display().to_string()));
+}
+
+#[test]
 fn lint_accepts_standard_input() {
     let output = run_with_stdin(["lint", "-"], "SUMMARY = \"demo\"");
 

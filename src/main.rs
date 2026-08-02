@@ -1,4 +1,7 @@
-use bbtidy::{Config, Token, format_with_options, get_line_col, lint_with_options, load_config};
+use bbtidy::{
+    Config, Token, WorkspaceIndex, format_with_options, get_line_col, lint_with_options,
+    lint_with_workspace, load_config,
+};
 use clap::{Args, Parser, Subcommand};
 use logos::Logos;
 use similar::TextDiff;
@@ -178,6 +181,17 @@ fn run_lint(args: InputArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
+    let workspace_paths = inputs.iter().filter_map(|input| match input {
+        Input::Stdin => None,
+        Input::File(path) => Some(path),
+    });
+    let workspace = match WorkspaceIndex::from_paths(workspace_paths) {
+        Ok(workspace) => workspace,
+        Err(error) => {
+            eprintln!("error: could not index workspace: {error}");
+            return EXIT_ERROR;
+        }
+    };
     let mut had_findings = false;
     let mut had_error = false;
     let mut stdout = io::stdout().lock();
@@ -191,7 +205,11 @@ fn run_lint(args: InputArgs, config: &Config) -> i32 {
                 continue;
             }
         };
-        match lint_with_options(&text, &config.lint) {
+        let diagnostics = match input {
+            Input::Stdin => lint_with_options(&text, &config.lint),
+            Input::File(path) => lint_with_workspace(&text, path, &workspace, &config.lint),
+        };
+        match diagnostics {
             Ok(diagnostics) => {
                 had_findings |= !diagnostics.is_empty();
                 for diagnostic in diagnostics {

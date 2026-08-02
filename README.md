@@ -179,6 +179,8 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT003` | `summary-length` | A static, literal `SUMMARY` longer than 80 characters |
 | `BBT004` | `autorev` | `SRCREV` variants that use `${AUTOREV}` |
 | `BBT005` | `duplicate-inherit` | A static class inherited more than once in one file |
+| `BBT006` | `unresolved-require` | A static `require` target missing from the indexed layers |
+| `BBT007` | `unresolved-inherit` | A static inherited class missing from the indexed layers |
 
 All initial rules are warnings. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintRule`,
@@ -187,8 +189,10 @@ operational error instead of producing potentially misleading findings.
 
 The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
-values or class names. Cross-file inheritance, configuration, suppression, and
-release-specific analysis remain future work.
+values or class names. When `lint` receives a complete layer directory, it
+indexes the supplied metadata and uses that context for static `require` and
+`inherit` checks. Single-file and standard-input linting remain file-local, and
+dynamic references are skipped.
 
 ## Lossless syntax tree
 
