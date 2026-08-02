@@ -12,6 +12,9 @@ top-level metadata assignments, and file-local linting suitable for CI.
 
 - **Tokenization**: efficiently breaks down BitBake files into tokens (Identifiers, Strings, Keywords, etc.) using `logos`.
 - **Span Reporting**: Reports the exact location (line and column) of each token.
+- **Lossless concrete syntax tree**: Represents every top-level byte as a
+  source-backed node with stable ranges while retaining comments, blank lines,
+  unknown syntax, and embedded bodies verbatim.
 - **Modern metadata syntax**: Recognizes all eight assignment operators, colon
   overrides, key expansion, variable flags, multiline quoted values, and current
   BitBake directives.
@@ -146,6 +149,39 @@ The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. Cross-file inheritance, configuration, suppression, and
 release-specific analysis remain future work.
+
+## Lossless syntax tree
+
+The Rust library exposes `parse` as the shared structural front end for
+formatting and linting. Its `SyntaxTree` borrows the original source and divides
+it into ordered, contiguous `SyntaxNode` ranges. Concatenating `node.text()` for
+every node always reproduces the input byte-for-byte.
+
+Recognized nodes provide structured data and absolute source ranges for
+assignments, directives, shell and Python functions, and top-level Python
+definitions. Blank lines, comments, and unsupported top-level constructs remain
+explicit nodes. Function and Python-definition bodies are deliberately opaque:
+bbtidy finds their safe boundaries but does not interpret or rewrite the
+embedded language.
+
+```rust
+use bbtidy::{SyntaxKind, format_syntax, lint_syntax, parse};
+
+let source = "SUMMARY=\"Example\"\n";
+let tree = parse(source)?;
+
+if let SyntaxKind::Assignment(assignment) = tree.nodes()[0].kind() {
+    assert_eq!(assignment.name(), "SUMMARY");
+}
+
+let formatted = format_syntax(&tree);
+let diagnostics = lint_syntax(&tree);
+# Ok::<(), bbtidy::SyntaxError>(())
+```
+
+`format` and `lint` are convenience entry points that parse source and then
+delegate to `format_syntax` and `lint_syntax`. Callers performing multiple
+operations can parse once and reuse the same tree.
 
 ## Supported syntax
 

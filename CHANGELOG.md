@@ -43,6 +43,9 @@ All notable changes to this project will be documented in this file.
 - Weekly and change-triggered upstream compatibility CI.
 - Support for triple-quoted strings and combined `fakeroot python` modifiers
   when preserving embedded Python functions.
+- A public, lossless top-level concrete syntax tree with contiguous byte ranges
+  and structured assignment, directive, function, and Python-definition nodes.
+- Parse-once `format_syntax` and `lint_syntax` APIs for reusing a syntax tree.
 
 ### Changed
 
@@ -57,6 +60,8 @@ All notable changes to this project will be documented in this file.
   bytes.
 - Directory discovery now skips recipe payload directories and only discovers
   `.conf` files within an identifiable layer configuration tree.
+- Formatting and linting now share the concrete syntax tree as their structural
+  representation; the duplicate lint-side statement scanner has been removed.
 
 ## [0.1.0-alpha.1] - 2026-08-01
 
