@@ -1,9 +1,14 @@
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
 from scripts.check_release_version import pep440_version, release_tag_from_environment
+from scripts.prepare_release_binaries import (
+    SUPPORTED_PLATFORMS,
+    prepare_release_binaries,
+)
 from scripts.smoke_test_package import select_distribution
 
 
@@ -53,6 +58,48 @@ class DistributionSelectionTests(unittest.TestCase):
 
             with self.assertRaises(RuntimeError):
                 select_distribution(directory, "wheel")
+
+
+class ReleaseBinaryTests(unittest.TestCase):
+    def test_extracts_one_binary_for_each_wheel_platform(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            wheels = root / "wheels"
+            output = root / "release-binaries"
+            wheels.mkdir()
+            for platform in SUPPORTED_PLATFORMS:
+                executable = "bbtidy.exe" if platform == "win_amd64" else "bbtidy"
+                wheel = wheels / "bbtidy-1.2.3-py3-none-{}.whl".format(platform)
+                with zipfile.ZipFile(wheel, "w") as archive:
+                    archive.writestr(
+                        "bbtidy-1.2.3.data/scripts/{}".format(executable),
+                        ("binary-" + platform).encode(),
+                    )
+
+            extracted = prepare_release_binaries(wheels, output, "v1.2.3")
+
+            self.assertEqual(len(extracted), len(SUPPORTED_PLATFORMS))
+            self.assertEqual(
+                {path.name for path in extracted},
+                {
+                    "bbtidy-v1.2.3-{}{}".format(
+                        suffix, ".exe" if platform == "win_amd64" else ""
+                    )
+                    for platform, suffix in SUPPORTED_PLATFORMS.items()
+                },
+            )
+
+    def test_rejects_an_incomplete_wheel_platform_set(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            wheels = root / "wheels"
+            wheels.mkdir()
+            wheel = wheels / "bbtidy-1.2.3-py3-none-win_amd64.whl"
+            with zipfile.ZipFile(wheel, "w") as archive:
+                archive.writestr("bbtidy-1.2.3.data/scripts/bbtidy.exe", b"binary")
+
+            with self.assertRaisesRegex(RuntimeError, "missing"):
+                prepare_release_binaries(wheels, root / "release-binaries", "v1.2.3")
 
 
 if __name__ == "__main__":

@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
   repository whitespace, and wheel/source-distribution smoke coverage.
 - A PyPI release-matrix entry for Linux ARMv7 hard-float
   (`manylinux_2_17_armv7l`).
+- GitHub Release assets containing standalone binaries for every Python-wheel
+  platform, extracted from and validated against the release wheel set.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

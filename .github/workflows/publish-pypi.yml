@@ -150,3 +150,37 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+
+  github-release:
+    name: GitHub Release binaries
+    needs: [wheels, sdist]
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download release wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-dist-*
+          path: dist
+          merge-multiple: true
+      - name: Extract standalone binaries
+        run: >-
+          python scripts/prepare_release_binaries.py
+          --wheel-dir dist
+          --output-dir release-binaries
+          --tag "$GITHUB_REF_NAME"
+      - name: Create GitHub release and upload binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release-binaries/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release-binaries/* \
+              --verify-tag \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes
+          fi

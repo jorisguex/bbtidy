@@ -349,6 +349,12 @@ The Python package workflow builds and installs a wheel on every pull request
 and push to `main`. The release workflow can be run manually to inspect all
 platform artifacts without publishing.
 
+Tag releases also create a GitHub Release with standalone `bbtidy` binaries
+for every Python-wheel platform: Linux glibc x86-64, ARM64, and ARMv7;
+Linux musl x86-64 and ARM64; macOS Intel and Apple silicon; and Windows
+x86-64. The release job extracts these binaries from the exact wheel set and
+rejects an incomplete or unexpected platform set before publishing the assets.
+
 To publish a release:
 
 1. Update the version in `Cargo.toml` and finalize the changelog.
