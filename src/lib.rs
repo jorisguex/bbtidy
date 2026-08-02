@@ -262,6 +262,12 @@ enum FunctionQuote {
     Triple(u8),
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ShellHereDoc {
+    delimiter: Vec<u8>,
+    strip_tabs: bool,
+}
+
 fn function_opening_brace(line: &str) -> Option<(usize, ScannerFunctionKind)> {
     let (content, _) = split_line_ending(line);
     let code = &content[..comment_start(content).unwrap_or(content.len())];
@@ -356,6 +362,8 @@ fn find_brace_block_end(
     let mut quote: Option<FunctionQuote> = None;
     let mut escaped = false;
     let mut comment = false;
+    let mut here_documents = Vec::new();
+    let mut arithmetic_depth = 0usize;
     let mut index = opening_brace;
 
     while index < bytes.len() {
@@ -363,6 +371,11 @@ fn find_brace_block_end(
         if comment {
             if byte == b'\n' {
                 comment = false;
+                index += 1;
+                if !here_documents.is_empty() {
+                    index = skip_shell_here_documents(bytes, index, &mut here_documents)?;
+                }
+                continue;
             }
             index += 1;
             continue;
@@ -404,9 +417,40 @@ fn find_brace_block_end(
             continue;
         }
 
+        if matches!(function_kind, ScannerFunctionKind::Shell) && bytes[index..].starts_with(b"((")
+        {
+            arithmetic_depth += 1;
+            index += 2;
+            continue;
+        }
+
+        if matches!(function_kind, ScannerFunctionKind::Shell)
+            && arithmetic_depth > 0
+            && bytes[index..].starts_with(b"))")
+        {
+            arithmetic_depth = arithmetic_depth.checked_sub(1)?;
+            index += 2;
+            continue;
+        }
+
+        if matches!(function_kind, ScannerFunctionKind::Shell)
+            && arithmetic_depth == 0
+            && bytes[index..].starts_with(b"<<")
+            && let Some((here_document, end)) = parse_shell_here_document(bytes, index)
+        {
+            here_documents.push(here_document);
+            index = end;
+            continue;
+        }
+
         match byte {
             b'\'' | b'"' => quote = Some(FunctionQuote::Single(byte)),
             b'#' if is_comment_start_in_function(bytes, index, function_kind) => comment = true,
+            b'\n' if !here_documents.is_empty() => {
+                index += 1;
+                index = skip_shell_here_documents(bytes, index, &mut here_documents)?;
+                continue;
+            }
             b'{' => depth += 1,
             b'}' => {
                 depth = depth.checked_sub(1)?;
@@ -420,6 +464,127 @@ fn find_brace_block_end(
     }
 
     None
+}
+
+fn parse_shell_here_document(bytes: &[u8], start: usize) -> Option<(ShellHereDoc, usize)> {
+    if !bytes[start..].starts_with(b"<<") || bytes.get(start + 2) == Some(&b'<') {
+        return None;
+    }
+
+    let mut index = start + 2;
+    let strip_tabs = bytes.get(index) == Some(&b'-');
+    if strip_tabs {
+        index += 1;
+    }
+
+    while matches!(bytes.get(index), Some(b' ' | b'\t')) {
+        index += 1;
+    }
+
+    let mut delimiter = Vec::new();
+    match bytes.get(index).copied()? {
+        b'\'' | b'"' => {
+            let quote = bytes[index];
+            index += 1;
+            while index < bytes.len() && bytes[index] != quote {
+                delimiter.push(bytes[index]);
+                index += 1;
+            }
+            if bytes.get(index) != Some(&quote) {
+                return None;
+            }
+            index += 1;
+        }
+        b'\\' => {
+            index += 1;
+            delimiter.push(bytes.get(index).copied()?);
+            index += 1;
+            while let Some(&byte) = bytes.get(index) {
+                if byte.is_ascii_whitespace() || is_shell_operator(byte) {
+                    break;
+                }
+                if byte == b'\\' {
+                    index += 1;
+                    delimiter.push(bytes.get(index).copied()?);
+                } else {
+                    delimiter.push(byte);
+                }
+                index += 1;
+            }
+        }
+        _ => {
+            while let Some(&byte) = bytes.get(index) {
+                if byte.is_ascii_whitespace() || is_shell_operator(byte) {
+                    break;
+                }
+                if byte == b'\\' {
+                    index += 1;
+                    delimiter.push(bytes.get(index).copied()?);
+                } else {
+                    delimiter.push(byte);
+                }
+                index += 1;
+            }
+        }
+    }
+
+    if delimiter.is_empty() {
+        return None;
+    }
+
+    Some((
+        ShellHereDoc {
+            delimiter,
+            strip_tabs,
+        },
+        index,
+    ))
+}
+
+fn is_shell_operator(byte: u8) -> bool {
+    matches!(byte, b';' | b'|' | b'&' | b'<' | b'>' | b'(' | b')')
+}
+
+fn skip_shell_here_documents(
+    bytes: &[u8],
+    mut offset: usize,
+    here_documents: &mut Vec<ShellHereDoc>,
+) -> Option<usize> {
+    while !here_documents.is_empty() {
+        let here_document = here_documents.remove(0);
+        loop {
+            let line_end = bytes[offset..]
+                .iter()
+                .position(|&byte| byte == b'\n')
+                .map(|relative| offset + relative)
+                .unwrap_or(bytes.len());
+            let mut line = &bytes[offset..line_end];
+            if line.ends_with(b"\r") {
+                line = &line[..line.len() - 1];
+            }
+            if here_document.strip_tabs {
+                while line.first() == Some(&b'\t') {
+                    line = &line[1..];
+                }
+            }
+
+            if line == here_document.delimiter.as_slice() {
+                offset = if line_end < bytes.len() {
+                    line_end + 1
+                } else {
+                    line_end
+                };
+                break;
+            }
+
+            if line_end == bytes.len() {
+                return None;
+            }
+            offset = line_end + 1;
+        }
+    }
+
+    Some(offset)
 }
 
 fn is_comment_start_in_function(

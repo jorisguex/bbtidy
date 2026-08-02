@@ -2,12 +2,13 @@ use bbtidy::{LintSeverity, lint, lint_rules};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const CORPUS_FILES: [&str; 5] = [
+const CORPUS_FILES: [&str; 6] = [
     "conf/layer.conf",
     "classes/example.bbclass",
     "recipes-example/example/example.inc",
     "recipes-example/example/example_1.0.bb",
     "recipes-example/example/example_%.bbappend",
+    "recipes-example/example/compatibility.bb",
 ];
 
 #[test]

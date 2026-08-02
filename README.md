@@ -107,9 +107,11 @@ Formatting is intentionally limited while BitBake syntax support is being
 developed. Assignment-operator spacing is normalized for both single-line and
 continued assignments. Directive spacing is normalized only between the
 keyword and its arguments. Continuation tails, argument contents, comments,
-and embedded shell and Python code are kept byte-for-byte unchanged. Runs of
-top-level blank lines are reduced to one without changing blank lines inside
-embedded functions.
+and embedded shell and Python code are kept byte-for-byte unchanged. The
+opaque shell boundary scanner understands quoted and tab-stripping
+here-documents, multiple pending here-documents, shell arithmetic, and braces
+inside quoted strings or comments. Runs of top-level blank lines are reduced to
+one without changing blank lines inside embedded functions.
 
 Directory inputs are traversed recursively. `.bb`, `.bbappend`, `.bbclass`, and
 `.inc` metadata files are discovered automatically, except beneath recipe

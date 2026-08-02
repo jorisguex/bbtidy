@@ -5,12 +5,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const FIXTURES: [&str; 5] = [
+const FIXTURES: [&str; 6] = [
     "conf/layer.conf",
     "classes/example.bbclass",
     "recipes-example/example/example.inc",
     "recipes-example/example/example_1.0.bb",
     "recipes-example/example/example_%.bbappend",
+    "recipes-example/example/compatibility.bb",
 ];
 
 #[test]

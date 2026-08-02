@@ -13,6 +13,14 @@ All notable changes to this project will be documented in this file.
 - Completed continued assignments with an unclosed quote now fail structural
   validation before any file can be rewritten.
 
+### Added
+
+- Shell-function boundary detection for quoted, tab-stripping, and multiple
+  pending here-documents, including protection against braces in their bodies.
+- Compatibility fixtures covering shell arithmetic, function modifiers,
+  anonymous Python functions, multiline directives, unusual quoting, and
+  legacy underscore overrides.
+
 ## [0.1.0-alpha.2] - 2026-08-02
 
 ### Added

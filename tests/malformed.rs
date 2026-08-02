@@ -10,7 +10,7 @@ struct MalformedCase {
     message: &'static str,
 }
 
-const CASES: [MalformedCase; 4] = [
+const CASES: [MalformedCase; 5] = [
     MalformedCase {
         file_name: "unclosed-function.bb",
         line: 2,
@@ -30,6 +30,11 @@ const CASES: [MalformedCase; 4] = [
         file_name: "unclosed-continued-quote.bb",
         line: 1,
         message: "top-level assignment contains an unclosed quote",
+    },
+    MalformedCase {
+        file_name: "unterminated-heredoc.bb",
+        line: 1,
+        message: "function body has no closing brace",
     },
 ];
 
