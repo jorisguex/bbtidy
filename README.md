@@ -53,6 +53,7 @@ Rust-based Python tools such as Ruff.
 Release wheels target:
 
 - Linux x86-64 and ARM64 using glibc (`manylinux_2_17`)
+- Linux ARMv7 hard-float using glibc (`manylinux_2_17_armv7l`)
 - Linux x86-64 and ARM64 using musl (`musllinux_1_2`)
 - macOS on Intel and Apple silicon
 - Windows on x86-64

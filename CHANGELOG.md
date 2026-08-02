@@ -28,6 +28,8 @@ All notable changes to this project will be documented in this file.
   covering indexing, formatting, and batch semantic linting at layer scale.
 - CI quality gates for formatting, clippy, all-target tests, benchmark health,
   repository whitespace, and wheel/source-distribution smoke coverage.
+- A PyPI release-matrix entry for Linux ARMv7 hard-float
+  (`manylinux_2_17_armv7l`).
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

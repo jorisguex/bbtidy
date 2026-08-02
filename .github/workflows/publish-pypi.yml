@@ -47,6 +47,11 @@ jobs:
             target: aarch64
             manylinux: "2_17"
             smoke_test: false
+          - name: manylinux-armv7
+            runner: ubuntu-24.04
+            target: armv7-unknown-linux-gnueabihf
+            manylinux: "2_17"
+            smoke_test: false
           - name: musllinux-x86_64
             runner: ubuntu-24.04
             target: x86_64
