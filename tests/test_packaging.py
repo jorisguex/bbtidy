@@ -1,3 +1,4 @@
+import hashlib
 import tempfile
 import unittest
 import zipfile
@@ -5,6 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.check_release_version import pep440_version, release_tag_from_environment
+from scripts.create_release_checksums import create_checksums
 from scripts.prepare_release_binaries import (
     SUPPORTED_PLATFORMS,
     prepare_release_binaries,
@@ -102,6 +104,33 @@ class ReleaseBinaryTests(unittest.TestCase):
                 prepare_release_binaries(wheels, root / "release-binaries", "v1.2.3")
 
 
+class ReleaseChecksumTests(unittest.TestCase):
+    def test_creates_sha256sum_compatible_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / "bbtidy-v1.2.3-linux-x86_64"
+            second = root / "bbtidy-v1.2.3-windows-x86_64.exe"
+            first.write_bytes(b"linux binary")
+            second.write_bytes(b"windows binary")
+            manifest = root / "SHA256SUMS"
+
+            create_checksums(root, manifest)
+
+            expected = "".join(
+                "{}  {}\n".format(
+                    hashlib.sha256(path.read_bytes()).hexdigest(), path.name
+                )
+                for path in (first, second)
+            )
+            self.assertEqual(manifest.read_text(encoding="utf-8"), expected)
+
+    def test_rejects_a_directory_without_release_binaries(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with self.assertRaisesRegex(RuntimeError, "no release binaries"):
+                create_checksums(root, root / "SHA256SUMS")
+
+
 class ReleaseWorkflowTests(unittest.TestCase):
     def test_crates_publication_is_tag_gated_with_manual_validation(self):
         workflow = (
@@ -119,6 +148,19 @@ class ReleaseWorkflowTests(unittest.TestCase):
         )
         self.assertIn("needs: package", workflow)
         self.assertIn("cargo publish --locked --dry-run", workflow)
+
+    def test_github_release_verifies_linux_binaries_and_uploads_checksums(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "publish-pypi.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("verify-release-binaries:", workflow)
+        self.assertIn("docker/setup-qemu-action@", workflow)
+        self.assertIn("SHA256SUMS", workflow)
+        self.assertIn("needs: [wheels, sdist, verify-release-binaries]", workflow)
 
 
 if __name__ == "__main__":

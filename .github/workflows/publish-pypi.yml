@@ -104,6 +104,54 @@ jobs:
           path: dist/*.whl
           if-no-files-found: error
 
+  verify-release-binaries:
+    name: Verify Linux release binaries
+    needs: wheels
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Download release wheels
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: python-dist-*
+          path: dist
+          merge-multiple: true
+      - name: Extract standalone binaries
+        run: >-
+          python scripts/prepare_release_binaries.py
+          --wheel-dir dist
+          --output-dir release-binaries
+          --tag "$GITHUB_REF_NAME"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - name: Smoke-test Linux binaries
+        run: |
+          set -euo pipefail
+          binary_dir="$GITHUB_WORKSPACE/release-binaries"
+
+          smoke_test() {
+            local platform="$1"
+            local image="$2"
+            local binary="$3"
+            echo "Testing ${binary} on ${platform}"
+            timeout 60s docker run --rm --network none \
+              --platform "$platform" \
+              --volume "$binary_dir:/release:ro" \
+              "$image" \
+              "/release/${binary}" --version
+          }
+
+          smoke_test "linux/amd64" "debian:bookworm-slim" \
+            "bbtidy-${GITHUB_REF_NAME}-linux-x86_64"
+          smoke_test "linux/arm64" "debian:bookworm-slim" \
+            "bbtidy-${GITHUB_REF_NAME}-linux-aarch64"
+          smoke_test "linux/arm/v7" "debian:bookworm-slim" \
+            "bbtidy-${GITHUB_REF_NAME}-linux-armv7"
+          smoke_test "linux/amd64" "alpine:3.21" \
+            "bbtidy-${GITHUB_REF_NAME}-linux-musl-x86_64"
+          smoke_test "linux/arm64" "alpine:3.21" \
+            "bbtidy-${GITHUB_REF_NAME}-linux-musl-aarch64"
+
   sdist:
     name: Source distribution
     needs: validate
@@ -131,7 +179,7 @@ jobs:
   publish:
     name: Publish distributions
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
-    needs: [wheels, sdist]
+    needs: [wheels, sdist, verify-release-binaries]
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -153,7 +201,7 @@ jobs:
 
   github-release:
     name: GitHub Release binaries
-    needs: [wheels, sdist]
+    needs: [wheels, sdist, verify-release-binaries]
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
     runs-on: ubuntu-24.04
     permissions:
@@ -172,14 +220,21 @@ jobs:
           --wheel-dir dist
           --output-dir release-binaries
           --tag "$GITHUB_REF_NAME"
+      - name: Create SHA-256 manifest
+        run: >-
+          python scripts/create_release_checksums.py
+          --binary-dir release-binaries
+          --output SHA256SUMS
+      - name: Verify SHA-256 manifest
+        run: (cd release-binaries && sha256sum -c ../SHA256SUMS)
       - name: Create GitHub release and upload binaries
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" release-binaries/* --clobber
+            gh release upload "$GITHUB_REF_NAME" release-binaries/* SHA256SUMS --clobber
           else
-            gh release create "$GITHUB_REF_NAME" release-binaries/* \
+            gh release create "$GITHUB_REF_NAME" release-binaries/* SHA256SUMS \
               --verify-tag \
               --title "$GITHUB_REF_NAME" \
               --generate-notes

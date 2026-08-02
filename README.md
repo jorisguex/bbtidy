@@ -355,6 +355,9 @@ for every Python-wheel platform: Linux glibc x86-64, ARM64, and ARMv7;
 Linux musl x86-64 and ARM64; macOS Intel and Apple silicon; and Windows
 x86-64. The release job extracts these binaries from the exact wheel set and
 rejects an incomplete or unexpected platform set before publishing the assets.
+Linux binaries are smoke-tested in matching glibc or musl containers under
+native execution or QEMU, and each standalone binary is accompanied by a
+`SHA256SUMS` entry.
 
 To publish a release:
 

@@ -35,6 +35,8 @@ All notable changes to this project will be documented in this file.
 - A tag-gated crates.io Trusted Publishing workflow with validation-only manual
   runs.
 - Immutable commit pins for the release-critical GitHub Actions.
+- Linux release binaries are smoke-tested under matching glibc and musl
+  containers, and GitHub Releases include a `SHA256SUMS` manifest.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 
