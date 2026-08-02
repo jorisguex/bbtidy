@@ -2,8 +2,13 @@ use logos::Logos;
 use std::fmt;
 
 mod lint;
+mod syntax;
 
 pub use lint::{LintDiagnostic, LintRule, LintSeverity, lint, lint_rules};
+pub use syntax::{
+    AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
+    PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
+};
 
 #[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Token {
@@ -306,7 +311,7 @@ fn append_normalized_blank_line(output: &mut String, line: &str) {
 }
 
 #[derive(Clone, Copy)]
-enum FunctionKind {
+enum ScannerFunctionKind {
     Shell,
     Python,
 }
@@ -317,7 +322,7 @@ enum FunctionQuote {
     Triple(u8),
 }
 
-fn function_opening_brace(line: &str) -> Option<(usize, FunctionKind)> {
+fn function_opening_brace(line: &str) -> Option<(usize, ScannerFunctionKind)> {
     let (content, _) = split_line_ending(line);
     let code = &content[..comment_start(content).unwrap_or(content.len())];
     let code = code.trim_end();
@@ -331,11 +336,11 @@ fn function_opening_brace(line: &str) -> Option<(usize, FunctionKind)> {
     }
 
     let declaration = closing_paren[..opening_paren].trim();
-    let mut kind = FunctionKind::Shell;
+    let mut kind = ScannerFunctionKind::Shell;
     let mut name = declaration;
     loop {
         if let Some(rest) = strip_keyword(name, "python") {
-            kind = FunctionKind::Python;
+            kind = ScannerFunctionKind::Python;
             name = rest;
         } else if let Some(rest) = strip_keyword(name, "fakeroot") {
             name = rest;
@@ -344,7 +349,7 @@ fn function_opening_brace(line: &str) -> Option<(usize, FunctionKind)> {
         }
     }
 
-    if name.is_empty() && !matches!(kind, FunctionKind::Python) {
+    if name.is_empty() && !matches!(kind, ScannerFunctionKind::Python) {
         return None;
     }
     if !name.is_empty() && !is_function_name(name) {
@@ -404,7 +409,7 @@ fn comment_start(text: &str) -> Option<usize> {
 fn find_brace_block_end(
     text: &str,
     opening_brace: usize,
-    function_kind: FunctionKind,
+    function_kind: ScannerFunctionKind,
 ) -> Option<usize> {
     let bytes = text.as_bytes();
     let mut depth = 0usize;
@@ -450,7 +455,7 @@ fn find_brace_block_end(
             continue;
         }
 
-        if matches!(function_kind, FunctionKind::Python)
+        if matches!(function_kind, ScannerFunctionKind::Python)
             && matches!(byte, b'\'' | b'"')
             && bytes[index..].starts_with(&[byte, byte, byte])
         {
@@ -477,8 +482,12 @@ fn find_brace_block_end(
     None
 }
 
-fn is_comment_start_in_function(bytes: &[u8], index: usize, function_kind: FunctionKind) -> bool {
-    if matches!(function_kind, FunctionKind::Python) {
+fn is_comment_start_in_function(
+    bytes: &[u8],
+    index: usize,
+    function_kind: ScannerFunctionKind,
+) -> bool {
+    if matches!(function_kind, ScannerFunctionKind::Python) {
         return true;
     }
 
