@@ -252,7 +252,11 @@ reindent continuation lines, or format embedded shell or Python code.
 Run the test suite with:
 
 ```bash
-cargo test
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo test --all-targets --locked
+git diff --check
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
 Measure the main layer-analysis paths on a repeatable synthetic 1,000-recipe
@@ -265,6 +269,10 @@ cargo bench --locked --bench layer_analysis
 The benchmark reports workspace index construction, single-file formatting,
 and batch workspace-aware linting. It is intended for comparing changes across
 the same machine rather than enforcing a wall-clock threshold in CI.
+
+The package workflow runs these quality checks before building artifacts and
+smoke-tests both the wheel and source distribution. Tag-release validation uses
+the same checks before enabling the PyPI publishing jobs.
 
 Build and verify the Python wheel and source distribution with:
 

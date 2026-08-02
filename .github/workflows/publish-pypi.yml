@@ -18,8 +18,16 @@ jobs:
         run: python scripts/check_release_version.py
       - name: Test packaging helpers
         run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check clippy
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
+      - name: Check repository diff
+        run: git diff --check
       - name: Run Rust tests
-        run: cargo test --locked --all-targets
+        run: cargo test --all-targets --locked
+      - name: Run layer-analysis benchmark
+        run: cargo bench --locked --bench layer_analysis
 
   wheels:
     name: Wheel (${{ matrix.platform.name }})

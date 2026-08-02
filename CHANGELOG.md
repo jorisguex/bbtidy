@@ -26,6 +26,8 @@ All notable changes to this project will be documented in this file.
   including static unresolved `require` and `inherit` diagnostics.
 - In-memory workspace lookup fast paths and a dependency-free benchmark harness
   covering indexing, formatting, and batch semantic linting at layer scale.
+- CI quality gates for formatting, clippy, all-target tests, benchmark health,
+  repository whitespace, and wheel/source-distribution smoke coverage.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 
