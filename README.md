@@ -18,9 +18,9 @@ top-level metadata assignments, and file-local linting suitable for CI.
 - **Modern metadata syntax**: Recognizes all eight assignment operators, colon
   overrides, key expansion, variable flags, multiline quoted values, and current
   BitBake directives.
-- **Safe formatting boundaries**: Formats complete, single-line top-level
-  assignments while preserving shell functions, Python functions, continued
-  statements, and unsupported syntax.
+- **Safe formatting boundaries**: Normalizes top-level assignments and
+  directives while preserving continuation tails, comments, shell functions,
+  Python functions, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
 - **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`, and
@@ -104,7 +104,12 @@ recipes-example/example.bb:12:11: warning[BBT004]: SRCREV uses ${AUTOREV}; pin a
 ```
 
 Formatting is intentionally limited while BitBake syntax support is being
-developed. Embedded shell and Python code is kept byte-for-byte unchanged.
+developed. Assignment-operator spacing is normalized for both single-line and
+continued assignments. Directive spacing is normalized only between the
+keyword and its arguments. Continuation tails, argument contents, comments,
+and embedded shell and Python code are kept byte-for-byte unchanged. Runs of
+top-level blank lines are reduced to one without changing blank lines inside
+embedded functions.
 
 Directory inputs are traversed recursively. `.bb`, `.bbappend`, `.bbclass`, and
 `.inc` metadata files are discovered automatically, except beneath recipe
@@ -198,8 +203,8 @@ The `0.1.0-alpha.2` lexer recognizes:
 
 Legacy underscore overrides remain lexically accepted as identifier and
 variable-reference components. They are not interpreted as override operations.
-The formatter remains deliberately conservative and only changes complete,
-single-line top-level assignments.
+The formatter remains deliberately conservative: it does not wrap values,
+reindent continuation lines, or format embedded shell or Python code.
 
 ## Development
 

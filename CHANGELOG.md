@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- The formatter now normalizes assignment-operator spacing on continued
+  assignments while preserving every byte of the continuation tail.
+- Top-level directives now use one separator between the keyword and their
+  arguments without rewriting argument or comment contents.
+- Completed continued assignments with an unclosed quote now fail structural
+  validation before any file can be rewritten.
+
 ## [0.1.0-alpha.2] - 2026-08-02
 
 ### Added
