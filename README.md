@@ -185,7 +185,7 @@ operations can parse once and reuse the same tree.
 
 ## Supported syntax
 
-The `0.1.0-alpha.1` lexer recognizes:
+The `0.1.0-alpha.2` lexer recognizes:
 
 - Assignments using `=`, `:=`, `?=`, `??=`, `+=`, `=+`, `.=` and `=.`
 - Literal and dynamic overrides such as `RDEPENDS:${PN}:class-native`
@@ -219,7 +219,7 @@ python scripts/smoke_test_package.py --kind sdist dist
 
 `pip install .` uses the same PEP 517 configuration for a local source build.
 The Cargo version is the release source of truth; maturin converts prereleases
-to PEP 440 automatically, for example `0.1.0-alpha.1` becomes `0.1.0a1`.
+to PEP 440 automatically, for example `0.1.0-alpha.2` becomes `0.1.0a2`.
 
 The integration suite includes a representative fixture layer containing
 `.bb`, `.bbappend`, `.bbclass`, `.inc`, and `.conf` files. It verifies golden
@@ -287,7 +287,7 @@ To publish a release:
 
 1. Update the version in `Cargo.toml` and finalize the changelog.
 2. Create a tag that exactly matches the Cargo version, such as
-   `v0.1.0-alpha.2`.
+   `v0.1.0-alpha.3`.
 3. Push the tag. The release workflow builds and smoke-tests all wheels and the
    source distribution, then publishes them through PyPI Trusted Publishing.
 

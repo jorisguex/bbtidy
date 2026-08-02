@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-08-02
+
 ### Added
 
 - A representative, interconnected fixture layer covering `.bb`, `.bbappend`,
