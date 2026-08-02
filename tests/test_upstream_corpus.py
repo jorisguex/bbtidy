@@ -7,6 +7,7 @@ from scripts.check_upstream_corpus import (
     discover_metadata_files,
     load_manifest,
     opaque_regions,
+    workflow_command_value,
 )
 
 
@@ -105,6 +106,14 @@ class OpaqueRegionTests(unittest.TestCase):
                 ),
                 "def helper(d):\n    return d.getVar('VALUE')\n\n",
             ],
+        )
+
+
+class WorkflowCommandTests(unittest.TestCase):
+    def test_escapes_annotation_control_characters(self):
+        self.assertEqual(
+            workflow_command_value("100%\r\nfailed"),
+            "100%25%0D%0Afailed",
         )
 
 

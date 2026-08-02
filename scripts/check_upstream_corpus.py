@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -21,6 +22,21 @@ REVISION = re.compile(r"^[0-9a-f]{40}$")
 
 class CompatibilityError(RuntimeError):
     """A reproducible upstream compatibility check failed."""
+
+
+def workflow_command_value(value):
+    return str(value).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def report_error(error):
+    message = "error: {}".format(error)
+    print(message, file=sys.stderr)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        print(
+            "::error title=Upstream compatibility failed::{}".format(
+                workflow_command_value(message)
+            )
+        )
 
 
 def load_manifest(path):
@@ -427,7 +443,7 @@ def main():
             with tempfile.TemporaryDirectory(prefix="bbtidy-upstream-") as temporary:
                 check_compatibility(arguments, Path(temporary))
     except (CompatibilityError, OSError, UnicodeError) as error:
-        print("error: {}".format(error), file=sys.stderr)
+        report_error(error)
         return 1
     return 0
 
