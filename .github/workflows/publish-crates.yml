@@ -1,0 +1,38 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish crate
+    runs-on: ubuntu-24.04
+    environment:
+      name: crates-io-release
+      url: https://crates.io/crates/bbtidy
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Match tag and package version
+        run: python scripts/check_release_version.py
+
+      - name: Validate package
+        run: cargo publish --locked --dry-run
+
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish crate
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
