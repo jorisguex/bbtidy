@@ -1,6 +1,6 @@
 use crate::{
     AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceCandidate,
-    WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
+    WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -331,7 +331,11 @@ fn check_workspace_references(
         match directive.keyword() {
             DirectiveKeyword::Require => {
                 for (relative_offset, target) in static_words(arguments) {
-                    let candidates = workspace.file_candidates(path, target);
+                    let candidates = workspace.file_candidates_for(
+                        path,
+                        target,
+                        WorkspaceFileDirective::Require,
+                    );
                     if candidates.is_empty() {
                         let rule = &LINT_RULES[5];
                         let offset = directive.arguments_range().start() + relative_offset;
@@ -385,16 +389,33 @@ fn check_workspace_references(
                     }
                 }
             }
+            DirectiveKeyword::Include | DirectiveKeyword::IncludeAll => {
+                // BitBake treats both directives as optional: a missing
+                // include is not an error, and include_all intentionally
+                // expands to every match. Keep them out of unresolved and
+                // ambiguity diagnostics while retaining their semantics in
+                // the public workspace-resolution API.
+                let directive = if matches!(directive.keyword(), DirectiveKeyword::Include) {
+                    WorkspaceFileDirective::Include
+                } else {
+                    WorkspaceFileDirective::IncludeAll
+                };
+                for (_, target) in static_words(arguments) {
+                    let _ = workspace.file_candidates_for(path, target, directive);
+                }
+            }
             _ => {}
         }
     }
 }
 
 fn ambiguity_message(candidates: &[WorkspaceCandidate<'_>]) -> Option<String> {
-    let priority = candidates.first()?.priority();
+    let first = candidates.first()?;
+    let priority = first.priority();
+    let scope = first.scope();
     let highest_priority = candidates
         .iter()
-        .filter(|candidate| candidate.priority() == priority)
+        .filter(|candidate| candidate.priority() == priority && candidate.scope() == scope)
         .collect::<Vec<_>>();
     if highest_priority.len() < 2 {
         return None;

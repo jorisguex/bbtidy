@@ -196,11 +196,19 @@ The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. When `lint` receives a complete layer directory, it
 indexes the supplied metadata and uses that context for static `require` and
-`inherit` checks. Layer priorities are read from `BBFILE_PRIORITY_*`
-assignments in `conf/layer.conf`; local files take precedence, followed by
-descending layer priority. Same-priority matches produce the ambiguity rules
-above instead of being silently resolved by path order. Single-file and
-standard-input linting remain file-local, and dynamic references are skipped.
+`inherit` checks. The workspace model reads `BBFILE_COLLECTIONS`,
+`BBFILE_PATTERN_*`, `BBFILE_PRIORITY_*`, and simple static `BBPATH` entries
+from each supplied `conf/layer.conf`. A relative `include` or `require` first
+checks the directory containing the current file and then searches `BBPATH`;
+`include_all` searches only `BBPATH` and retains every match. Inherited classes
+are searched in `classes-recipe` directories before ordinary `classes`
+directories. `include` and `include_all` are optional directives, so missing
+matches do not produce unresolved-reference diagnostics; `require` remains
+strict. Same-priority matches in the winning search scope produce the
+ambiguity rules above instead of being silently resolved. The public
+`WorkspaceCandidate` API exposes the selected layer, collection, priority, and
+search scope for resolution explanations. Single-file and standard-input
+linting remain file-local, and dynamic references are skipped.
 
 ## Lossless syntax tree
 

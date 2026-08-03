@@ -39,6 +39,8 @@ All notable changes to this project will be documented in this file.
   containers, and GitHub Releases include a `SHA256SUMS` manifest.
 - Workspace-aware linting now respects `BBFILE_PRIORITY_*` and reports
   same-priority `require` and `inherit` ambiguities.
+- Workspace resolution now models static `BBPATH`, layer collections and
+  patterns, BitBake class search scopes, and `include_all` multi-match lookup.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

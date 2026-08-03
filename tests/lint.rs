@@ -72,11 +72,11 @@ fn workspace_lint_reports_same_priority_ambiguities() {
     let consumer_conf = consumer.write("conf/layer.conf", "BBFILE_PRIORITY_consumer = \"1\"\n");
     let first_class = first.write("classes/base.bbclass", "BASE = \"first\"\n");
     let second_class = second.write("classes/base.bbclass", "BASE = \"second\"\n");
-    let first_include = first.write("recipes-example/common.inc", "COMMON = \"first\"\n");
-    let second_include = second.write("recipes-example/common.inc", "COMMON = \"second\"\n");
+    let first_include = first.write("common.inc", "COMMON = \"first\"\n");
+    let second_include = second.write("common.inc", "COMMON = \"second\"\n");
     let recipe = consumer.write(
         "recipes-example/example.bb",
-        "require common.inc\ninherit base\n",
+        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\n",
     );
     let index = WorkspaceIndex::from_paths([
         first_conf,
@@ -91,7 +91,7 @@ fn workspace_lint_reports_same_priority_ambiguities() {
     .unwrap();
 
     let diagnostics = lint_with_workspace(
-        "require common.inc\ninherit base\n",
+        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\n",
         &recipe,
         &index,
         &LintOptions::default(),

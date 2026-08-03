@@ -80,7 +80,13 @@ impl Fixture {
         paths.push(write(
             &root,
             "conf/layer.conf",
-            "BBPATH .= \":${LAYERDIR}\"\n",
+            concat!(
+                "BBFILE_COLLECTIONS += \"benchmark\"\n",
+                "BBFILE_PATTERN_benchmark = \"^${LAYERDIR}/\"\n",
+                "BBFILE_PRIORITY_benchmark = \"5\"\n",
+                "BBPATH .= \":${LAYERDIR}\"\n",
+                "BBPATH .= \":${LAYERDIR}/recipes-example\"\n",
+            ),
         ));
         paths.push(write(&root, "classes/base.bbclass", "BASE = \"1\"\n"));
         paths.push(write(

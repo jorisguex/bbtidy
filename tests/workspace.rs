@@ -1,4 +1,4 @@
-use bbtidy::WorkspaceIndex;
+use bbtidy::{WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -48,8 +48,8 @@ fn resolves_classes_by_layer_priority_and_retains_candidates() {
     let high_conf = high.write("conf/layer.conf", "BBFILE_PRIORITY_high = \"10\"\n");
     let low_class = low.write("classes/base.bbclass", "BASE = \"low\"\n");
     let high_class = high.write("classes/base.bbclass", "BASE = \"high\"\n");
-    let low_include = low.write("recipes-example/common.inc", "COMMON = \"low\"\n");
-    let high_include = high.write("recipes-example/common.inc", "COMMON = \"high\"\n");
+    let low_include = low.write("common.inc", "COMMON = \"low\"\n");
+    let high_include = high.write("common.inc", "COMMON = \"high\"\n");
     let consumer = TemporaryLayer::new("workspace-consumer");
     let consumer_conf = consumer.write("conf/layer.conf", "BBFILE_PRIORITY_consumer = \"1\"\n");
     let consumer_recipe = consumer.write("recipes-example/example.bb", "inherit base\n");
@@ -81,6 +81,112 @@ fn resolves_classes_by_layer_priority_and_retains_candidates() {
             .map(|candidate| (candidate.path(), candidate.priority()))
             .collect::<Vec<_>>(),
         vec![(canonical_high.as_path(), 10), (canonical_low.as_path(), 5),]
+    );
+}
+
+#[test]
+fn follows_bbpath_collection_metadata_and_include_modes() {
+    let low = TemporaryLayer::new("workspace-bbpath-low");
+    let high = TemporaryLayer::new("workspace-bbpath-high");
+    let consumer = TemporaryLayer::new("workspace-bbpath-consumer");
+    let low_conf = low.write(
+        "conf/layer.conf",
+        concat!(
+            "BBFILE_COLLECTIONS += \"low\"\n",
+            "BBFILE_PATTERN_low = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_low = \"5\"\n",
+            "BBPATH .= \":${LAYERDIR}\"\n",
+        ),
+    );
+    let high_conf = high.write(
+        "conf/layer.conf",
+        concat!(
+            "BBFILE_COLLECTIONS += \"high\"\n",
+            "BBFILE_PATTERN_high = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_high = \"10\"\n",
+            "BBPATH .= \":${LAYERDIR}\"\n",
+        ),
+    );
+    let consumer_conf = consumer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBFILE_COLLECTIONS += \"consumer\"\n",
+            "BBFILE_PATTERN_consumer = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_consumer = \"1\"\n",
+            "BBPATH .= \":${LAYERDIR}\"\n",
+        ),
+    );
+    let low_include = low.write("shared.inc", "ORIGIN = \"low\"\n");
+    let high_include = high.write("shared.inc", "ORIGIN = \"high\"\n");
+    let local_include = consumer.write("recipes-example/local.inc", "ORIGIN = \"local\"\n");
+    let recipe = consumer.write("recipes-example/example.bb", "require shared.inc\n");
+
+    let index = WorkspaceIndex::from_paths([
+        low_conf,
+        high_conf,
+        consumer_conf,
+        low_include,
+        high_include.clone(),
+        local_include.clone(),
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let require_candidates =
+        index.file_candidates_for(&recipe, "shared.inc", WorkspaceFileDirective::Require);
+    assert_eq!(require_candidates.len(), 2);
+    assert_eq!(
+        require_candidates[0].path(),
+        fs::canonicalize(high_include).unwrap()
+    );
+    assert_eq!(require_candidates[0].collection(), Some("high"));
+    assert_eq!(require_candidates[0].scope(), WorkspaceSearchScope::Bbpath);
+    assert_eq!(require_candidates[1].priority(), 5);
+
+    let include_all = index.include_all_candidates(&recipe, "shared.inc");
+    assert_eq!(include_all.len(), 2);
+    assert!(
+        include_all
+            .iter()
+            .all(|candidate| candidate.scope() == WorkspaceSearchScope::Bbpath)
+    );
+
+    let local_candidates =
+        index.file_candidates_for(&recipe, "local.inc", WorkspaceFileDirective::Include);
+    assert_eq!(local_candidates.len(), 1);
+    assert_eq!(
+        local_candidates[0].path(),
+        fs::canonicalize(local_include).unwrap()
+    );
+    assert_eq!(
+        local_candidates[0].scope(),
+        WorkspaceSearchScope::CurrentFile
+    );
+
+    let include_all_local = index.include_all_candidates(&recipe, "local.inc");
+    assert!(include_all_local.is_empty());
+}
+
+#[test]
+fn class_search_prefers_classes_recipe_before_classes() {
+    let recipe_layer = TemporaryLayer::new("workspace-class-scope-recipe");
+    let global_layer = TemporaryLayer::new("workspace-class-scope-global");
+    let recipe_conf = recipe_layer.write("conf/layer.conf", "BBFILE_PRIORITY_recipe = \"5\"\n");
+    let global_conf = global_layer.write("conf/layer.conf", "BBFILE_PRIORITY_global = \"10\"\n");
+    let recipe_class = recipe_layer.write("classes-recipe/base.bbclass", "ORIGIN = \"recipe\"\n");
+    let global_class = global_layer.write("classes/base.bbclass", "ORIGIN = \"global\"\n");
+
+    let index =
+        WorkspaceIndex::from_paths([recipe_conf, global_conf, recipe_class.clone(), global_class])
+            .unwrap();
+
+    assert_eq!(
+        index.resolve_class("base"),
+        Some(fs::canonicalize(recipe_class).unwrap().as_path())
+    );
+    assert_eq!(
+        index.class_candidates("base")[0].scope(),
+        WorkspaceSearchScope::ClassesRecipe
     );
 }
 

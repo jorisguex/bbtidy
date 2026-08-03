@@ -6,11 +6,38 @@ use std::path::{Path, PathBuf};
 
 const DEFAULT_LAYER_PRIORITY: i32 = 0;
 
-/// A candidate returned by priority-aware workspace resolution.
+/// Describes the BitBake search scope that produced a workspace candidate.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorkspaceSearchScope {
+    /// An absolute path or a file beside the referencing metadata file.
+    CurrentFile,
+    /// A file found through the effective BBPATH search path.
+    Bbpath,
+    /// A class found in a classes-recipe directory on BBPATH.
+    ClassesRecipe,
+    /// A class found in a classes directory on BBPATH.
+    Classes,
+}
+
+/// Identifies the directive semantics used for a metadata file lookup.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorkspaceFileDirective {
+    /// Search beside the referencing file and then select the first BBPATH match.
+    Include,
+    /// Search only BBPATH and retain every matching file.
+    IncludeAll,
+    /// Search beside the referencing file and then retain the BBPATH matches.
+    Require,
+}
+
+/// A candidate returned by BitBake-aware workspace resolution.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorkspaceCandidate<'a> {
     path: &'a Path,
+    layer: &'a Path,
     priority: i32,
+    collection: Option<&'a str>,
+    scope: WorkspaceSearchScope,
 }
 
 impl<'a> WorkspaceCandidate<'a> {
@@ -19,9 +46,24 @@ impl<'a> WorkspaceCandidate<'a> {
         self.path
     }
 
-    /// Returns the `BBFILE_PRIORITY` used to rank this candidate.
+    /// Returns the layer root containing the candidate.
+    pub fn layer(self) -> &'a Path {
+        self.layer
+    }
+
+    /// Returns the BBFILE_PRIORITY used to rank the candidate's layer.
     pub const fn priority(self) -> i32 {
         self.priority
+    }
+
+    /// Returns the collection selected by the layer's BBFILE_PATTERN metadata.
+    pub fn collection(self) -> Option<&'a str> {
+        self.collection
+    }
+
+    /// Returns the BitBake search scope that produced the candidate.
+    pub const fn scope(self) -> WorkspaceSearchScope {
+        self.scope
     }
 }
 
@@ -30,13 +72,14 @@ impl<'a> WorkspaceCandidate<'a> {
 ///
 /// The index deliberately only considers files supplied by the caller. This
 /// makes single-file linting safe: semantic findings are emitted only when a
-/// complete layer, including its `conf/layer.conf`, is present in the input
-/// set. Complete layers are ordered by their `BBFILE_PRIORITY_*` assignment;
-/// paths are used as a deterministic tie-breaker when a layer omits an
-/// explicit priority.
+/// complete layer, including its conf/layer.conf, is present in the input
+/// set. Layer metadata is used to build a deterministic BBPATH search order;
+/// layer priority remains the fallback when the supplied metadata does not
+/// describe a more specific path order.
 #[derive(Clone, Debug, Default)]
 pub struct WorkspaceIndex {
     layers: Vec<LayerIndex>,
+    search_paths: Vec<SearchPath>,
 }
 
 impl WorkspaceIndex {
@@ -70,10 +113,16 @@ impl WorkspaceIndex {
                 .cmp(&left.priority)
                 .then_with(|| left.root.cmp(&right.root))
         });
-        Ok(Self { layers })
+
+        let mut index = Self {
+            layers,
+            search_paths: Vec::new(),
+        };
+        index.search_paths = build_search_paths(&index.layers);
+        Ok(index)
     }
 
-    /// Returns whether `path` belongs to a complete indexed layer.
+    /// Returns whether path belongs to a complete indexed layer.
     pub fn is_complete_for(&self, path: &Path) -> bool {
         let path = canonicalize_for_lookup(path);
         self.layers
@@ -81,16 +130,31 @@ impl WorkspaceIndex {
             .any(|layer| layer.is_complete() && layer.files.contains(&path))
     }
 
-    /// Returns all matching static class definitions, ordered by layer
-    /// priority and then by canonical path.
+    /// Returns all matching static class definitions in BitBake search order.
+    ///
+    /// For inherit, BitBake searches all classes-recipe directories on
+    /// BBPATH before searching the ordinary classes directories. The returned
+    /// candidates retain layer, collection, priority, and scope information so
+    /// callers can explain or validate the resolution.
     pub fn class_candidates(&self, class: &str) -> Vec<WorkspaceCandidate<'_>> {
+        if class.is_empty() || class.contains(['/', '\\']) {
+            return Vec::new();
+        }
+
         let mut candidates = Vec::new();
-        for layer in self.layers.iter().filter(|layer| layer.is_complete()) {
-            if let Some(paths) = layer.classes.get(class) {
-                candidates.extend(paths.iter().map(|path| WorkspaceCandidate {
-                    path: path.as_path(),
-                    priority: layer.priority,
-                }));
+        for (directory, scope) in [
+            ("classes-recipe", WorkspaceSearchScope::ClassesRecipe),
+            ("classes", WorkspaceSearchScope::Classes),
+        ] {
+            for search_path in &self.search_paths {
+                let layer = &self.layers[search_path.layer_index];
+                let candidate = search_path
+                    .path
+                    .join(directory)
+                    .join(format!("{class}.bbclass"));
+                if let Some(path) = layer.find_exact(&candidate) {
+                    append_candidate(&mut candidates, layer.make_candidate(path, scope));
+                }
             }
         }
         candidates
@@ -98,77 +162,109 @@ impl WorkspaceIndex {
 
     /// Resolves a static class name against the indexed layer class files.
     ///
-    /// When multiple definitions exist, the highest-priority definition is
-    /// returned. Call [`Self::class_candidates`] when callers need to detect
-    /// same-priority ambiguity instead of accepting the selected definition.
+    /// The first candidate follows the documented BitBake class search order.
+    /// Call class_candidates when callers need to inspect every possible
+    /// definition.
     pub fn resolve_class(&self, class: &str) -> Option<&Path> {
-        self.layers
-            .iter()
-            .filter(|layer| layer.is_complete())
-            .find_map(|layer| {
-                layer
-                    .classes
-                    .get(class)
-                    .and_then(|paths| paths.first().map(PathBuf::as_path))
-            })
+        self.class_candidates(class)
+            .into_iter()
+            .next()
+            .map(|candidate| candidate.path)
     }
 
-    /// Returns all matching static metadata files, ordered by BitBake-style
-    /// search scope and then by layer priority.
+    /// Returns all matching static metadata files for a directive.
     ///
-    /// A file beside the referencing file takes precedence. If no local file
-    /// matches, the indexed layers are searched by descending
-    /// `BBFILE_PRIORITY_*`; same-priority candidates are retained so callers
-    /// can report ambiguity rather than silently choosing one.
-    pub fn file_candidates<'a>(&'a self, from: &Path, target: &str) -> Vec<WorkspaceCandidate<'a>> {
-        let from = canonicalize_for_lookup(from);
-        let originating_layer = self
-            .layers
-            .iter()
-            .position(|layer| layer.is_complete() && layer.files.contains(&from));
-
-        if let Some(index) = originating_layer {
-            let local = self.layers[index].find_candidates(&from, target);
-            if !local.is_empty() {
-                return local
-                    .into_iter()
-                    .map(|path| WorkspaceCandidate {
-                        path,
-                        priority: self.layers[index].priority,
-                    })
-                    .collect();
-            }
+    /// Include and require first check the directory containing from, then
+    /// search BBPATH. IncludeAll skips the current directory and returns every
+    /// BBPATH match in search order. The candidate list is intentionally not
+    /// truncated for include or require, allowing lint callers to report
+    /// same-priority ambiguity while resolve_file retains the first-match API.
+    pub fn file_candidates_for<'a>(
+        &'a self,
+        from: &Path,
+        target: &str,
+        directive: WorkspaceFileDirective,
+    ) -> Vec<WorkspaceCandidate<'a>> {
+        let target_path = Path::new(target);
+        if target_path.is_absolute() {
+            return self
+                .find_path(target_path)
+                .map(|(index, path)| {
+                    vec![self.layers[index].make_candidate(path, WorkspaceSearchScope::CurrentFile)]
+                })
+                .unwrap_or_default();
         }
 
+        let from = canonicalize_for_lookup(from);
         let mut candidates = Vec::new();
-        for (index, layer) in self.layers.iter().enumerate() {
-            if !layer.is_complete() || Some(index) == originating_layer {
-                continue;
-            }
-            candidates.extend(
-                layer
-                    .find_candidates(&from, target)
-                    .into_iter()
-                    .map(|path| WorkspaceCandidate {
-                        path,
-                        priority: layer.priority,
-                    }),
+
+        if !matches!(directive, WorkspaceFileDirective::IncludeAll)
+            && let Some(parent) = from.parent()
+            && let Some((index, path)) = self.find_path(&parent.join(target_path))
+        {
+            append_candidate(
+                &mut candidates,
+                self.layers[index].make_candidate(path, WorkspaceSearchScope::CurrentFile),
             );
+            return candidates;
+        }
+
+        for search_path in &self.search_paths {
+            let layer = &self.layers[search_path.layer_index];
+            if let Some(path) = layer.find_exact(&search_path.path.join(target_path)) {
+                append_candidate(
+                    &mut candidates,
+                    layer.make_candidate(path, WorkspaceSearchScope::Bbpath),
+                );
+            }
         }
         candidates
     }
 
-    /// Resolves a static metadata file reference.
+    /// Returns all matching static metadata files using require semantics.
+    pub fn file_candidates<'a>(&'a self, from: &Path, target: &str) -> Vec<WorkspaceCandidate<'a>> {
+        self.file_candidates_for(from, target, WorkspaceFileDirective::Require)
+    }
+
+    /// Resolves a static metadata file reference using require semantics.
     ///
     /// Relative references are checked beside the referencing file first and
-    /// then from each indexed layer root. A priority-ranked filename match is
-    /// used as a final convenience for BitBake's layer search behavior. Call
-    /// [`Self::file_candidates`] when ambiguity information is required.
+    /// then through the effective BBPATH. The first candidate is returned;
+    /// call file_candidates_for when ambiguity information is required.
     pub fn resolve_file<'a>(&'a self, from: &Path, target: &str) -> Option<&'a Path> {
         self.file_candidates(from, target)
             .into_iter()
             .next()
             .map(|candidate| candidate.path)
+    }
+
+    /// Returns every file that include_all would parse.
+    pub fn include_all_candidates<'a>(
+        &'a self,
+        from: &Path,
+        target: &str,
+    ) -> Vec<WorkspaceCandidate<'a>> {
+        self.file_candidates_for(from, target, WorkspaceFileDirective::IncludeAll)
+    }
+
+    fn find_path<'a>(&'a self, candidate: &Path) -> Option<(usize, &'a Path)> {
+        if let Some(found) = self
+            .layers
+            .iter()
+            .enumerate()
+            .find_map(|(index, layer)| layer.find_exact(candidate).map(|path| (index, path)))
+        {
+            return Some(found);
+        }
+
+        if !needs_canonicalization(candidate) {
+            return None;
+        }
+        let canonical = fs::canonicalize(candidate).ok()?;
+        self.layers
+            .iter()
+            .enumerate()
+            .find_map(|(index, layer)| layer.find_exact(&canonical).map(|path| (index, path)))
     }
 }
 
@@ -176,9 +272,8 @@ impl WorkspaceIndex {
 struct LayerIndex {
     root: PathBuf,
     priority: i32,
+    metadata: LayerMetadata,
     files: BTreeSet<PathBuf>,
-    classes: BTreeMap<String, Vec<PathBuf>>,
-    names: BTreeMap<String, BTreeSet<PathBuf>>,
 }
 
 impl LayerIndex {
@@ -188,35 +283,14 @@ impl LayerIndex {
             .filter(|path| path.starts_with(&root))
             .cloned()
             .collect::<BTreeSet<_>>();
-        let priority = parse_layer_priority(&root, &files);
-        let mut classes = BTreeMap::new();
-        let mut names = BTreeMap::new();
-
-        for path in &files {
-            let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
-                continue;
-            };
-            names
-                .entry(file_name.to_owned())
-                .or_insert_with(BTreeSet::new)
-                .insert(path.clone());
-
-            if path.extension().and_then(|extension| extension.to_str()) == Some("bbclass")
-                && let Some(stem) = path.file_stem().and_then(|stem| stem.to_str())
-            {
-                classes
-                    .entry(stem.to_owned())
-                    .or_insert_with(Vec::new)
-                    .push(path.clone());
-            }
-        }
+        let metadata = parse_layer_metadata(&root, &files);
+        let priority = metadata.priority();
 
         Self {
             root,
             priority,
+            metadata,
             files,
-            classes,
-            names,
         }
     }
 
@@ -224,87 +298,221 @@ impl LayerIndex {
         self.files.contains(&self.root.join("conf/layer.conf"))
     }
 
-    fn find_candidates<'a>(&'a self, from: &Path, target: &str) -> Vec<&'a Path> {
-        let target_path = Path::new(target);
-        let mut candidates = Vec::new();
-
-        if target_path.is_absolute() {
-            self.append_candidate(target_path, &mut candidates);
-            return candidates;
-        }
-
-        if let Some(parent) = from.parent() {
-            self.append_candidate(&parent.join(target_path), &mut candidates);
-        }
-        self.append_candidate(&self.root.join(target_path), &mut candidates);
-
-        if target_path.components().count() == 1
-            && let Some(matches) = self.names.get(target)
-        {
-            for path in matches {
-                self.append_path(path.as_path(), &mut candidates);
-            }
-        }
-        candidates
+    fn find_exact<'a>(&'a self, candidate: &Path) -> Option<&'a Path> {
+        self.files.get(candidate).map(PathBuf::as_path)
     }
 
-    fn append_candidate<'a>(&'a self, candidate: &Path, candidates: &mut Vec<&'a Path>) {
-        if let Some(path) = self.find_candidate(candidate) {
-            self.append_path(path, candidates);
+    fn make_candidate<'a>(
+        &'a self,
+        path: &'a Path,
+        scope: WorkspaceSearchScope,
+    ) -> WorkspaceCandidate<'a> {
+        WorkspaceCandidate {
+            path,
+            layer: &self.root,
+            priority: self.priority,
+            collection: self.metadata.collection_for(path, &self.root),
+            scope,
         }
-    }
-
-    fn append_path<'a>(&'a self, path: &'a Path, candidates: &mut Vec<&'a Path>) {
-        if !candidates.contains(&path) {
-            candidates.push(path);
-        }
-    }
-
-    fn find_candidate<'a>(&'a self, candidate: &Path) -> Option<&'a Path> {
-        if let Some(path) = self.files.get(candidate) {
-            return Some(path.as_path());
-        }
-        let candidate = fs::canonicalize(candidate).ok()?;
-        self.files.get(&candidate).map(PathBuf::as_path)
     }
 }
 
-fn parse_layer_priority(root: &Path, files: &BTreeSet<PathBuf>) -> i32 {
+#[derive(Clone, Debug, Default)]
+struct LayerMetadata {
+    collections: Vec<String>,
+    patterns: BTreeMap<String, String>,
+    priorities: BTreeMap<String, i32>,
+    bbpath: Vec<PathBuf>,
+}
+
+impl LayerMetadata {
+    fn priority(&self) -> i32 {
+        self.collections
+            .iter()
+            .filter_map(|collection| self.priorities.get(collection))
+            .copied()
+            .max()
+            .or_else(|| self.priorities.values().copied().max())
+            .unwrap_or(DEFAULT_LAYER_PRIORITY)
+    }
+
+    fn collection_for<'a>(&'a self, path: &Path, root: &Path) -> Option<&'a str> {
+        self.collections
+            .iter()
+            .find(|collection| {
+                self.patterns
+                    .get(*collection)
+                    .is_some_and(|pattern| pattern_matches_path(pattern, path, root))
+            })
+            .map(String::as_str)
+            .or_else(|| (self.collections.len() == 1).then(|| self.collections[0].as_str()))
+    }
+}
+
+#[derive(Clone, Debug)]
+struct SearchPath {
+    path: PathBuf,
+    layer_index: usize,
+}
+
+fn build_search_paths(layers: &[LayerIndex]) -> Vec<SearchPath> {
+    let mut search_paths = Vec::new();
+    for (layer_index, layer) in layers.iter().enumerate() {
+        let paths = if layer.metadata.bbpath.is_empty() {
+            vec![layer.root.clone()]
+        } else {
+            layer.metadata.bbpath.clone()
+        };
+
+        for path in paths {
+            let path = canonicalize_for_lookup(&path);
+            let owner = layers
+                .iter()
+                .position(|candidate| path.starts_with(&candidate.root))
+                .unwrap_or(layer_index);
+            if search_paths
+                .iter()
+                .any(|entry: &SearchPath| entry.path == path)
+            {
+                continue;
+            }
+            search_paths.push(SearchPath {
+                path,
+                layer_index: owner,
+            });
+        }
+    }
+    search_paths
+}
+
+fn append_candidate<'a>(
+    candidates: &mut Vec<WorkspaceCandidate<'a>>,
+    candidate: WorkspaceCandidate<'a>,
+) {
+    if !candidates
+        .iter()
+        .any(|existing| existing.path == candidate.path)
+    {
+        candidates.push(candidate);
+    }
+}
+
+fn parse_layer_metadata(root: &Path, files: &BTreeSet<PathBuf>) -> LayerMetadata {
     let layer_configuration = root.join("conf/layer.conf");
     if !files.contains(&layer_configuration) {
-        return DEFAULT_LAYER_PRIORITY;
+        return LayerMetadata::default();
     }
 
     let Ok(source) = fs::read_to_string(layer_configuration) else {
-        return DEFAULT_LAYER_PRIORITY;
+        return LayerMetadata::default();
     };
     let Ok(tree) = parse(&source) else {
-        return DEFAULT_LAYER_PRIORITY;
+        return LayerMetadata::default();
     };
 
-    tree.nodes()
-        .iter()
-        .filter_map(|node| match node.kind() {
-            SyntaxKind::Assignment(assignment) => Some(assignment),
-            _ => None,
-        })
-        .filter(|assignment| assignment.name().starts_with("BBFILE_PRIORITY_"))
-        .filter_map(|assignment| parse_integer_value(assignment.value()))
-        .max()
-        .unwrap_or(DEFAULT_LAYER_PRIORITY)
+    let mut metadata = LayerMetadata::default();
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        let base_name = assignment
+            .name()
+            .split(':')
+            .next()
+            .unwrap_or(assignment.name());
+        match base_name {
+            "BBPATH" => {
+                for path in parse_bbpath(assignment.value(), root) {
+                    if !metadata.bbpath.contains(&path) {
+                        metadata.bbpath.push(path);
+                    }
+                }
+            }
+            "BBFILE_COLLECTIONS" => {
+                for collection in static_words(assignment.value()) {
+                    if !metadata.collections.contains(&collection) {
+                        metadata.collections.push(collection);
+                    }
+                }
+            }
+            name if name.starts_with("BBFILE_PATTERN_") => {
+                if let Some(collection) = name.strip_prefix("BBFILE_PATTERN_")
+                    && let Some(pattern) = scalar_value(assignment.value())
+                {
+                    metadata.patterns.insert(collection.to_owned(), pattern);
+                }
+            }
+            name if name.starts_with("BBFILE_PRIORITY_") => {
+                if let Some(collection) = name.strip_prefix("BBFILE_PRIORITY_")
+                    && let Some(priority) = parse_integer_value(assignment.value())
+                {
+                    metadata.priorities.insert(collection.to_owned(), priority);
+                }
+            }
+            _ => {}
+        }
+    }
+    metadata
 }
 
-fn parse_integer_value(value: &str) -> Option<i32> {
+fn parse_bbpath(value: &str, root: &Path) -> Vec<PathBuf> {
+    let value = scalar_value(value).unwrap_or_default();
+    let value = value.replace("\\\r\n", "").replace("\\\n", "");
+    value
+        .split(':')
+        .filter_map(|entry| {
+            let entry = entry.trim();
+            if entry.is_empty() {
+                return None;
+            }
+            let expanded = entry
+                .replace("${LAYERDIR}", &root.to_string_lossy())
+                .replace("${THISDIR}", &root.join("conf").to_string_lossy());
+            let path = PathBuf::from(expanded);
+            Some(if path.is_absolute() {
+                path
+            } else {
+                root.join(path)
+            })
+        })
+        .collect()
+}
+
+fn static_words(value: &str) -> Vec<String> {
+    scalar_value(value)
+        .unwrap_or_default()
+        .split_ascii_whitespace()
+        .filter(|word| !word.contains("${") && !word.contains("${@"))
+        .map(str::to_owned)
+        .collect()
+}
+
+fn scalar_value(value: &str) -> Option<String> {
     let value = value.trim();
-    let value = if let Some(quote) = value.as_bytes().first().copied()
+    if let Some(quote) = value.as_bytes().first().copied()
         && matches!(quote, b'\'' | b'"')
     {
         let end = value[1..].find(quote as char)? + 1;
-        &value[1..end]
-    } else {
-        value.split('#').next()?.trim()
-    };
-    value.parse().ok()
+        return Some(value[1..end].to_owned());
+    }
+    Some(value.split('#').next()?.trim().to_owned())
+}
+
+fn parse_integer_value(value: &str) -> Option<i32> {
+    scalar_value(value)?.parse().ok()
+}
+
+fn pattern_matches_path(pattern: &str, path: &Path, root: &Path) -> bool {
+    let expanded = pattern
+        .trim()
+        .trim_start_matches('^')
+        .replace("${LAYERDIR}", &root.to_string_lossy());
+    let prefix = expanded
+        .split(['*', '?', '[', '(', '$'])
+        .next()
+        .unwrap_or(&expanded)
+        .trim_end_matches('/');
+    !prefix.is_empty() && path.to_string_lossy().starts_with(prefix)
 }
 
 fn supplied_layer_root_for(path: &Path) -> Option<PathBuf> {
@@ -333,4 +541,14 @@ fn canonicalize_for_lookup(path: &Path) -> PathBuf {
             .map(|directory| directory.join(path))
             .unwrap_or_else(|_| path.to_path_buf())
     }
+}
+
+fn needs_canonicalization(path: &Path) -> bool {
+    !path.is_absolute()
+        || path.components().any(|component| {
+            matches!(
+                component,
+                std::path::Component::CurDir | std::path::Component::ParentDir
+            )
+        })
 }
