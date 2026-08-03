@@ -20,6 +20,9 @@ All notable changes to this project will be documented in this file.
   lints workflows, and audits both locked Rust dependency graphs.
 - Dependabot coverage for root and fuzz Cargo dependencies plus GitHub Actions.
 - A repository-owned workflow pin validator with regression tests.
+- A conservative static workspace dependency graph for `include`,
+  `include_all`, `require`, `inherit`, and `inherit_defer`, with a `BBT010`
+  cycle diagnostic and resolution explanations for ambiguous providers.
 - Shell-function boundary detection for quoted, tab-stripping, and multiple
   pending here-documents, including protection against braces in their bodies.
 - Compatibility fixtures covering shell arithmetic, function modifiers,

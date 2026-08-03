@@ -200,6 +200,7 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT007` | `unresolved-inherit` | A static inherited class missing from the indexed layers |
 | `BBT008` | `ambiguous-require` | A static `require` target matches multiple highest-priority files |
 | `BBT009` | `ambiguous-inherit` | A static inherited class has multiple highest-priority definitions |
+| `BBT010` | `dependency-cycle` | A resolved static `include`, `require`, or `inherit` closes a dependency cycle |
 
 All initial rules are warnings. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintRule`,
@@ -209,8 +210,10 @@ operational error instead of producing potentially misleading findings.
 The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. When `lint` receives a complete layer directory, it
-indexes the supplied metadata and uses that context for static `require` and
-`inherit` checks. The workspace model reads `BBFILE_COLLECTIONS`,
+indexes the supplied metadata into a static dependency graph. The graph follows
+the effective target of `include`, `require`, `inherit`, and `inherit_defer`,
+and every target of `include_all`; it reports cycles but skips dynamic and
+unresolved optional references. The workspace model reads `BBFILE_COLLECTIONS`,
 `BBFILE_PATTERN_*`, `BBFILE_PRIORITY_*`, and simple static `BBPATH` entries
 from each supplied `conf/layer.conf`. A relative `include` or `require` first
 checks the directory containing the current file and then searches `BBPATH`;
@@ -219,10 +222,11 @@ are searched in `classes-recipe` directories before ordinary `classes`
 directories. `include` and `include_all` are optional directives, so missing
 matches do not produce unresolved-reference diagnostics; `require` remains
 strict. Same-priority matches in the winning search scope produce the
-ambiguity rules above instead of being silently resolved. The public
-`WorkspaceCandidate` API exposes the selected layer, collection, priority, and
-search scope for resolution explanations. Single-file and standard-input
-linting remain file-local, and dynamic references are skipped.
+ambiguity rules above instead of being silently resolved. Ambiguity and cycle
+diagnostics identify the selected target's layer, collection, priority, and
+search scope. The public `WorkspaceCandidate` and `WorkspaceDependency` APIs
+expose the corresponding resolution and graph information. Single-file and
+standard-input linting remain file-local, and dynamic references are skipped.
 
 ## Lossless syntax tree
 

@@ -1,6 +1,7 @@
 use crate::{
     AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceCandidate,
-    WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
+    WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col,
+    parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -62,6 +63,12 @@ static LINT_RULES: &[LintRule] = &[
         "ambiguous-inherit",
         LintSeverity::Warning,
         "A static inherited class must resolve to one highest-priority definition.",
+    ),
+    LintRule::new(
+        "BBT010",
+        "dependency-cycle",
+        LintSeverity::Warning,
+        "A static metadata dependency must not close a resolution cycle.",
     ),
 ];
 
@@ -359,6 +366,18 @@ fn check_workspace_references(
                             format!("required file '{target}' {message}"),
                         ));
                     }
+                    if let Some(candidate) = candidates.first().copied() {
+                        check_dependency_cycle(
+                            tree,
+                            path,
+                            workspace,
+                            directive.arguments_range().start(),
+                            relative_offset,
+                            WorkspaceDependencyKind::Require,
+                            candidate,
+                            diagnostics,
+                        );
+                    }
                 }
             }
             DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
@@ -387,6 +406,23 @@ fn check_workspace_references(
                             format!("inherited class '{class}' {message}"),
                         ));
                     }
+                    if let Some(candidate) = candidates.first().copied() {
+                        let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
+                            WorkspaceDependencyKind::Inherit
+                        } else {
+                            WorkspaceDependencyKind::InheritDefer
+                        };
+                        check_dependency_cycle(
+                            tree,
+                            path,
+                            workspace,
+                            directive.arguments_range().start(),
+                            relative_offset,
+                            kind,
+                            candidate,
+                            diagnostics,
+                        );
+                    }
                 }
             }
             DirectiveKeyword::Include | DirectiveKeyword::IncludeAll => {
@@ -395,18 +431,75 @@ fn check_workspace_references(
                 // expands to every match. Keep them out of unresolved and
                 // ambiguity diagnostics while retaining their semantics in
                 // the public workspace-resolution API.
-                let directive = if matches!(directive.keyword(), DirectiveKeyword::Include) {
+                let file_directive = if matches!(directive.keyword(), DirectiveKeyword::Include) {
                     WorkspaceFileDirective::Include
                 } else {
                     WorkspaceFileDirective::IncludeAll
                 };
-                for (_, target) in static_words(arguments) {
-                    let _ = workspace.file_candidates_for(path, target, directive);
+                let kind = if matches!(directive.keyword(), DirectiveKeyword::Include) {
+                    WorkspaceDependencyKind::Include
+                } else {
+                    WorkspaceDependencyKind::IncludeAll
+                };
+                for (relative_offset, target) in static_words(arguments) {
+                    let candidates = workspace.file_candidates_for(path, target, file_directive);
+                    let candidates = if matches!(kind, WorkspaceDependencyKind::IncludeAll) {
+                        candidates
+                    } else {
+                        candidates.into_iter().take(1).collect()
+                    };
+                    for candidate in candidates {
+                        check_dependency_cycle(
+                            tree,
+                            path,
+                            workspace,
+                            directive.arguments_range().start(),
+                            relative_offset,
+                            kind,
+                            candidate,
+                            diagnostics,
+                        );
+                    }
                 }
             }
             _ => {}
         }
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_dependency_cycle(
+    tree: &SyntaxTree<'_>,
+    from: &std::path::Path,
+    workspace: &WorkspaceIndex,
+    arguments_start: usize,
+    relative_offset: usize,
+    kind: WorkspaceDependencyKind,
+    candidate: WorkspaceCandidate<'_>,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    let Some(cycle) = workspace.dependency_cycle(from, candidate.path()) else {
+        return;
+    };
+
+    let rule = &LINT_RULES[9];
+    let offset = arguments_start + relative_offset;
+    let (line, column) = get_line_col(tree.source(), offset);
+    let cycle = cycle
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>()
+        .join(" -> ");
+    diagnostics.push(LintDiagnostic::new(
+        rule,
+        line,
+        column,
+        format!(
+            "static {} dependency resolves to {} and forms a cycle: {cycle}",
+            kind.keyword(),
+            candidate_description(candidate)
+        ),
+    ));
 }
 
 fn ambiguity_message(candidates: &[WorkspaceCandidate<'_>]) -> Option<String> {
@@ -427,8 +520,26 @@ fn ambiguity_message(candidates: &[WorkspaceCandidate<'_>]) -> Option<String> {
         .collect::<Vec<_>>()
         .join(", ");
     Some(format!(
-        "matches multiple candidates at layer priority {priority}: {paths}"
+        "resolves to {}, but {} candidates share effective priority {priority} through {}: {paths}",
+        candidate_description(*first),
+        highest_priority.len(),
+        first.scope().description(),
     ))
+}
+
+fn candidate_description(candidate: WorkspaceCandidate<'_>) -> String {
+    let collection = candidate
+        .collection()
+        .map(|collection| format!(", collection '{collection}'"))
+        .unwrap_or_default();
+    format!(
+        "'{}' through {} in layer '{}'{} at priority {}",
+        candidate.path().display(),
+        candidate.scope().description(),
+        candidate.layer().display(),
+        collection,
+        candidate.priority(),
+    )
 }
 
 fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -650,7 +761,7 @@ mod tests {
             lint_rules().iter().map(LintRule::id).collect::<Vec<_>>(),
             [
                 "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007", "BBT008",
-                "BBT009",
+                "BBT009", "BBT010",
             ]
         );
         assert!(

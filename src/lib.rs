@@ -18,7 +18,8 @@ pub use syntax::{
     PythonDefinitionSyntax, SyntaxKind, SyntaxNode, SyntaxTree, TextRange, parse,
 };
 pub use workspace::{
-    WorkspaceCandidate, WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope,
+    WorkspaceCandidate, WorkspaceDependency, WorkspaceDependencyKind, WorkspaceFileDirective,
+    WorkspaceIndex, WorkspaceSearchScope,
 };
 
 #[derive(Logos, Clone, Copy, Debug, Eq, PartialEq)]

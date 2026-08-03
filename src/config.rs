@@ -252,10 +252,11 @@ mod tests {
 max_top_level_blank_lines = 0
 
 [lint]
-disable = ["BBT003"]
+disable = ["BBT003", "BBT010"]
 
 [lint.severity]
 BBT001 = "error"
+BBT010 = "info"
 
 [paths]
 exclude = ["vendor/**", "**/files/**"]

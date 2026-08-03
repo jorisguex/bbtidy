@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 9);
+    assert_eq!(rules.len(), 10);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -107,6 +107,62 @@ fn workspace_lint_reports_same_priority_ambiguities() {
     );
     assert!(diagnostics[0].message().contains("priority 5"));
     assert!(diagnostics[1].message().contains("priority 5"));
+    assert!(diagnostics[0].message().contains("resolves to"));
+    assert!(diagnostics[0].message().contains("BBPATH"));
+}
+
+#[test]
+fn workspace_lint_reports_static_cycles_and_skips_dynamic_references() {
+    let layer = TemporaryLayer::new("lint-dependency-cycle");
+    let configuration = layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    let class = layer.write(
+        "classes/base.bbclass",
+        "require recipes-example/example/example.bb\n",
+    );
+    let helper = layer.write("recipes-example/example/helper.inc", "require example.bb\n");
+    let required = layer.write(
+        "recipes-example/example/required.inc",
+        "require example.bb\n",
+    );
+    let shared = layer.write("shared.inc", "require recipes-example/example/example.bb\n");
+    let source = concat!(
+        "include helper.inc\n",
+        "include_all shared.inc\n",
+        "require required.inc\n",
+        "inherit base\n",
+        "include ${DYNAMIC}\n",
+    );
+    let recipe = layer.write("recipes-example/example/example.bb", source);
+    let index = WorkspaceIndex::from_paths([
+        configuration,
+        class,
+        helper,
+        required,
+        shared,
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.rule_id())
+            .collect::<Vec<_>>(),
+        ["BBT010", "BBT010", "BBT010", "BBT010"]
+    );
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| (diagnostic.line(), diagnostic.column()))
+            .collect::<Vec<_>>(),
+        [(1, 9), (2, 13), (3, 9), (4, 9)]
+    );
+    assert!(diagnostics[0].message().contains("current file directory"));
+    assert!(diagnostics[1].message().contains("BBPATH"));
+    assert!(diagnostics[3].message().contains("classes on BBPATH"));
 }
 
 struct TemporaryLayer {

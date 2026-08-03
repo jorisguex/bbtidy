@@ -330,7 +330,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 9);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 10);
     let result = &run["results"][0];
     assert_eq!(result["ruleId"], "BBT004");
     assert_eq!(result["level"], "warning");
@@ -341,6 +341,59 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     assert_eq!(
         result["locations"][0]["physicalLocation"]["region"]["startLine"],
         1
+    );
+}
+
+#[test]
+fn workspace_cycles_are_reported_in_json_and_sarif() {
+    let directory = TemporaryDirectory::new("lint-workspace-cycle");
+    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    directory.write("recipes-example/example/helper.inc", "require example.bb\n");
+    let recipe = directory.write("recipes-example/example/example.bb", "require helper.inc\n");
+
+    let json = run([
+        "lint",
+        "--output",
+        "json",
+        directory.path().to_str().unwrap(),
+    ]);
+    assert_eq!(json.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&json.stdout).unwrap();
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    assert_eq!(diagnostics.len(), 2);
+    assert!(
+        diagnostics
+            .iter()
+            .all(|diagnostic| diagnostic["rule_id"] == "BBT010")
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic["path"] == recipe.display().to_string())
+    );
+
+    let sarif = run([
+        "lint",
+        "--output",
+        "sarif",
+        directory.path().to_str().unwrap(),
+    ]);
+    assert_eq!(sarif.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&sarif.stdout).unwrap();
+    let run = &report["runs"][0];
+    assert!(
+        run["tool"]["driver"]["rules"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|rule| rule["id"] == "BBT010")
+    );
+    assert!(
+        run["results"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|result| result["ruleId"] == "BBT010")
     );
 }
 

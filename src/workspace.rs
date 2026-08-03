@@ -1,5 +1,5 @@
-use crate::{SyntaxKind, parse};
-use std::collections::{BTreeMap, BTreeSet};
+use crate::{DirectiveKeyword, SyntaxKind, SyntaxTree, comment_start, parse};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -19,6 +19,18 @@ pub enum WorkspaceSearchScope {
     Classes,
 }
 
+impl WorkspaceSearchScope {
+    /// Returns a stable human-readable name for this search scope.
+    pub const fn description(self) -> &'static str {
+        match self {
+            Self::CurrentFile => "the current file directory",
+            Self::Bbpath => "BBPATH",
+            Self::ClassesRecipe => "classes-recipe on BBPATH",
+            Self::Classes => "classes on BBPATH",
+        }
+    }
+}
+
 /// Identifies the directive semantics used for a metadata file lookup.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkspaceFileDirective {
@@ -28,6 +40,54 @@ pub enum WorkspaceFileDirective {
     IncludeAll,
     /// Search beside the referencing file and then retain the BBPATH matches.
     Require,
+}
+
+/// Identifies the directive that created a resolved static workspace edge.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum WorkspaceDependencyKind {
+    Include,
+    IncludeAll,
+    Require,
+    Inherit,
+    InheritDefer,
+}
+
+impl WorkspaceDependencyKind {
+    /// Returns the directive keyword represented by this dependency edge.
+    pub const fn keyword(self) -> &'static str {
+        match self {
+            Self::Include => "include",
+            Self::IncludeAll => "include_all",
+            Self::Require => "require",
+            Self::Inherit => "inherit",
+            Self::InheritDefer => "inherit_defer",
+        }
+    }
+}
+
+/// A resolved static dependency between two metadata files in an indexed workspace.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorkspaceDependency<'a> {
+    from: &'a Path,
+    to: &'a Path,
+    kind: WorkspaceDependencyKind,
+}
+
+impl<'a> WorkspaceDependency<'a> {
+    /// Returns the metadata file containing the dependency directive.
+    pub fn from(self) -> &'a Path {
+        self.from
+    }
+
+    /// Returns the metadata file selected by BitBake search semantics.
+    pub fn to(self) -> &'a Path {
+        self.to
+    }
+
+    /// Returns the directive that introduced this dependency.
+    pub const fn kind(self) -> WorkspaceDependencyKind {
+        self.kind
+    }
 }
 
 /// A candidate returned by BitBake-aware workspace resolution.
@@ -80,6 +140,7 @@ impl<'a> WorkspaceCandidate<'a> {
 pub struct WorkspaceIndex {
     layers: Vec<LayerIndex>,
     search_paths: Vec<SearchPath>,
+    dependencies: BTreeMap<PathBuf, Vec<DependencyEdge>>,
 }
 
 impl WorkspaceIndex {
@@ -117,8 +178,10 @@ impl WorkspaceIndex {
         let mut index = Self {
             layers,
             search_paths: Vec::new(),
+            dependencies: BTreeMap::new(),
         };
         index.search_paths = build_search_paths(&index.layers);
+        index.dependencies = index.build_dependencies();
         Ok(index)
     }
 
@@ -247,6 +310,91 @@ impl WorkspaceIndex {
         self.file_candidates_for(from, target, WorkspaceFileDirective::IncludeAll)
     }
 
+    /// Returns the resolved static dependency edges originating at `path`.
+    ///
+    /// Edges are built only for complete supplied layers. Dynamic directive
+    /// arguments and unresolved optional includes are deliberately omitted.
+    pub fn dependencies_from(&self, path: &Path) -> Vec<WorkspaceDependency<'_>> {
+        let path = canonicalize_for_lookup(path);
+        let Some((from, edges)) = self.dependencies.get_key_value(&path) else {
+            return Vec::new();
+        };
+        edges
+            .iter()
+            .map(|edge| WorkspaceDependency {
+                from: from.as_path(),
+                to: edge.to.as_path(),
+                kind: edge.kind,
+            })
+            .collect()
+    }
+
+    /// Returns a deterministic cycle witness if a resolved edge from `from`
+    /// to `to` closes a static workspace dependency cycle.
+    ///
+    /// The returned path starts and ends at `from`, with `to` as its second
+    /// entry. An empty or dynamically unresolved graph never produces a
+    /// cycle witness.
+    pub fn dependency_cycle(&self, from: &Path, to: &Path) -> Option<Vec<PathBuf>> {
+        let from = canonicalize_for_lookup(from);
+        let to = canonicalize_for_lookup(to);
+        if from == to {
+            return Some(vec![from.clone(), from]);
+        }
+
+        let mut queue = VecDeque::from([to.clone()]);
+        let mut visited = BTreeSet::from([to.clone()]);
+        let mut parents = BTreeMap::new();
+
+        while let Some(current) = queue.pop_front() {
+            let Some(edges) = self.dependencies.get(&current) else {
+                continue;
+            };
+            for edge in edges {
+                let next = edge.to.clone();
+                if !visited.insert(next.clone()) {
+                    continue;
+                }
+                parents.insert(next.clone(), current.clone());
+                if next == from {
+                    let mut tail = vec![from.clone()];
+                    while tail.last() != Some(&to) {
+                        let parent = parents.get(tail.last().unwrap())?.clone();
+                        tail.push(parent);
+                    }
+                    tail.reverse();
+                    let mut cycle = vec![from];
+                    cycle.extend(tail);
+                    return Some(cycle);
+                }
+                queue.push_back(next);
+            }
+        }
+        None
+    }
+
+    fn build_dependencies(&self) -> BTreeMap<PathBuf, Vec<DependencyEdge>> {
+        let mut dependencies = BTreeMap::new();
+        for layer in &self.layers {
+            if !layer.is_complete() {
+                continue;
+            }
+            for path in &layer.files {
+                let Ok(source) = fs::read_to_string(path) else {
+                    continue;
+                };
+                let Ok(tree) = parse(&source) else {
+                    continue;
+                };
+                let edges = collect_dependency_edges(self, path, &tree);
+                if !edges.is_empty() {
+                    dependencies.insert(path.clone(), edges);
+                }
+            }
+        }
+        dependencies
+    }
+
     fn find_path<'a>(&'a self, candidate: &Path) -> Option<(usize, &'a Path)> {
         if let Some(found) = self
             .layers
@@ -266,6 +414,12 @@ impl WorkspaceIndex {
             .enumerate()
             .find_map(|(index, layer)| layer.find_exact(&canonical).map(|path| (index, path)))
     }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct DependencyEdge {
+    to: PathBuf,
+    kind: WorkspaceDependencyKind,
 }
 
 #[derive(Clone, Debug)]
@@ -397,6 +551,81 @@ fn append_candidate<'a>(
     }
 }
 
+fn collect_dependency_edges(
+    index: &WorkspaceIndex,
+    from: &Path,
+    tree: &SyntaxTree<'_>,
+) -> Vec<DependencyEdge> {
+    let mut edges = Vec::new();
+
+    for node in tree.nodes() {
+        let SyntaxKind::Directive(directive) = node.kind() else {
+            continue;
+        };
+        let arguments = directive.arguments();
+        let arguments = &arguments[..comment_start(arguments).unwrap_or(arguments.len())];
+
+        match directive.keyword() {
+            DirectiveKeyword::Include
+            | DirectiveKeyword::IncludeAll
+            | DirectiveKeyword::Require => {
+                let (kind, directive_kind, include_all) = match directive.keyword() {
+                    DirectiveKeyword::Include => (
+                        WorkspaceDependencyKind::Include,
+                        WorkspaceFileDirective::Include,
+                        false,
+                    ),
+                    DirectiveKeyword::IncludeAll => (
+                        WorkspaceDependencyKind::IncludeAll,
+                        WorkspaceFileDirective::IncludeAll,
+                        true,
+                    ),
+                    DirectiveKeyword::Require => (
+                        WorkspaceDependencyKind::Require,
+                        WorkspaceFileDirective::Require,
+                        false,
+                    ),
+                    _ => unreachable!("matched only file dependency directives"),
+                };
+                for target in static_directive_words(arguments) {
+                    let candidates = index.file_candidates_for(from, target, directive_kind);
+                    if include_all {
+                        edges.extend(candidates.into_iter().map(|candidate| DependencyEdge {
+                            to: candidate.path().to_path_buf(),
+                            kind,
+                        }));
+                    } else if let Some(candidate) = candidates.first() {
+                        edges.push(DependencyEdge {
+                            to: candidate.path().to_path_buf(),
+                            kind,
+                        });
+                    }
+                }
+            }
+            DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
+                let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
+                    WorkspaceDependencyKind::Inherit
+                } else {
+                    WorkspaceDependencyKind::InheritDefer
+                };
+                for class in static_directive_words(arguments) {
+                    if let Some(candidate) = index.class_candidates(class).into_iter().next() {
+                        edges.push(DependencyEdge {
+                            to: candidate.path().to_path_buf(),
+                            kind,
+                        });
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    edges.sort();
+    edges.dedup();
+    edges
+}
+
 fn parse_layer_metadata(root: &Path, files: &BTreeSet<PathBuf>) -> LayerMetadata {
     let layer_configuration = root.join("conf/layer.conf");
     if !files.contains(&layer_configuration) {
@@ -485,6 +714,26 @@ fn static_words(value: &str) -> Vec<String> {
         .filter(|word| !word.contains("${") && !word.contains("${@"))
         .map(str::to_owned)
         .collect()
+}
+
+fn static_directive_words(text: &str) -> Vec<&str> {
+    let mut dynamic_expression = false;
+    let mut words = Vec::new();
+    for word in text.split_ascii_whitespace() {
+        if dynamic_expression {
+            dynamic_expression = !word.contains('}');
+            continue;
+        }
+        if word.contains('$') || word.contains('{') {
+            dynamic_expression = !word.contains('}');
+            continue;
+        }
+        if word == "\\" || word.contains('}') {
+            continue;
+        }
+        words.push(word);
+    }
+    words
 }
 
 fn scalar_value(value: &str) -> Option<String> {

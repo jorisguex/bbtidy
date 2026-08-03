@@ -1,4 +1,6 @@
-use bbtidy::{WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope};
+use bbtidy::{
+    WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -30,6 +32,80 @@ fn indexes_complete_layers_and_resolves_classes_and_files() {
 }
 
 #[test]
+fn builds_static_dependency_edges_and_reports_cycle_witnesses() {
+    let layer = TemporaryLayer::new("workspace-dependency-graph");
+    let layer_conf = layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    let class = layer.write(
+        "classes/base.bbclass",
+        "require recipes-example/example/example.bb\n",
+    );
+    let helper = layer.write("recipes-example/example/helper.inc", "require example.bb\n");
+    let required = layer.write(
+        "recipes-example/example/required.inc",
+        "require example.bb\n",
+    );
+    let shared = layer.write("shared.inc", "require recipes-example/example/example.bb\n");
+    let recipe = layer.write(
+        "recipes-example/example/example.bb",
+        concat!(
+            "include helper.inc\n",
+            "include_all shared.inc\n",
+            "require required.inc\n",
+            "inherit base\n",
+            "include ${DYNAMIC}\n",
+        ),
+    );
+
+    let index = WorkspaceIndex::from_paths([
+        layer_conf,
+        class.clone(),
+        helper.clone(),
+        required.clone(),
+        shared.clone(),
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let mut dependencies = index
+        .dependencies_from(&recipe)
+        .into_iter()
+        .map(|dependency| {
+            assert_eq!(dependency.from(), fs::canonicalize(&recipe).unwrap());
+            (dependency.kind(), dependency.to().to_path_buf())
+        })
+        .collect::<Vec<_>>();
+    dependencies.sort();
+    assert_eq!(
+        dependencies,
+        vec![
+            (
+                WorkspaceDependencyKind::Include,
+                fs::canonicalize(&helper).unwrap(),
+            ),
+            (
+                WorkspaceDependencyKind::IncludeAll,
+                fs::canonicalize(&shared).unwrap(),
+            ),
+            (
+                WorkspaceDependencyKind::Require,
+                fs::canonicalize(&required).unwrap(),
+            ),
+            (
+                WorkspaceDependencyKind::Inherit,
+                fs::canonicalize(&class).unwrap(),
+            ),
+        ]
+    );
+
+    let cycle = index
+        .dependency_cycle(&recipe, &helper)
+        .expect("helper should require its source recipe");
+    assert_eq!(cycle.first(), cycle.last());
+    assert_eq!(cycle.first(), Some(&fs::canonicalize(recipe).unwrap()));
+    assert_eq!(cycle.get(1), Some(&fs::canonicalize(helper).unwrap()));
+}
+
+#[test]
 fn incomplete_file_contexts_do_not_appear_complete() {
     let layer = TemporaryLayer::new("workspace-incomplete");
     layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
@@ -38,6 +114,7 @@ fn incomplete_file_contexts_do_not_appear_complete() {
 
     assert!(!index.is_complete_for(&recipe));
     assert!(index.resolve_class("base").is_none());
+    assert!(index.dependencies_from(&recipe).is_empty());
 }
 
 #[test]
@@ -137,11 +214,18 @@ fn follows_bbpath_collection_metadata_and_include_modes() {
     assert_eq!(require_candidates.len(), 2);
     assert_eq!(
         require_candidates[0].path(),
-        fs::canonicalize(high_include).unwrap()
+        fs::canonicalize(&high_include).unwrap()
     );
     assert_eq!(require_candidates[0].collection(), Some("high"));
     assert_eq!(require_candidates[0].scope(), WorkspaceSearchScope::Bbpath);
     assert_eq!(require_candidates[1].priority(), 5);
+    let dependencies = index.dependencies_from(&recipe);
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].kind(), WorkspaceDependencyKind::Require);
+    assert_eq!(
+        dependencies[0].to(),
+        fs::canonicalize(&high_include).unwrap().as_path()
+    );
 
     let include_all = index.include_all_candidates(&recipe, "shared.inc");
     assert_eq!(include_all.len(), 2);
