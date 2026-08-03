@@ -87,6 +87,42 @@ fn config_controls_formatter_blank_lines() {
 }
 
 #[test]
+fn config_enables_conservative_metadata_list_layout() {
+    let directory = TemporaryDirectory::new("config-metadata-list-layout");
+    let config = directory.write(
+        ".bbtidy.toml",
+        "[format]\nmetadata_list_layout = \"one-per-line\"\n",
+    );
+    let file = directory.write(
+        "example.bb",
+        concat!(
+            "SRC_URI= \" \\\n",
+            "\tfile://one.patch \\\n",
+            " file://two.patch \\\n",
+            "\"\n",
+        ),
+    );
+
+    let output = run([
+        "format",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_success(&output);
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        concat!(
+            "SRC_URI = \" \\\n",
+            "    file://one.patch \\\n",
+            "    file://two.patch \\\n",
+            "    \"\n",
+        )
+    );
+}
+
+#[test]
 fn config_filters_lint_rules_and_overrides_severity() {
     let directory = TemporaryDirectory::new("config-lint");
     let config = directory.write(

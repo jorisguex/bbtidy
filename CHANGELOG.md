@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- An opt-in, conservative one-item-per-line formatter layout for static
+  continued `SRC_URI`, `DEPENDS`, and `RDEPENDS` values, configured through
+  `metadata_list_layout = "one-per-line"`.
 - A dedicated security workflow that validates immutable GitHub Action pins,
   lints workflows, and audits both locked Rust dependency graphs.
 - Dependabot coverage for root and fuzz Cargo dependencies plus GitHub Actions.

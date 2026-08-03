@@ -122,12 +122,14 @@ Findings use an editor- and CI-friendly format:
 recipes-example/example.bb:12:11: warning[BBT004]: SRCREV uses ${AUTOREV}; pin a source revision for reproducible builds
 ```
 
-Formatting is intentionally limited while BitBake syntax support is being
+Formatting is intentionally conservative while BitBake syntax support is being
 developed. Assignment-operator spacing is normalized for both single-line and
 continued assignments. Directive spacing is normalized only between the
-keyword and its arguments. Continuation tails, argument contents, comments,
-and embedded shell and Python code are kept byte-for-byte unchanged. The
-opaque shell boundary scanner understands quoted and tab-stripping
+keyword and its arguments. By default, continuation tails, argument contents,
+comments, and embedded shell and Python code are kept byte-for-byte unchanged.
+An opt-in layout is available for a small set of static metadata lists; its
+safety limits are described in the configuration section. The opaque shell
+boundary scanner understands quoted and tab-stripping
 here-documents, multiple pending here-documents, shell arithmetic, and braces
 inside quoted strings or comments. Runs of top-level blank lines are reduced to
 one without changing blank lines inside embedded functions.
@@ -158,6 +160,7 @@ The supported configuration keys are:
 ```toml
 [format]
 max_top_level_blank_lines = 1
+metadata_list_layout = "preserve" # or "one-per-line"
 
 [lint]
 disable = ["BBT003"]
@@ -169,6 +172,15 @@ BBT004 = "info"
 [paths]
 exclude = ["vendor/**", "**/files/**"]
 ```
+
+`metadata_list_layout` defaults to `preserve`. The opt-in `one-per-line` mode
+only reindents continued, single- or double-quoted static lists for `SRC_URI`,
+`DEPENDS`, and `RDEPENDS`, including colon overrides such as
+`RDEPENDS:${PN}`. It keeps the existing item order and only acts when every
+item is already one static whitespace-free token on a continuation line with
+consistent line endings. Dynamic expansions, escaped or quoted items,
+multi-item lines, generic variables, and malformed or mixed-line-ending values
+remain unchanged apart from normal assignment spacing.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. Exclusion globs are relative to the
@@ -276,8 +288,9 @@ The `0.1.0-alpha.2` lexer recognizes:
 
 Legacy underscore overrides remain lexically accepted as identifier and
 variable-reference components. They are not interpreted as override operations.
-The formatter remains deliberately conservative: it does not wrap values,
-reindent continuation lines, or format embedded shell or Python code.
+The formatter remains deliberately conservative: outside the opt-in static-list
+layout above, it does not wrap values, reindent continuation lines, or format
+embedded shell or Python code.
 
 ## Development
 

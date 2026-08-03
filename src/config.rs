@@ -1,4 +1,4 @@
-use crate::{FormatOptions, LintOptions, LintSeverity, lint_rules};
+use crate::{FormatOptions, LintOptions, LintSeverity, MetadataListLayout, lint_rules};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -106,6 +106,10 @@ impl Config {
                     .format
                     .max_top_level_blank_lines
                     .unwrap_or(FormatOptions::default().max_top_level_blank_lines),
+                metadata_list_layout: file_config
+                    .format
+                    .metadata_list_layout
+                    .unwrap_or(FormatOptions::default().metadata_list_layout),
             },
             lint: LintOptions::from_parts(disabled_rules, severity_overrides),
             base_dir: base_dir.to_path_buf(),
@@ -191,6 +195,7 @@ struct FileConfig {
 #[serde(deny_unknown_fields)]
 struct FileFormatConfig {
     max_top_level_blank_lines: Option<usize>,
+    metadata_list_layout: Option<MetadataListLayout>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -250,6 +255,7 @@ mod tests {
             r#"
 [format]
 max_top_level_blank_lines = 0
+metadata_list_layout = "one-per-line"
 
 [lint]
 disable = ["BBT003", "BBT010"]
@@ -264,6 +270,10 @@ exclude = ["vendor/**", "**/files/**"]
         );
 
         assert_eq!(config.format.max_top_level_blank_lines, 0);
+        assert_eq!(
+            config.format.metadata_list_layout,
+            MetadataListLayout::OnePerLine
+        );
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));
         assert!(config.is_excluded(Path::new("/project/recipes/example/files/data.inc")));
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
