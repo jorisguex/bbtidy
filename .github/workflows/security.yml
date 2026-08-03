@@ -1,0 +1,58 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/dependabot.yml"
+      - ".github/workflows/**"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "fuzz/Cargo.lock"
+      - "fuzz/Cargo.toml"
+      - "scripts/check_workflows.py"
+  pull_request:
+    paths:
+      - ".github/dependabot.yml"
+      - ".github/workflows/**"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "fuzz/Cargo.lock"
+      - "fuzz/Cargo.toml"
+      - "scripts/check_workflows.py"
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-security:
+    name: Validate workflow security
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Check immutable action pins
+        run: python3 scripts/check_workflows.py
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Lint workflows
+        run: |
+          actionlint_path="$(go env GOPATH)/bin/actionlint"
+          "$actionlint_path" -color
+
+  dependency-audit:
+    name: Audit Rust dependencies
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Audit root dependency lockfile
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Audit fuzz dependency lockfile
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: fuzz

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Development and packaging examples now use the portable `python3` command.
 - The formatter now normalizes assignment-operator spacing on continued
   assignments while preserving every byte of the continuation tail.
 - Top-level directives now use one separator between the keyword and their
@@ -15,6 +16,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- A dedicated security workflow that validates immutable GitHub Action pins,
+  lints workflows, and audits both locked Rust dependency graphs.
+- Dependabot coverage for root and fuzz Cargo dependencies plus GitHub Actions.
+- A repository-owned workflow pin validator with regression tests.
 - Shell-function boundary detection for quoted, tab-stripping, and multiple
   pending here-documents, including protection against braces in their bodies.
 - Compatibility fixtures covering shell arithmetic, function modifiers,

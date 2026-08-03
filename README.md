@@ -40,7 +40,7 @@ for CI.
 Install the native executable from PyPI with pip:
 
 ```bash
-python -m pip install bbtidy
+python3 -m pip install bbtidy
 bbtidy --version
 ```
 
@@ -284,8 +284,19 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo test --all-targets --locked
 git diff --check
-python -m unittest discover -s tests -p "test_*.py"
+python3 -m unittest discover -s tests -p "test_*.py"
 ```
+
+CI requires every third-party GitHub Action to use an immutable commit pin. Run
+the repository check locally with:
+
+```bash
+python3 scripts/check_workflows.py
+```
+
+The scheduled Security workflow also runs `actionlint`, audits both Cargo lock
+files against the RustSec advisory database, and Dependabot opens weekly Cargo
+and GitHub Actions update pull requests.
 
 Measure the main layer-analysis paths on a repeatable synthetic 1,000-recipe
 fixture with:
@@ -333,8 +344,8 @@ Build and verify the Python wheel and source distribution with:
 
 ```bash
 maturin build --release --locked --sdist --out dist
-python scripts/smoke_test_package.py --kind wheel dist
-python scripts/smoke_test_package.py --kind sdist dist
+python3 scripts/smoke_test_package.py --kind wheel dist
+python3 scripts/smoke_test_package.py --kind sdist dist
 ```
 
 `pip install .` uses the same PEP 517 configuration for a local source build.
@@ -360,7 +371,7 @@ installed, run the complete check with:
 
 ```bash
 cargo build --release --locked
-python scripts/check_upstream_corpus.py
+python3 scripts/check_upstream_corpus.py
 ```
 
 The harness scans more than 3,300 real metadata files, formats a disposable
@@ -373,7 +384,7 @@ Existing pinned checkouts can be reused, and the BitBake parse can be omitted
 on a non-Linux development machine:
 
 ```bash
-python scripts/check_upstream_corpus.py \
+python3 scripts/check_upstream_corpus.py \
     --source-root /path/containing/poky-and-meta-openembedded \
     --skip-bitbake
 ```
