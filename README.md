@@ -102,6 +102,20 @@ To lint a file, recipe directory, or layer:
 bbtidy lint recipes-example/
 ```
 
+For CI integrations, select a machine-readable report format:
+
+```bash
+bbtidy lint --output json recipes-example/
+bbtidy lint --output sarif recipes-example/
+```
+
+JSON output is a versioned object with `version: 1` and a `diagnostics` array.
+Each diagnostic contains `path`, `line`, `column`, `severity`, `rule_id`, and
+`message`. SARIF output follows SARIF 2.1.0 and includes the complete rule
+catalog plus source locations. Text output remains the default. Machine output
+is emitted only after all inputs analyze successfully, so an operational error
+cannot leave a partial JSON or SARIF document on standard output.
+
 Findings use an editor- and CI-friendly format:
 
 ```text
@@ -283,6 +297,26 @@ cargo bench --locked --bench layer_analysis
 The benchmark reports workspace index construction, single-file formatting,
 and batch workspace-aware linting. It is intended for comparing changes across
 the same machine rather than enforcing a wall-clock threshold in CI.
+
+Exercise parser and formatter invariants with the property tests:
+
+```bash
+cargo test --test parser_properties --locked
+```
+
+The repository also contains a cargo-fuzz target for the parser, formatter, and
+linter boundary. With `cargo-fuzz` and a nightly toolchain installed, run a
+short local smoke test with:
+
+```bash
+cargo +nightly fuzz check parser
+cargo +nightly fuzz run parser -- -max_total_time=60
+```
+
+The fuzz target checks that successful parsing is lossless, formatting remains
+parseable, formatting is idempotent, and linting does not panic. Seed inputs
+are stored under `fuzz/corpus/parser/`; the fuzz workflow runs a bounded smoke
+test for changes affecting the parser or formatter.
 
 The package workflow runs these quality checks before building artifacts and
 smoke-tests both the wheel and source distribution. Tag-release validation uses

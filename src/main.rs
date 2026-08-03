@@ -1,9 +1,10 @@
 use bbtidy::{
-    Config, Token, WorkspaceIndex, format_with_options, get_line_col, lint_with_options,
-    lint_with_workspace, load_config,
+    Config, LintDiagnostic, LintSeverity, Token, WorkspaceIndex, format_with_options, get_line_col,
+    lint_rules, lint_with_options, lint_with_workspace, load_config,
 };
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
+use serde_json::{Value, json};
 use similar::TextDiff;
 use std::collections::BTreeSet;
 use std::fs;
@@ -45,7 +46,7 @@ enum Command {
     Check(InputArgs),
 
     /// Check BitBake metadata for lint findings
-    Lint(InputArgs),
+    Lint(LintArgs),
 
     /// Print the lexer token stream
     Lex(InputArgs),
@@ -63,6 +64,23 @@ struct FormatArgs {
 
     #[command(flatten)]
     inputs: InputArgs,
+}
+
+#[derive(Args)]
+struct LintArgs {
+    /// Select human-readable text, JSON, or SARIF diagnostics.
+    #[arg(long, value_enum, default_value_t = LintOutput::Text, value_name = "FORMAT")]
+    output: LintOutput,
+
+    #[command(flatten)]
+    inputs: InputArgs,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum LintOutput {
+    Text,
+    Json,
+    Sarif,
 }
 
 #[derive(Args)]
@@ -173,8 +191,8 @@ fn run_check(args: InputArgs, config: &Config) -> i32 {
     if differences { EXIT_DIFFERENCES } else { 0 }
 }
 
-fn run_lint(args: InputArgs, config: &Config) -> i32 {
-    let inputs = match resolve_inputs(&args.paths, config) {
+fn run_lint(args: LintArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.inputs.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
@@ -194,6 +212,8 @@ fn run_lint(args: InputArgs, config: &Config) -> i32 {
     };
     let mut had_findings = false;
     let mut had_error = false;
+    let machine_output = args.output != LintOutput::Text;
+    let mut collected = Vec::new();
     let mut stdout = io::stdout().lock();
 
     for input in &inputs {
@@ -212,22 +232,31 @@ fn run_lint(args: InputArgs, config: &Config) -> i32 {
         match diagnostics {
             Ok(diagnostics) => {
                 had_findings |= !diagnostics.is_empty();
-                for diagnostic in diagnostics {
-                    if let Err(error) = writeln!(
-                        stdout,
-                        "{}:{}:{}: {}[{}]: {}",
-                        label,
-                        diagnostic.line(),
-                        diagnostic.column(),
-                        diagnostic.severity(),
-                        diagnostic.rule_id(),
-                        diagnostic.message()
-                    ) {
-                        if error.kind() == io::ErrorKind::BrokenPipe {
-                            return 0;
+                if machine_output {
+                    collected.extend(diagnostics.into_iter().map(|diagnostic| {
+                        ReportedDiagnostic {
+                            label: label.clone(),
+                            diagnostic,
                         }
-                        eprintln!("error: could not write standard output: {error}");
-                        return EXIT_ERROR;
+                    }));
+                } else {
+                    for diagnostic in diagnostics {
+                        if let Err(error) = writeln!(
+                            stdout,
+                            "{}:{}:{}: {}[{}]: {}",
+                            label,
+                            diagnostic.line(),
+                            diagnostic.column(),
+                            diagnostic.severity(),
+                            diagnostic.rule_id(),
+                            diagnostic.message()
+                        ) {
+                            if error.kind() == io::ErrorKind::BrokenPipe {
+                                return 0;
+                            }
+                            eprintln!("error: could not write standard output: {error}");
+                            return EXIT_ERROR;
+                        }
                     }
                 }
             }
@@ -240,10 +269,115 @@ fn run_lint(args: InputArgs, config: &Config) -> i32 {
 
     if had_error {
         EXIT_ERROR
-    } else if had_findings {
-        EXIT_DIFFERENCES
     } else {
-        0
+        if machine_output
+            && let Err(error) = write_lint_report(args.output, &collected, &mut stdout)
+        {
+            if error.kind() == io::ErrorKind::BrokenPipe {
+                return 0;
+            }
+            eprintln!("error: could not write standard output: {error}");
+            return EXIT_ERROR;
+        }
+        if had_findings { EXIT_DIFFERENCES } else { 0 }
+    }
+}
+
+struct ReportedDiagnostic {
+    label: String,
+    diagnostic: LintDiagnostic,
+}
+
+fn write_lint_report(
+    output: LintOutput,
+    diagnostics: &[ReportedDiagnostic],
+    stdout: &mut impl Write,
+) -> io::Result<()> {
+    let report = match output {
+        LintOutput::Text => unreachable!("text reports are streamed directly"),
+        LintOutput::Json => json_report(diagnostics),
+        LintOutput::Sarif => sarif_report(diagnostics),
+    };
+    let serialized = serde_json::to_vec_pretty(&report)
+        .map_err(|error| io::Error::other(format!("could not serialize diagnostics: {error}")))?;
+    stdout.write_all(&serialized)?;
+    stdout.write_all(b"\n")
+}
+
+fn json_report(diagnostics: &[ReportedDiagnostic]) -> Value {
+    json!({
+        "version": 1,
+        "diagnostics": diagnostics.iter().map(json_diagnostic).collect::<Vec<_>>(),
+    })
+}
+
+fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
+    let diagnostic = &entry.diagnostic;
+    json!({
+        "path": entry.label,
+        "line": diagnostic.line(),
+        "column": diagnostic.column(),
+        "severity": diagnostic.severity().to_string(),
+        "rule_id": diagnostic.rule_id(),
+        "message": diagnostic.message(),
+    })
+}
+
+fn sarif_report(diagnostics: &[ReportedDiagnostic]) -> Value {
+    let rules = lint_rules()
+        .iter()
+        .map(|rule| {
+            json!({
+                "id": rule.id(),
+                "name": rule.name(),
+                "shortDescription": {"text": rule.description()},
+                "defaultConfiguration": {"level": sarif_level(rule.severity())},
+            })
+        })
+        .collect::<Vec<_>>();
+    let results = diagnostics
+        .iter()
+        .map(|entry| {
+            let diagnostic = &entry.diagnostic;
+            json!({
+                "ruleId": diagnostic.rule_id(),
+                "level": sarif_level(diagnostic.severity()),
+                "message": {"text": diagnostic.message()},
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": entry.label},
+                        "region": {
+                            "startLine": diagnostic.line(),
+                            "startColumn": diagnostic.column(),
+                        },
+                    },
+                }],
+            })
+        })
+        .collect::<Vec<_>>();
+
+    json!({
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": "bbtidy",
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "informationUri": "https://github.com/jorisguex/bbtidy",
+                    "rules": rules,
+                },
+            },
+            "results": results,
+        }],
+    })
+}
+
+fn sarif_level(severity: LintSeverity) -> &'static str {
+    match severity {
+        LintSeverity::Info => "note",
+        LintSeverity::Warning => "warning",
+        LintSeverity::Error => "error",
     }
 }
 

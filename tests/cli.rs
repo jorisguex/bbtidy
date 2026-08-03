@@ -1,3 +1,4 @@
+use serde_json::Value;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -282,6 +283,81 @@ fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
     let clean = run(["lint", file.to_str().unwrap()]);
     assert_success(&clean);
     assert!(clean.stdout.is_empty());
+}
+
+#[test]
+fn lint_json_output_has_a_stable_schema() {
+    let directory = TemporaryDirectory::new("lint-json");
+    let file = directory.write(
+        "example.bb",
+        concat!(
+            "SUMMARY = \"demo\"  \n",
+            "SRCREV = \"${AUTOREV}\"\n",
+            "inherit cmake\n",
+            "inherit cmake\n",
+        ),
+    );
+
+    let output = run(["lint", "--output", "json", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["version"], 1);
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    assert_eq!(diagnostics.len(), 3);
+    assert_eq!(diagnostics[0]["path"], file.display().to_string());
+    assert_eq!(diagnostics[0]["line"], 1);
+    assert_eq!(diagnostics[0]["column"], 17);
+    assert_eq!(diagnostics[0]["severity"], "warning");
+    assert_eq!(diagnostics[0]["rule_id"], "BBT001");
+}
+
+#[test]
+fn lint_sarif_output_contains_rules_locations_and_results() {
+    let directory = TemporaryDirectory::new("lint-sarif");
+    let file = directory.write("example.bb", "SRCREV = \"${AUTOREV}\"\n");
+
+    let output = run(["lint", "--output", "sarif", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["version"], "2.1.0");
+    assert_eq!(
+        report["$schema"],
+        "https://json.schemastore.org/sarif-2.1.0.json"
+    );
+    let run = &report["runs"][0];
+    assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 9);
+    let result = &run["results"][0];
+    assert_eq!(result["ruleId"], "BBT004");
+    assert_eq!(result["level"], "warning");
+    assert_eq!(
+        result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"],
+        file.display().to_string()
+    );
+    assert_eq!(
+        result["locations"][0]["physicalLocation"]["region"]["startLine"],
+        1
+    );
+}
+
+#[test]
+fn machine_lint_output_is_not_partial_when_analysis_fails() {
+    let directory = TemporaryDirectory::new("lint-json-error");
+    let file = directory.write("malformed.bb", "SUMMARY = \"unterminated\n");
+
+    let output = run(["lint", "--output", "json", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("top-level assignment contains an unclosed quote")
+    );
 }
 
 #[test]

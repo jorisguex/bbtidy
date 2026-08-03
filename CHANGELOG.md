@@ -41,6 +41,10 @@ All notable changes to this project will be documented in this file.
   same-priority `require` and `inherit` ambiguities.
 - Workspace resolution now models static `BBPATH`, layer collections and
   patterns, BitBake class search scopes, and `include_all` multi-match lookup.
+- Linting now supports versioned JSON and SARIF output, with complete rule
+  metadata and source locations for CI integrations.
+- Added parser conformance/property tests and a cargo-fuzz target covering
+  losslessness, parseability, idempotence, and lint robustness.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 

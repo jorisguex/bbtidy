@@ -1,0 +1,19 @@
+[package]
+name = "bbtidy-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+bbtidy = { path = ".." }
+libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "parser"
+path = "fuzz_targets/parser.rs"
+test = false
+doc = false
+bench = false

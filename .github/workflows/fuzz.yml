@@ -1,0 +1,43 @@
+name: Parser fuzzing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fuzz.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "fuzz/**"
+      - "src/**"
+  pull_request:
+    paths:
+      - ".github/workflows/fuzz.yml"
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "fuzz/**"
+      - "src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parser:
+    name: Fuzz parser and formatter
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Rust nightly
+        run: rustup toolchain install nightly --profile minimal
+
+      - name: Install cargo-fuzz
+        run: cargo +nightly install cargo-fuzz --locked
+
+      - name: Compile fuzz target
+        run: cargo +nightly fuzz check parser
+
+      - name: Run seeded fuzz smoke test
+        run: cargo +nightly fuzz run parser -- -max_total_time=30 -seed=20260803

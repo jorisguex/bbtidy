@@ -404,9 +404,10 @@ fn parse_directive<'a>(
     text: &'a str,
     continued: bool,
 ) -> Option<DirectiveSyntax<'a>> {
-    let content_end = text_without_final_line_ending(text).len();
-    let leading = text.len() - text.trim_start_matches([' ', '\t']).len();
-    let trimmed = &text[leading..];
+    let content = text_without_final_line_ending(text);
+    let content_end = content.len();
+    let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
+    let trimmed = &content[leading..];
     let keywords = [
         DirectiveKeyword::IncludeAll,
         DirectiveKeyword::InheritDefer,
@@ -618,6 +619,17 @@ mod tests {
         assert!(matches!(tree.nodes()[0].kind(), SyntaxKind::Blank));
         assert!(matches!(tree.nodes()[1].kind(), SyntaxKind::Comment));
         assert!(matches!(tree.nodes()[2].kind(), SyntaxKind::Unknown));
+    }
+
+    #[test]
+    fn directives_without_arguments_have_empty_ranges() {
+        let tree = parse("include_all\n").unwrap();
+        let SyntaxKind::Directive(directive) = tree.nodes()[0].kind() else {
+            panic!("expected directive");
+        };
+
+        assert_eq!(directive.arguments(), "");
+        assert_eq!(directive.arguments_range(), TextRange::new(11, 11));
     }
 
     #[test]
