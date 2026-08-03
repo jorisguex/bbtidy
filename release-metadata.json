@@ -80,7 +80,7 @@
       "runner": "macos-15-intel",
       "target": "x86_64",
       "manylinux": "off",
-      "wheel_platform": "macosx_11_0_x86_64",
+      "wheel_platform": "macosx_10_12_x86_64",
       "binary_asset": "macos-x86_64",
       "binary_extension": "",
       "smoke_test": true,

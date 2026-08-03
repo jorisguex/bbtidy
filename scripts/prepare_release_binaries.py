@@ -24,14 +24,15 @@ def wheel_metadata(path):
     parts = path.stem.split("-")
     if len(parts) < 5 or parts[0] != "bbtidy":
         raise RuntimeError("unexpected bbtidy wheel name: {}".format(path.name))
-    platform = parts[-1]
-    if platform not in SUPPORTED_PLATFORMS:
-        raise RuntimeError(
-            "unsupported bbtidy wheel platform '{}'; expected one of {}".format(
-                platform, ", ".join(sorted(SUPPORTED_PLATFORMS))
-            )
+    platform_tags = parts[-1].split(".")
+    for platform in platform_tags:
+        if platform in SUPPORTED_PLATFORMS:
+            return parts[1], platform
+    raise RuntimeError(
+        "unsupported bbtidy wheel platform '{}'; expected one of {}".format(
+            parts[-1], ", ".join(sorted(SUPPORTED_PLATFORMS))
         )
-    return parts[1], platform
+    )
 
 
 def extract_binary(wheel, output_directory, release_tag):

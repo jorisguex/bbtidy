@@ -62,6 +62,12 @@ class ReleaseMetadataTests(unittest.TestCase):
             sum(entry["container"] is not None for entry in entries),
             5,
         )
+        self.assertEqual(
+            next(entry for entry in entries if entry["name"] == "macos-x86_64")[
+                "wheel_platform"
+            ],
+            "macosx_10_12_x86_64",
+        )
 
     def test_release_context_rejects_a_tag_not_matching_cargo_version(self):
         with self.assertRaisesRegex(ValueError, "does not match Cargo version"):
@@ -160,13 +166,27 @@ class ReleaseChecksumTests(unittest.TestCase):
 
 
 class ReleaseArtifactTests(unittest.TestCase):
-    def write_distribution_set(self, directory, metadata_version=None):
+    def write_distribution_set(
+        self, directory, metadata_version=None, composite_manylinux_tags=False
+    ):
         version = pep440_version(cargo_version())
         metadata_version = metadata_version or version
+        manylinux_compatibility_tags = {
+            "manylinux_2_17_x86_64": "manylinux2014_x86_64",
+            "manylinux_2_17_aarch64": "manylinux2014_aarch64",
+            "manylinux_2_17_armv7l": "manylinux2014_armv7l",
+        }
         for entry in wheel_entries():
             platform = entry["wheel_platform"]
             executable = "bbtidy.exe" if entry["binary_extension"] else "bbtidy"
-            wheel = directory / "bbtidy-{}-py3-none-{}.whl".format(version, platform)
+            wheel_platform = platform
+            if composite_manylinux_tags and platform in manylinux_compatibility_tags:
+                wheel_platform = "{}.{}".format(
+                    platform, manylinux_compatibility_tags[platform]
+                )
+            wheel = directory / "bbtidy-{}-py3-none-{}.whl".format(
+                version, wheel_platform
+            )
             with zipfile.ZipFile(wheel, "w") as archive:
                 archive.writestr(
                     "bbtidy-{}.data/scripts/{}".format(version, executable),
@@ -203,6 +223,15 @@ class ReleaseArtifactTests(unittest.TestCase):
             self.assertEqual(result["python_version"], version)
             self.assertEqual(len(result["wheels"]), len(SUPPORTED_PLATFORMS))
             self.assertEqual(result["sdist"].name, "bbtidy-{}.tar.gz".format(version))
+
+    def test_verifies_composite_manylinux_platform_tags(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            self.write_distribution_set(directory, composite_manylinux_tags=True)
+
+            result = verify_distributions(directory)
+
+            self.assertEqual(len(result["wheels"]), len(SUPPORTED_PLATFORMS))
 
     def test_rejects_embedded_package_metadata_version_mismatch(self):
         with tempfile.TemporaryDirectory() as temporary:

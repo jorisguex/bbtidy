@@ -275,7 +275,7 @@ operations can parse once and reuse the same tree.
 
 ## Supported syntax
 
-The `0.1.0-alpha.3` lexer recognizes:
+The `0.1.0-alpha.4` lexer recognizes:
 
 - Assignments using `=`, `:=`, `?=`, `??=`, `+=`, `=+`, `.=` and `=.`
 - Literal and dynamic overrides such as `RDEPENDS:${PN}:class-native`
@@ -367,7 +367,7 @@ python3 scripts/smoke_test_package.py --kind sdist dist
 
 `pip install .` uses the same PEP 517 configuration for a local source build.
 The Cargo version is the release source of truth; maturin converts prereleases
-to PEP 440 automatically, for example `0.1.0-alpha.3` becomes `0.1.0a3`.
+to PEP 440 automatically, for example `0.1.0-alpha.4` becomes `0.1.0a4`.
 
 The integration suite includes a representative fixture layer containing
 `.bb`, `.bbappend`, `.bbclass`, `.inc`, and `.conf` files. It verifies golden

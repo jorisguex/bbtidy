@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.4] - 2026-08-03
+
+### Fixed
+
+- Release artifact verification now accepts composite manylinux compatibility
+  tags and the Intel macOS wheel platform produced by Maturin, allowing the
+  complete PyPI and GitHub Release publication flow to run.
+
 ## [0.1.0-alpha.3] - 2026-08-03
 
 ### Changed
