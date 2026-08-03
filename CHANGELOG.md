@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-08-03
+
 ### Changed
 
 - Development and packaging examples now use the portable `python3` command.
