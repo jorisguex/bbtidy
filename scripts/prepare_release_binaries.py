@@ -7,16 +7,14 @@ import sys
 import zipfile
 from pathlib import Path
 
+try:
+    from scripts.release_metadata import supported_platforms, wheel_entries
+except ImportError:
+    from release_metadata import supported_platforms, wheel_entries  # type: ignore
 
-SUPPORTED_PLATFORMS = {
-    "manylinux_2_17_x86_64": "linux-x86_64",
-    "manylinux_2_17_aarch64": "linux-aarch64",
-    "manylinux_2_17_armv7l": "linux-armv7",
-    "musllinux_1_2_x86_64": "linux-musl-x86_64",
-    "musllinux_1_2_aarch64": "linux-musl-aarch64",
-    "macosx_11_0_x86_64": "macos-x86_64",
-    "macosx_11_0_arm64": "macos-arm64",
-    "win_amd64": "windows-x86_64",
+SUPPORTED_PLATFORMS = supported_platforms()
+SUPPORTED_EXTENSIONS = {
+    entry["wheel_platform"]: entry["binary_extension"] for entry in wheel_entries()
 }
 
 
@@ -53,8 +51,17 @@ def extract_binary(wheel, output_directory, release_tag):
             )
         executable_name = candidates[0].rsplit("/", 1)[-1]
         suffix = ".exe" if executable_name == "bbtidy.exe" else ""
+        expected_suffix = SUPPORTED_EXTENSIONS[wheel_metadata(wheel)[1]]
+        if suffix != expected_suffix:
+            raise RuntimeError(
+                "packaged executable extension for {} does not match release metadata".format(
+                    wheel.name
+                )
+            )
         destination = output_directory / (
-            "bbtidy-{}-{}{}".format(release_tag, SUPPORTED_PLATFORMS[platform], suffix)
+            "bbtidy-{}-{}{}".format(
+                release_tag, SUPPORTED_PLATFORMS[platform], expected_suffix
+            )
         )
         destination.write_bytes(archive.read(candidates[0]))
         if suffix == "":

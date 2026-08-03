@@ -16,8 +16,8 @@ jobs:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Match tag and package version
-        run: python scripts/check_release_version.py
+      - name: Validate release metadata
+        run: python scripts/release_metadata.py
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -44,6 +44,8 @@ jobs:
 
       - name: Validate package
         run: cargo publish --locked --dry-run
+      - name: Inspect packaged crate contents
+        run: cargo package --locked --list
 
   publish:
     name: Publish crate
@@ -60,8 +62,8 @@ jobs:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Match tag and package version
-        run: python scripts/check_release_version.py
+      - name: Validate release metadata
+        run: python scripts/release_metadata.py
 
       - name: Authenticate with crates.io
         id: auth

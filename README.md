@@ -322,6 +322,13 @@ The package workflow runs these quality checks before building artifacts and
 smoke-tests both the wheel and source distribution. Tag-release validation uses
 the same checks before enabling the PyPI publishing jobs.
 
+Release artifact expectations are defined once in
+`release-metadata.json`. The release workflows derive their wheel matrix,
+standalone-binary names, and Linux container smoke tests from that manifest.
+The `verify_release_artifacts.py` helper rejects missing or unexpected wheel
+platforms, mismatched embedded package metadata, unsafe source-distribution
+paths, and an incomplete source-distribution set before publication.
+
 Build and verify the Python wheel and source distribution with:
 
 ```bash
@@ -424,7 +431,10 @@ For crates.io, configure the `bbtidy` crate with owner `jorisguex`, repository
 `bbtidy`, workflow `publish-crates.yml`, and environment `crates-io-release`.
 No repository API token is needed for either publisher. The version guard
 rejects mismatched tags before release artifacts are built, and manual workflow
-runs never publish to either registry.
+runs never publish to either registry. Registry publication and GitHub Release
+asset creation wait for the complete distribution and binary verification jobs;
+Linux smoke tests also compare each executable's `--version` output with the
+Cargo release version.
 
 ## License
 

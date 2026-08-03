@@ -12,10 +12,13 @@ jobs:
   validate:
     name: Validate release version
     runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.release-metadata.outputs.matrix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - name: Match tag and package versions
-        run: python scripts/check_release_version.py
+      - name: Validate release metadata
+        id: release-metadata
+        run: python scripts/release_metadata.py --github-output "$GITHUB_OUTPUT"
       - name: Test packaging helpers
         run: python -m unittest discover -s tests -p "test_*.py"
       - name: Check formatting
@@ -36,47 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - name: manylinux-x86_64
-            runner: ubuntu-24.04
-            target: x86_64
-            manylinux: "2_17"
-            smoke_test: true
-          - name: manylinux-aarch64
-            runner: ubuntu-24.04
-            target: aarch64
-            manylinux: "2_17"
-            smoke_test: false
-          - name: manylinux-armv7
-            runner: ubuntu-24.04
-            target: armv7-unknown-linux-gnueabihf
-            manylinux: "2_17"
-            smoke_test: false
-          - name: musllinux-x86_64
-            runner: ubuntu-24.04
-            target: x86_64
-            manylinux: musllinux_1_2
-            smoke_test: false
-          - name: musllinux-aarch64
-            runner: ubuntu-24.04
-            target: aarch64
-            manylinux: musllinux_1_2
-            smoke_test: false
-          - name: macos-x86_64
-            runner: macos-15-intel
-            target: x86_64
-            manylinux: "off"
-            smoke_test: true
-          - name: macos-aarch64
-            runner: macos-15
-            target: aarch64
-            manylinux: "off"
-            smoke_test: true
-          - name: windows-x86_64
-            runner: windows-2025
-            target: x64
-            manylinux: "off"
-            smoke_test: true
+        platform: ${{ fromJSON(needs.validate.outputs.matrix) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -106,7 +69,7 @@ jobs:
 
   verify-release-binaries:
     name: Verify Linux release binaries
-    needs: wheels
+    needs: verify-distributions
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -128,29 +91,19 @@ jobs:
         run: |
           set -euo pipefail
           binary_dir="$GITHUB_WORKSPACE/release-binaries"
+          python scripts/release_metadata.py \
+            --asset-tag "$GITHUB_REF_NAME" \
+            --linux-smoke-plan > smoke-plan.tsv
 
-          smoke_test() {
-            local platform="$1"
-            local image="$2"
-            local binary="$3"
+          while IFS=$'\t' read -r platform image binary expected_version; do
             echo "Testing ${binary} on ${platform}"
-            timeout 60s docker run --rm --network none \
+            actual_version="$(timeout 60s docker run --rm --network none \
               --platform "$platform" \
               --volume "$binary_dir:/release:ro" \
               "$image" \
-              "/release/${binary}" --version
-          }
-
-          smoke_test "linux/amd64" "debian:bookworm-slim" \
-            "bbtidy-${GITHUB_REF_NAME}-linux-x86_64"
-          smoke_test "linux/arm64" "debian:bookworm-slim" \
-            "bbtidy-${GITHUB_REF_NAME}-linux-aarch64"
-          smoke_test "linux/arm/v7" "debian:bookworm-slim" \
-            "bbtidy-${GITHUB_REF_NAME}-linux-armv7"
-          smoke_test "linux/amd64" "alpine:3.21" \
-            "bbtidy-${GITHUB_REF_NAME}-linux-musl-x86_64"
-          smoke_test "linux/arm64" "alpine:3.21" \
-            "bbtidy-${GITHUB_REF_NAME}-linux-musl-aarch64"
+              "/release/${binary}" --version)"
+            test "$actual_version" = "$expected_version"
+          done < smoke-plan.tsv
 
   sdist:
     name: Source distribution
@@ -176,10 +129,24 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  verify-distributions:
+    name: Verify published distribution set
+    needs: [wheels, sdist]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: python-dist-*
+          path: dist
+          merge-multiple: true
+      - name: Verify wheel and source distribution metadata
+        run: python scripts/verify_release_artifacts.py --dist-dir dist
+
   publish:
     name: Publish distributions
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
-    needs: [wheels, sdist, verify-release-binaries]
+    needs: [verify-distributions, verify-release-binaries]
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -201,7 +168,7 @@ jobs:
 
   github-release:
     name: GitHub Release binaries
-    needs: [wheels, sdist, verify-release-binaries]
+    needs: [verify-distributions, verify-release-binaries]
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
     runs-on: ubuntu-24.04
     permissions:

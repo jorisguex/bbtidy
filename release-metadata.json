@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "package": {
+    "name": "bbtidy",
+    "tag_prefix": "v"
+  },
+  "wheel_matrix": [
+    {
+      "name": "manylinux-x86_64",
+      "runner": "ubuntu-24.04",
+      "target": "x86_64",
+      "manylinux": "2_17",
+      "wheel_platform": "manylinux_2_17_x86_64",
+      "binary_asset": "linux-x86_64",
+      "binary_extension": "",
+      "smoke_test": true,
+      "container": {
+        "platform": "linux/amd64",
+        "image": "debian:bookworm-slim"
+      }
+    },
+    {
+      "name": "manylinux-aarch64",
+      "runner": "ubuntu-24.04",
+      "target": "aarch64",
+      "manylinux": "2_17",
+      "wheel_platform": "manylinux_2_17_aarch64",
+      "binary_asset": "linux-aarch64",
+      "binary_extension": "",
+      "smoke_test": false,
+      "container": {
+        "platform": "linux/arm64",
+        "image": "debian:bookworm-slim"
+      }
+    },
+    {
+      "name": "manylinux-armv7",
+      "runner": "ubuntu-24.04",
+      "target": "armv7-unknown-linux-gnueabihf",
+      "manylinux": "2_17",
+      "wheel_platform": "manylinux_2_17_armv7l",
+      "binary_asset": "linux-armv7",
+      "binary_extension": "",
+      "smoke_test": false,
+      "container": {
+        "platform": "linux/arm/v7",
+        "image": "debian:bookworm-slim"
+      }
+    },
+    {
+      "name": "musllinux-x86_64",
+      "runner": "ubuntu-24.04",
+      "target": "x86_64",
+      "manylinux": "musllinux_1_2",
+      "wheel_platform": "musllinux_1_2_x86_64",
+      "binary_asset": "linux-musl-x86_64",
+      "binary_extension": "",
+      "smoke_test": false,
+      "container": {
+        "platform": "linux/amd64",
+        "image": "alpine:3.21"
+      }
+    },
+    {
+      "name": "musllinux-aarch64",
+      "runner": "ubuntu-24.04",
+      "target": "aarch64",
+      "manylinux": "musllinux_1_2",
+      "wheel_platform": "musllinux_1_2_aarch64",
+      "binary_asset": "linux-musl-aarch64",
+      "binary_extension": "",
+      "smoke_test": false,
+      "container": {
+        "platform": "linux/arm64",
+        "image": "alpine:3.21"
+      }
+    },
+    {
+      "name": "macos-x86_64",
+      "runner": "macos-15-intel",
+      "target": "x86_64",
+      "manylinux": "off",
+      "wheel_platform": "macosx_11_0_x86_64",
+      "binary_asset": "macos-x86_64",
+      "binary_extension": "",
+      "smoke_test": true,
+      "container": null
+    },
+    {
+      "name": "macos-aarch64",
+      "runner": "macos-15",
+      "target": "aarch64",
+      "manylinux": "off",
+      "wheel_platform": "macosx_11_0_arm64",
+      "binary_asset": "macos-arm64",
+      "binary_extension": "",
+      "smoke_test": true,
+      "container": null
+    },
+    {
+      "name": "windows-x86_64",
+      "runner": "windows-2025",
+      "target": "x64",
+      "manylinux": "off",
+      "wheel_platform": "win_amd64",
+      "binary_asset": "windows-x86_64",
+      "binary_extension": ".exe",
+      "smoke_test": true,
+      "container": null
+    }
+  ]
+}

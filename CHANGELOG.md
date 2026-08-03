@@ -45,6 +45,9 @@ All notable changes to this project will be documented in this file.
   metadata and source locations for CI integrations.
 - Added parser conformance/property tests and a cargo-fuzz target covering
   losslessness, parseability, idempotence, and lint robustness.
+- Consolidated the release wheel, binary, and container verification matrix in
+  `release-metadata.json`; publication now verifies embedded distribution
+  metadata and exact standalone-binary versions before registry upload.
 
 ## [0.1.0-alpha.2] - 2026-08-02
 
