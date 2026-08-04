@@ -297,6 +297,37 @@ The formatter remains deliberately conservative: outside the opt-in static-list
 layout above, it does not wrap values, reindent continuation lines, or format
 embedded shell or Python code.
 
+## BitBake version conformance
+
+bbtidy continuously tests the currently supported Yocto Project release lines.
+Support means that a pinned corpus from the listed release is formatted
+losslessly and idempotently, structural CST coverage stays within its checked-in
+thresholds, and both the original and formatted layers pass a real
+`bitbake --parse-only core-image-minimal` run.
+
+| Support tier | Yocto release | BitBake | CI policy |
+| --- | --- | --- | --- |
+| Supported | 5.0 LTS (scarthgap) | 2.8 | Required on relevant changes |
+| Supported | 6.0 LTS (wrynose) | 2.18 | Required on relevant changes |
+| Development | master | master | Scheduled and manually triggered; non-blocking |
+
+The pinned manifests live in `tests/upstream-corpora/`. Updating a supported
+snapshot is an explicit compatibility change: update its full commit revisions,
+review any CST metric movement, and require the complete differential parse
+check to pass. The moving `master` corpus follows upstream branch heads to
+surface upcoming syntax changes without changing the release gate.
+
+Run a stable corpus check locally after building a release binary:
+
+```bash
+cargo build --locked --release
+python3 scripts/check_upstream_corpus.py \
+  --manifest tests/upstream-corpora/yocto-5.0-scarthgap.json
+```
+
+Use `--skip-bitbake` for formatter, lint, preservation, and CST checks on hosts
+that cannot run BitBake. This does not satisfy the supported-release CI gate.
+
 ## Development
 
 Run the test suite with:

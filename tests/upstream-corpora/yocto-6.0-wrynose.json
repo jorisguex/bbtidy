@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "id": "yocto-6.0-wrynose",
+  "tier": "supported",
+  "yocto_version": "6.0",
+  "bitbake_version": "2.18",
+  "snapshot": "Yocto Project 6.0 LTS (wrynose), 2026-08-04",
+  "repositories": [
+    {
+      "name": "openembedded-core",
+      "url": "https://github.com/openembedded/openembedded-core.git",
+      "revision": "f09a0f28aeb54ddd90415dd458338e1565bb5a49",
+      "sparse_paths": [
+        ".templateconf",
+        "meta/",
+        "scripts/",
+        "oe-init-build-env"
+      ]
+    },
+    {
+      "name": "bitbake",
+      "url": "https://github.com/openembedded/bitbake.git",
+      "revision": "fae9db3168dbff1b8c76fe9c6726a9687ff97514",
+      "sparse_paths": [
+        "*"
+      ]
+    },
+    {
+      "name": "meta-openembedded",
+      "url": "https://github.com/openembedded/meta-openembedded.git",
+      "revision": "af8b6d6b2f0b11595b0a0d5b82efa3129d52a628",
+      "sparse_paths": [
+        "meta-networking/",
+        "meta-oe/",
+        "meta-python/"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "name": "openembedded-core",
+      "repository": "openembedded-core",
+      "path": "meta",
+      "minimum_files": 1500
+    },
+    {
+      "name": "meta-oe",
+      "repository": "meta-openembedded",
+      "path": "meta-oe",
+      "minimum_files": 1000
+    },
+    {
+      "name": "meta-python",
+      "repository": "meta-openembedded",
+      "path": "meta-python",
+      "minimum_files": 650
+    },
+    {
+      "name": "meta-networking",
+      "repository": "meta-openembedded",
+      "path": "meta-networking",
+      "minimum_files": 230
+    }
+  ],
+  "syntax_metrics": {
+    "minimum_structured_nodes": 65000,
+    "maximum_unknown_nodes": 200
+  },
+  "bitbake": {
+    "init_repository": "openembedded-core",
+    "template": "meta/conf/templates/default",
+    "target": "core-image-minimal",
+    "additional_layers": [
+      "meta-openembedded/meta-oe",
+      "meta-openembedded/meta-python",
+      "meta-openembedded/meta-networking"
+    ]
+  }
+}

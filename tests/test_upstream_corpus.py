@@ -7,6 +7,7 @@ from scripts.check_upstream_corpus import (
     discover_metadata_files,
     load_manifest,
     opaque_regions,
+    verify_syntax_metrics,
     workflow_command_value,
 )
 
@@ -14,11 +15,22 @@ from scripts.check_upstream_corpus import (
 class ManifestTests(unittest.TestCase):
     def test_checked_in_manifest_is_valid(self):
         root = Path(__file__).resolve().parents[1]
-        manifest = load_manifest(root / "tests" / "upstream-corpus.json")
+        manifests = sorted((root / "tests" / "upstream-corpora").glob("*.json"))
 
-        self.assertEqual(manifest["schema"], 1)
-        self.assertEqual(len(manifest["repositories"]), 2)
-        self.assertEqual(len(manifest["layers"]), 4)
+        self.assertEqual(len(manifests), 3)
+        loaded = [load_manifest(path) for path in manifests]
+        self.assertEqual(
+            {manifest["id"] for manifest in loaded},
+            {"yocto-5.0-scarthgap", "yocto-6.0-wrynose", "yocto-master"},
+        )
+        self.assertEqual(
+            {
+                (manifest["yocto_version"], manifest["bitbake_version"])
+                for manifest in loaded
+                if manifest["tier"] == "supported"
+            },
+            {("5.0", "2.8"), ("6.0", "2.18")},
+        )
 
     def test_manifest_rejects_floating_revisions(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -27,6 +39,10 @@ class ManifestTests(unittest.TestCase):
                 """
 {
   "schema": 1,
+  "id": "example",
+  "tier": "supported",
+  "yocto_version": "1",
+  "bitbake_version": "1",
   "repositories": [{
     "name": "example",
     "url": "https://example.com/repository.git",
@@ -38,7 +54,17 @@ class ManifestTests(unittest.TestCase):
     "repository": "example",
     "path": "meta",
     "minimum_files": 1
-  }]
+  }],
+  "syntax_metrics": {
+    "minimum_structured_nodes": 1,
+    "maximum_unknown_nodes": 0
+  },
+  "bitbake": {
+    "init_repository": "example",
+    "template": "meta/conf/templates/default",
+    "target": "example",
+    "additional_layers": []
+  }
 }
 """,
                 encoding="utf-8",
@@ -46,6 +72,40 @@ class ManifestTests(unittest.TestCase):
 
             with self.assertRaises(CompatibilityError):
                 load_manifest(manifest)
+
+    def test_development_manifest_accepts_an_explicit_branch_ref(self):
+        root = Path(__file__).resolve().parents[1]
+        manifest = load_manifest(root / "tests" / "upstream-corpora/yocto-master.json")
+
+        self.assertEqual(manifest["tier"], "development")
+        self.assertTrue(
+            all(repository["ref"].startswith("refs/heads/")
+                for repository in manifest["repositories"])
+        )
+
+
+class SyntaxMetricsTests(unittest.TestCase):
+    def test_rejects_structural_coverage_regressions(self):
+        source = {
+            "version": 1,
+            "files": 2,
+            "structured_nodes": 10,
+            "unknown_nodes": 1,
+        }
+        formatted = {
+            "version": 1,
+            "files": 2,
+            "structured_nodes": 9,
+            "unknown_nodes": 2,
+        }
+
+        with self.assertRaises(CompatibilityError):
+            verify_syntax_metrics(
+                source,
+                formatted,
+                {"minimum_structured_nodes": 10, "maximum_unknown_nodes": 1},
+                2,
+            )
 
 
 class DiscoveryTests(unittest.TestCase):

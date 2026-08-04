@@ -401,12 +401,28 @@ fn find_brace_block_end(
             index += 1;
             continue;
         }
-        if byte == b'\\' {
+        if byte == b'\\'
+            && !matches!(
+                (function_kind, quote),
+                (
+                    ScannerFunctionKind::Shell,
+                    Some(FunctionQuote::Single(b'\''))
+                )
+            )
+        {
             escaped = true;
             index += 1;
             continue;
         }
         if let Some(active_quote) = quote {
+            if matches!(
+                (function_kind, active_quote),
+                (ScannerFunctionKind::Shell, FunctionQuote::Single(b'"'))
+            ) && bytes[index..].starts_with(b"$(")
+            {
+                index = skip_shell_command_substitution(bytes, index + 2)?;
+                continue;
+            }
             match active_quote {
                 FunctionQuote::Single(delimiter) if byte == delimiter => {
                     quote = None;
@@ -437,6 +453,12 @@ fn find_brace_block_end(
         {
             arithmetic_depth += 1;
             index += 2;
+            continue;
+        }
+
+        if matches!(function_kind, ScannerFunctionKind::Shell) && bytes[index..].starts_with(b"$(")
+        {
+            index = skip_shell_command_substitution(bytes, index + 2)?;
             continue;
         }
 
@@ -472,6 +494,59 @@ fn find_brace_block_end(
                 depth = depth.checked_sub(1)?;
                 if depth == 0 {
                     return Some(next_line_end(text, index));
+                }
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+
+    None
+}
+
+fn skip_shell_command_substitution(bytes: &[u8], mut index: usize) -> Option<usize> {
+    let mut depth = 1_usize;
+    let mut quote = None;
+    let mut escaped = false;
+    let mut comment = false;
+
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if comment {
+            if byte == b'\n' {
+                comment = false;
+            }
+            index += 1;
+            continue;
+        }
+        if escaped {
+            escaped = false;
+            index += 1;
+            continue;
+        }
+        if quote != Some(b'\'') && byte == b'\\' {
+            escaped = true;
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+
+        match byte {
+            b'\'' | b'"' => quote = Some(byte),
+            b'#' if is_comment_start_in_function(bytes, index, ScannerFunctionKind::Shell) => {
+                comment = true;
+            }
+            b'(' => depth += 1,
+            b')' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    return Some(index + 1);
                 }
             }
             _ => {}
@@ -1237,6 +1312,42 @@ mod tests {
         assert!(formatted.contains("        VALUE=unchanged\n"));
         assert!(formatted.contains("    echo \"${VALUE}\"\n"));
         assert!(formatted.ends_with("VAR = \"formatted\"\n"));
+    }
+
+    #[test]
+    fn test_format_preserves_quotes_inside_shell_command_substitution() {
+        let input = concat!(
+            "do_compile() {\n",
+            "    VALUE=\"$(printf '%s' '\"')\"\n",
+            "}\n",
+            "SUMMARY=\"Example\"\n",
+        );
+        let expected = concat!(
+            "do_compile() {\n",
+            "    VALUE=\"$(printf '%s' '\"')\"\n",
+            "}\n",
+            "SUMMARY = \"Example\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_preserves_backslash_at_end_of_shell_single_quote() {
+        let input = concat!(
+            "do_install() {\n",
+            "    sed -e '$a\\' -e 'VALUE := example' ${D}/Makefile\n",
+            "}\n",
+            "SUMMARY=\"Example\"\n",
+        );
+        let expected = concat!(
+            "do_install() {\n",
+            "    sed -e '$a\\' -e 'VALUE := example' ${D}/Makefile\n",
+            "}\n",
+            "SUMMARY = \"Example\"\n",
+        );
+
+        assert_eq!(format(input).unwrap(), expected);
     }
 
     #[test]

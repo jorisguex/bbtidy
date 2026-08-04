@@ -1,25 +1,34 @@
 {
   "schema": 1,
-  "snapshot": "Yocto Project 5.0 LTS (scarthgap), 2026-08-02",
+  "id": "yocto-master",
+  "tier": "development",
+  "yocto_version": "master",
+  "bitbake_version": "master",
+  "snapshot": "Moving development branches",
   "repositories": [
     {
-      "name": "poky",
-      "url": "https://github.com/yoctoproject/poky.git",
-      "revision": "077627338ac18aeca34bfe0c52777fab38e2e0c0",
+      "name": "openembedded-core",
+      "url": "https://github.com/openembedded/openembedded-core.git",
+      "ref": "refs/heads/master",
       "sparse_paths": [
         ".templateconf",
-        "bitbake/",
         "meta/",
-        "meta-poky/",
-        "meta-yocto-bsp/",
         "scripts/",
         "oe-init-build-env"
       ]
     },
     {
+      "name": "bitbake",
+      "url": "https://github.com/openembedded/bitbake.git",
+      "ref": "refs/heads/master",
+      "sparse_paths": [
+        "*"
+      ]
+    },
+    {
       "name": "meta-openembedded",
       "url": "https://github.com/openembedded/meta-openembedded.git",
-      "revision": "ef3df29f2cfca6a9513b51ebcdccf82b6c8a836f",
+      "ref": "refs/heads/master",
       "sparse_paths": [
         "meta-networking/",
         "meta-oe/",
@@ -30,32 +39,36 @@
   "layers": [
     {
       "name": "openembedded-core",
-      "repository": "poky",
+      "repository": "openembedded-core",
       "path": "meta",
-      "minimum_files": 1400
+      "minimum_files": 1500
     },
     {
       "name": "meta-oe",
       "repository": "meta-openembedded",
       "path": "meta-oe",
-      "minimum_files": 900
+      "minimum_files": 1000
     },
     {
       "name": "meta-python",
       "repository": "meta-openembedded",
       "path": "meta-python",
-      "minimum_files": 550
+      "minimum_files": 650
     },
     {
       "name": "meta-networking",
       "repository": "meta-openembedded",
       "path": "meta-networking",
-      "minimum_files": 200
+      "minimum_files": 230
     }
   ],
+  "syntax_metrics": {
+    "minimum_structured_nodes": 68000,
+    "maximum_unknown_nodes": 200
+  },
   "bitbake": {
-    "repository": "poky",
-    "template": "meta-poky/conf/templates/default",
+    "init_repository": "openembedded-core",
+    "template": "meta/conf/templates/default",
     "target": "core-image-minimal",
     "additional_layers": [
       "meta-openembedded/meta-oe",

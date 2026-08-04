@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "id": "yocto-5.0-scarthgap",
+  "tier": "supported",
+  "yocto_version": "5.0",
+  "bitbake_version": "2.8",
+  "snapshot": "Yocto Project 5.0 LTS (scarthgap), 2026-08-02",
+  "repositories": [
+    {
+      "name": "poky",
+      "url": "https://github.com/yoctoproject/poky.git",
+      "revision": "077627338ac18aeca34bfe0c52777fab38e2e0c0",
+      "sparse_paths": [
+        ".templateconf",
+        "bitbake/",
+        "meta/",
+        "meta-poky/",
+        "meta-yocto-bsp/",
+        "scripts/",
+        "oe-init-build-env"
+      ]
+    },
+    {
+      "name": "meta-openembedded",
+      "url": "https://github.com/openembedded/meta-openembedded.git",
+      "revision": "ef3df29f2cfca6a9513b51ebcdccf82b6c8a836f",
+      "sparse_paths": [
+        "meta-networking/",
+        "meta-oe/",
+        "meta-python/"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "name": "openembedded-core",
+      "repository": "poky",
+      "path": "meta",
+      "minimum_files": 1400
+    },
+    {
+      "name": "meta-oe",
+      "repository": "meta-openembedded",
+      "path": "meta-oe",
+      "minimum_files": 900
+    },
+    {
+      "name": "meta-python",
+      "repository": "meta-openembedded",
+      "path": "meta-python",
+      "minimum_files": 550
+    },
+    {
+      "name": "meta-networking",
+      "repository": "meta-openembedded",
+      "path": "meta-networking",
+      "minimum_files": 200
+    }
+  ],
+  "syntax_metrics": {
+    "minimum_structured_nodes": 70000,
+    "maximum_unknown_nodes": 200
+  },
+  "bitbake": {
+    "init_repository": "poky",
+    "template": "meta-poky/conf/templates/default",
+    "target": "core-image-minimal",
+    "additional_layers": [
+      "meta-openembedded/meta-oe",
+      "meta-openembedded/meta-python",
+      "meta-openembedded/meta-networking"
+    ]
+  }
+}

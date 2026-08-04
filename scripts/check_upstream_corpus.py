@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check bbtidy against pinned OpenEmbedded-Core and meta-openembedded layers."""
+"""Check bbtidy against versioned OpenEmbedded-Core compatibility corpora."""
 
 import argparse
 import hashlib
@@ -13,7 +13,9 @@ import tempfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MANIFEST = PROJECT_ROOT / "tests" / "upstream-corpus.json"
+DEFAULT_MANIFEST = (
+    PROJECT_ROOT / "tests" / "upstream-corpora" / "yocto-5.0-scarthgap.json"
+)
 METADATA_EXTENSIONS = {".bb", ".bbappend", ".bbclass", ".conf", ".inc"}
 FUNCTION_START = re.compile(r"^[^ \t#\r\n].*\(\s*\)\s*\{\s*(?:#.*)?(?:\r?\n)?$")
 PYTHON_DEF_START = re.compile(r"^def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*:")
@@ -44,6 +46,17 @@ def load_manifest(path):
     if manifest.get("schema") != 1:
         raise CompatibilityError("upstream corpus manifest must use schema 1")
 
+    corpus_id = manifest.get("id")
+    tier = manifest.get("tier")
+    if not corpus_id or tier not in {"supported", "development"}:
+        raise CompatibilityError(
+            "upstream corpus manifest must identify a supported or development tier"
+        )
+    if not manifest.get("yocto_version") or not manifest.get("bitbake_version"):
+        raise CompatibilityError(
+            "upstream corpus manifest must declare Yocto and BitBake versions"
+        )
+
     repositories = manifest.get("repositories", [])
     layers = manifest.get("layers", [])
     if not repositories or not layers:
@@ -55,11 +68,24 @@ def load_manifest(path):
     for repository in repositories:
         name = repository.get("name")
         revision = repository.get("revision", "")
+        tracking_ref = repository.get("ref", "")
         if not name or name in repository_names:
             raise CompatibilityError("repository names must be present and unique")
-        if not REVISION.fullmatch(revision):
+        if tier == "supported" and not REVISION.fullmatch(revision):
             raise CompatibilityError(
                 "repository {} does not use a full commit revision".format(name)
+            )
+        if tier == "development" and not (
+            REVISION.fullmatch(revision)
+            or (
+                tracking_ref.startswith("refs/heads/")
+                and len(tracking_ref) > len("refs/heads/")
+            )
+        ):
+            raise CompatibilityError(
+                "development repository {} has no full revision or branch ref".format(
+                    name
+                )
             )
         if not repository.get("url") or not repository.get("sparse_paths"):
             raise CompatibilityError(
@@ -81,6 +107,24 @@ def load_manifest(path):
                 "layer {} has no path or minimum file count".format(name)
             )
         layer_names.add(name)
+
+    bitbake = manifest.get("bitbake", {})
+    init_repository = bitbake.get("init_repository", bitbake.get("repository"))
+    if (
+        init_repository not in repository_names
+        or not bitbake.get("template")
+        or not bitbake.get("target")
+        or not isinstance(bitbake.get("additional_layers"), list)
+    ):
+        raise CompatibilityError("upstream corpus has an invalid BitBake configuration")
+
+    syntax_metrics = manifest.get("syntax_metrics", {})
+    if not all(
+        isinstance(syntax_metrics.get(field), int)
+        and syntax_metrics[field] >= 0
+        for field in ("minimum_structured_nodes", "maximum_unknown_nodes")
+    ):
+        raise CompatibilityError("upstream corpus has invalid syntax metric thresholds")
 
     return manifest
 
@@ -113,6 +157,7 @@ def checkout_repository(repository, destination):
     run(["git", "-C", destination, "remote", "add", "origin", repository["url"]])
     run(["git", "-C", destination, "sparse-checkout", "init", "--no-cone"])
     patterns = ["/{}".format(path) for path in repository["sparse_paths"]]
+    target = repository.get("ref", repository.get("revision"))
     run(
         [
             "git",
@@ -134,7 +179,7 @@ def checkout_repository(repository, destination):
             "1",
             "--filter=blob:none",
             "origin",
-            repository["revision"],
+            target,
         ]
     )
     run(["git", "-C", destination, "checkout", "--quiet", "--detach", "FETCH_HEAD"])
@@ -146,12 +191,14 @@ def verify_repository(repository, path):
             "repository {} is missing at {}".format(repository["name"], path)
         )
     revision = run(["git", "-C", path, "rev-parse", "HEAD"]).stdout.strip()
-    if revision != repository["revision"]:
+    expected = repository.get("revision")
+    if expected and revision != expected:
         raise CompatibilityError(
             "repository {} is at {}; expected {}".format(
                 repository["name"], revision, repository["revision"]
             )
         )
+    return revision
 
 
 def is_layer_configuration(path, layer_root):
@@ -311,17 +358,57 @@ def verify_preservation(source_root, formatted_root, layers, metadata, excluded)
     return opaque_count, excluded_count
 
 
-def run_bitbake_parse(formatted_root, build_root, configuration):
-    poky = formatted_root / configuration["repository"]
+def syntax_stats(bbtidy, inputs):
+    result = run([bbtidy, "syntax-stats"] + inputs)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise CompatibilityError(
+            "bbtidy returned invalid syntax statistics: {}".format(error)
+        ) from error
+
+
+def verify_syntax_metrics(source, formatted, thresholds, total_files):
+    for label, metrics in (("source", source), ("formatted", formatted)):
+        if metrics.get("version") != 1 or metrics.get("files") != total_files:
+            raise CompatibilityError(
+                "{} syntax metrics did not cover all metadata files".format(label)
+            )
+
+    if formatted["structured_nodes"] < thresholds["minimum_structured_nodes"]:
+        raise CompatibilityError(
+            "formatted corpus has {} structured nodes; expected at least {}".format(
+                formatted["structured_nodes"], thresholds["minimum_structured_nodes"]
+            )
+        )
+    if formatted["unknown_nodes"] > thresholds["maximum_unknown_nodes"]:
+        raise CompatibilityError(
+            "formatted corpus has {} unknown nodes; expected at most {}".format(
+                formatted["unknown_nodes"], thresholds["maximum_unknown_nodes"]
+            )
+        )
+    if formatted["unknown_nodes"] > source["unknown_nodes"]:
+        raise CompatibilityError(
+            "formatting increased unknown nodes from {} to {}".format(
+                source["unknown_nodes"], formatted["unknown_nodes"]
+            )
+        )
+
+
+def run_bitbake_parse(root, build_root, configuration):
+    init_repository = configuration.get(
+        "init_repository", configuration.get("repository")
+    )
+    checkout = root / init_repository
     build_root.mkdir(parents=True)
     script = """
 set -e
-poky=$1
+checkout=$1
 build=$2
 export TEMPLATECONF=$3
 target=$4
 shift 4
-. "$poky/oe-init-build-env" "$build" >/dev/null
+. "$checkout/oe-init-build-env" "$build" >/dev/null
 for layer in "$@"; do
     bitbake-layers add-layer "$layer"
 done
@@ -333,12 +420,12 @@ bitbake --parse-only "$target"
             "-c",
             script,
             "bbtidy-upstream",
-            poky,
+            checkout,
             build_root,
-            poky / configuration["template"],
+            checkout / configuration["template"],
             configuration["target"],
         ]
-        + [formatted_root / path for path in configuration["additional_layers"]]
+        + [root / path for path in configuration["additional_layers"]]
     )
 
 
@@ -356,13 +443,16 @@ def check_compatibility(arguments, workspace):
         print("Using existing pinned upstream checkouts")
     else:
         source_root.mkdir(parents=True)
-        print("Fetching pinned upstream checkouts")
+        print("Fetching upstream checkouts")
         for repository in repositories:
-            print("  {} @ {}".format(repository["name"], repository["revision"][:12]))
+            target = repository.get("revision", repository.get("ref"))
+            print("  {} @ {}".format(repository["name"], target))
             checkout_repository(repository, source_root / repository["name"])
 
     for repository in repositories:
-        verify_repository(repository, source_root / repository["name"])
+        revision = verify_repository(repository, source_root / repository["name"])
+        if repository.get("ref"):
+            print("  {} resolved to {}".format(repository["name"], revision))
 
     formatted_root = workspace / "formatted"
     copy_sources(source_root, formatted_root, repositories)
@@ -371,6 +461,8 @@ def check_compatibility(arguments, workspace):
     metadata, excluded, total_files = verify_layers(source_root, formatted_root, layers)
 
     inputs = layer_paths(formatted_root, layers)
+    source_inputs = layer_paths(source_root, layers)
+    source_metrics = syntax_stats(arguments.bbtidy, source_inputs)
     print("Formatting {} metadata files".format(total_files))
     formatted = run([arguments.bbtidy, "format", "--write"] + inputs)
     changed_files = sum(
@@ -378,6 +470,10 @@ def check_compatibility(arguments, workspace):
     )
 
     run([arguments.bbtidy, "check"] + inputs)
+    formatted_metrics = syntax_stats(arguments.bbtidy, inputs)
+    verify_syntax_metrics(
+        source_metrics, formatted_metrics, manifest["syntax_metrics"], total_files
+    )
     linted = run([arguments.bbtidy, "lint"] + inputs, accepted=(0, 1))
     lint_findings = len([line for line in linted.stdout.splitlines() if line.strip()])
 
@@ -387,17 +483,28 @@ def check_compatibility(arguments, workspace):
 
     parsed = False
     if not arguments.skip_bitbake:
-        print("Parsing the formatted layers with BitBake")
-        run_bitbake_parse(formatted_root, workspace / "build", manifest["bitbake"])
+        print("Parsing original layers with BitBake")
+        run_bitbake_parse(source_root, workspace / "build-original", manifest["bitbake"])
+        print("Parsing formatted layers with BitBake")
+        run_bitbake_parse(
+            formatted_root, workspace / "build-formatted", manifest["bitbake"]
+        )
         parsed = True
 
-    print("Upstream compatibility check passed")
+    print(
+        "Upstream compatibility check passed: Yocto {} / BitBake {} ({})".format(
+            manifest["yocto_version"], manifest["bitbake_version"], manifest["tier"]
+        )
+    )
     print("  metadata files: {}".format(total_files))
     print("  files changed on first format: {}".format(changed_files))
     print("  lint diagnostics: {}".format(lint_findings))
+    print("  structured CST nodes: {}".format(formatted_metrics["structured_nodes"]))
+    print("  unknown CST nodes: {}".format(formatted_metrics["unknown_nodes"]))
+    print("  unknown CST bytes: {}".format(formatted_metrics["unknown_bytes"]))
     print("  opaque regions preserved: {}".format(opaque_count))
     print("  excluded payload files unchanged: {}".format(excluded_count))
-    print("  BitBake parse: {}".format("passed" if parsed else "skipped"))
+    print("  BitBake differential parse: {}".format("passed" if parsed else "skipped"))
 
 
 def main():

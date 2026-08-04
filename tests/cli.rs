@@ -9,6 +9,27 @@ const UNFORMATTED: &str = "SUMMARY=\"demo\"\n";
 const FORMATTED: &str = "SUMMARY = \"demo\"\n";
 
 #[test]
+fn syntax_stats_reports_machine_readable_cst_coverage() {
+    let directory = TemporaryDirectory::new("syntax-stats");
+    let file = directory.write(
+        "example.bb",
+        "SUMMARY=\"demo\"\n# note\n\nunsupported statement\n",
+    );
+
+    let output = run(["syntax-stats", file.to_str().unwrap()]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["version"], 1);
+    assert_eq!(report["files"], 1);
+    assert_eq!(report["total_nodes"], 4);
+    assert_eq!(report["structured_nodes"], 1);
+    assert_eq!(report["trivia_nodes"], 2);
+    assert_eq!(report["unknown_nodes"], 1);
+    assert_eq!(report["unknown_bytes"], 22);
+}
+
+#[test]
 fn format_prints_to_stdout_without_modifying_the_file() {
     let directory = TemporaryDirectory::new("format-stdout");
     let file = directory.write("example.bb", UNFORMATTED);

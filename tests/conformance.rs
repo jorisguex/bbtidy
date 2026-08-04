@@ -6,7 +6,7 @@ fn representative_bitbake_constructs_are_lossless_and_idempotent() {
         (
             "modern metadata",
             concat!(
-                "export RDEPENDS:${PN}:class-native[doc] = \" \\\n",
+                "export\t RDEPENDS:${PN}:class-native[doc] = \" \\\n",
                 "\tpython3 \\\n",
                 "\t\"\n",
                 "include_all conf/distro/include/maintainers.inc\n",
@@ -50,6 +50,9 @@ fn representative_bitbake_constructs_are_lossless_and_idempotent() {
         assert_eq!(rebuilt, source, "{name} was not lossless");
 
         let formatted = format_syntax(&tree);
+        if name == "modern metadata" {
+            assert!(formatted.starts_with("export RDEPENDS:${PN}:class-native[doc] = "));
+        }
         let reparsed = parse(&formatted)
             .unwrap_or_else(|error| panic!("formatted {name} did not parse: {error}"));
         assert_eq!(

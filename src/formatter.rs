@@ -77,12 +77,10 @@ fn format_assignment(
         return;
     }
 
-    let relative_operator = assignment.operator_range().start() - node.range().start();
-    let left = node.text()[..relative_operator].trim_end();
     let value = assignment.value().trim_start_matches([' ', '\t']);
     let (_, line_ending) = split_line_ending(node.text());
 
-    output.push_str(left);
+    push_assignment_left(output, node, assignment);
     output.push(' ');
     output.push_str(assignment.operator().lexeme());
     if !value.is_empty() {
@@ -90,6 +88,20 @@ fn format_assignment(
         output.push_str(value);
     }
     output.push_str(line_ending);
+}
+
+fn push_assignment_left(
+    output: &mut String,
+    node: &SyntaxNode<'_>,
+    assignment: &AssignmentSyntax<'_>,
+) {
+    if assignment.is_exported() {
+        output.push_str("export ");
+        output.push_str(assignment.name());
+    } else {
+        let relative_operator = assignment.operator_range().start() - node.range().start();
+        output.push_str(node.text()[..relative_operator].trim_end());
+    }
 }
 
 struct StaticMetadataList<'a> {
@@ -234,11 +246,9 @@ fn format_metadata_list(
     assignment: &AssignmentSyntax<'_>,
     list: StaticMetadataList<'_>,
 ) {
-    let relative_operator = assignment.operator_range().start() - node.range().start();
-    let left = node.text()[..relative_operator].trim_end();
     let (_, final_line_ending) = split_line_ending(node.text());
 
-    output.push_str(left);
+    push_assignment_left(output, node, assignment);
     output.push(' ');
     output.push_str(assignment.operator().lexeme());
     output.push(' ');

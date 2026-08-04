@@ -1,6 +1,6 @@
 use bbtidy::{
-    Config, LintDiagnostic, LintSeverity, Token, WorkspaceIndex, format_with_options, get_line_col,
-    lint_rules, lint_with_options, lint_with_workspace, load_config,
+    Config, LintDiagnostic, LintSeverity, SyntaxKind, Token, WorkspaceIndex, format_with_options,
+    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -50,6 +50,10 @@ enum Command {
 
     /// Print the lexer token stream
     Lex(InputArgs),
+
+    /// Report CST coverage metrics for the compatibility harness
+    #[command(hide = true)]
+    SyntaxStats(InputArgs),
 }
 
 #[derive(Args)]
@@ -117,6 +121,7 @@ fn main() {
         Command::Check(args) => run_check(args, &config),
         Command::Lint(args) => run_lint(args, &config),
         Command::Lex(args) => run_lex(args, &config),
+        Command::SyntaxStats(args) => run_syntax_stats(args, &config),
     };
 
     if exit_code != 0 {
@@ -438,6 +443,72 @@ fn run_lex(args: InputArgs, config: &Config) -> i32 {
     }
 
     if had_error { EXIT_ERROR } else { 0 }
+}
+
+fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.paths, config) {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+    let mut total_nodes = 0_u64;
+    let mut structured_nodes = 0_u64;
+    let mut trivia_nodes = 0_u64;
+    let mut unknown_nodes = 0_u64;
+    let mut unknown_bytes = 0_u64;
+
+    for input in &inputs {
+        let (label, text) = match read_input(input) {
+            Ok(source) => source,
+            Err(error) => {
+                eprintln!("error: {error}");
+                return EXIT_ERROR;
+            }
+        };
+        let tree = match parse(&text) {
+            Ok(tree) => tree,
+            Err(error) => {
+                eprintln!("error: could not parse {label}: {error}");
+                return EXIT_ERROR;
+            }
+        };
+        for node in tree.nodes() {
+            total_nodes += 1;
+            match node.kind() {
+                SyntaxKind::Blank | SyntaxKind::Comment => trivia_nodes += 1,
+                SyntaxKind::Unknown => {
+                    unknown_nodes += 1;
+                    unknown_bytes += node.text().len() as u64;
+                }
+                SyntaxKind::Assignment(_)
+                | SyntaxKind::Directive(_)
+                | SyntaxKind::Function(_)
+                | SyntaxKind::PythonDefinition(_) => structured_nodes += 1,
+            }
+        }
+    }
+
+    let report = json!({
+        "version": 1,
+        "files": inputs.len(),
+        "total_nodes": total_nodes,
+        "structured_nodes": structured_nodes,
+        "trivia_nodes": trivia_nodes,
+        "unknown_nodes": unknown_nodes,
+        "unknown_bytes": unknown_bytes,
+    });
+    match serde_json::to_string_pretty(&report) {
+        Ok(report) => {
+            println!("{report}");
+            0
+        }
+        Err(error) => {
+            eprintln!("error: could not serialize syntax statistics: {error}");
+            EXIT_ERROR
+        }
+    }
 }
 
 fn resolve_inputs(paths: &[PathBuf], config: &Config) -> Result<Vec<Input>, String> {
