@@ -230,15 +230,20 @@ unresolved optional references. The workspace model reads `BBFILE_COLLECTIONS`,
 from each supplied `conf/layer.conf`. A relative `include` or `require` first
 checks the directory containing the current file and then searches `BBPATH`;
 `include_all` searches only `BBPATH` and retains every match. Inherited classes
-are searched in `classes-recipe` directories before ordinary `classes`
-directories. `include` and `include_all` are optional directives, so missing
-matches do not produce unresolved-reference diagnostics; `require` remains
-strict. Same-priority matches in the winning search scope produce the
-ambiguity rules above instead of being silently resolved. Ambiguity and cycle
-diagnostics identify the selected target's layer, collection, priority, and
-search scope. The public `WorkspaceCandidate` and `WorkspaceDependency` APIs
-expose the corresponding resolution and graph information. Single-file and
-standard-input linting remain file-local, and dynamic references are skipped.
+use BitBake's context-specific namespaces: recipe parsing searches
+`classes-recipe` before ordinary `classes`, while configuration parsing searches
+`classes-global` before `classes`. Static `INHERIT` and `USER_CLASSES`
+configuration assignments and inheritance inside global classes participate in
+the workspace dependency graph. Shared includes and ordinary classes retain
+both possible parse contexts. `include` and `include_all` are optional
+directives, so missing matches do not produce unresolved-reference diagnostics;
+`require` remains strict. Same-priority matches in the winning search scope
+produce the ambiguity rules above instead of being silently resolved. Ambiguity
+and cycle diagnostics identify the selected target's layer, collection,
+priority, and search scope. The public `WorkspaceCandidate`,
+`WorkspaceClassContext`, and `WorkspaceDependency` APIs expose the corresponding
+resolution and graph information. Single-file and standard-input linting remain
+file-local, and dynamic references are skipped.
 
 ## Lossless syntax tree
 

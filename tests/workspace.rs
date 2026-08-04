@@ -1,6 +1,8 @@
 use bbtidy::{
-    WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope,
+    WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex,
+    WorkspaceSearchScope,
 };
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -271,6 +273,131 @@ fn class_search_prefers_classes_recipe_before_classes() {
     assert_eq!(
         index.class_candidates("base")[0].scope(),
         WorkspaceSearchScope::ClassesRecipe
+    );
+}
+
+#[test]
+fn separates_global_and_recipe_class_namespaces_and_dependencies() {
+    let layer = TemporaryLayer::new("workspace-global-class-scope");
+    let layer_conf = layer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "INHERIT += \"base ${DYNAMIC}\"\n",
+            "INHERIT:remove = \"removed\"\n",
+            "USER_CLASSES += \"metrics\"\n",
+        ),
+    );
+    let global_base = layer.write("classes-global/base.bbclass", "inherit helper\n");
+    let global_helper = layer.write("classes-global/helper.bbclass", "require conf/layer.conf\n");
+    let metrics = layer.write("classes/metrics.bbclass", "ORIGIN = \"shared\"\n");
+    let removed = layer.write("classes-global/removed.bbclass", "ORIGIN = \"removed\"\n");
+    let recipe_base = layer.write("classes-recipe/base.bbclass", "inherit helper\n");
+    let recipe_helper = layer.write("classes-recipe/helper.bbclass", "ORIGIN = \"recipe\"\n");
+    let shared_base = layer.write("classes/base.bbclass", "ORIGIN = \"shared\"\n");
+    let recipe = layer.write("recipes-example/example.bb", "inherit base\n");
+
+    let index = WorkspaceIndex::from_paths([
+        layer_conf.clone(),
+        global_base.clone(),
+        global_helper.clone(),
+        metrics.clone(),
+        removed,
+        recipe_base.clone(),
+        recipe_helper.clone(),
+        shared_base.clone(),
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let global_candidates = index.class_candidates_for("base", WorkspaceClassContext::Global);
+    assert_eq!(
+        global_candidates
+            .iter()
+            .map(|candidate| candidate.scope())
+            .collect::<Vec<_>>(),
+        [
+            WorkspaceSearchScope::ClassesGlobal,
+            WorkspaceSearchScope::Classes
+        ]
+    );
+    assert_eq!(
+        global_candidates[0].path(),
+        fs::canonicalize(&global_base).unwrap()
+    );
+
+    let recipe_candidates = index.class_candidates_for("base", WorkspaceClassContext::Recipe);
+    assert_eq!(
+        recipe_candidates
+            .iter()
+            .map(|candidate| candidate.scope())
+            .collect::<Vec<_>>(),
+        [
+            WorkspaceSearchScope::ClassesRecipe,
+            WorkspaceSearchScope::Classes
+        ]
+    );
+    assert_eq!(
+        recipe_candidates[0].path(),
+        fs::canonicalize(&recipe_base).unwrap()
+    );
+    assert_eq!(
+        index.resolve_class("base"),
+        Some(fs::canonicalize(&recipe_base).unwrap().as_path())
+    );
+    assert_eq!(
+        index.class_context_for_path(&layer_conf),
+        WorkspaceClassContext::Global
+    );
+    assert_eq!(
+        index.class_context_for_path(&global_base),
+        WorkspaceClassContext::Global
+    );
+    assert_eq!(
+        index.class_context_for_path(&recipe),
+        WorkspaceClassContext::Recipe
+    );
+    assert_eq!(
+        index.class_contexts_for_path(&shared_base),
+        [WorkspaceClassContext::Recipe, WorkspaceClassContext::Global]
+    );
+
+    let configuration_dependencies = index
+        .dependencies_from(&layer_conf)
+        .into_iter()
+        .map(|dependency| (dependency.kind(), dependency.to().to_path_buf()))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(
+        configuration_dependencies,
+        BTreeSet::from([
+            (
+                WorkspaceDependencyKind::InheritGlobal,
+                fs::canonicalize(&global_base).unwrap(),
+            ),
+            (
+                WorkspaceDependencyKind::UserClasses,
+                fs::canonicalize(&metrics).unwrap(),
+            ),
+        ])
+    );
+
+    let global_dependencies = index.dependencies_from(&global_base);
+    assert_eq!(global_dependencies.len(), 1);
+    assert_eq!(
+        global_dependencies[0].to(),
+        fs::canonicalize(&global_helper).unwrap()
+    );
+    let global_cycle = index
+        .dependency_cycle_for(&layer_conf, &global_base, WorkspaceClassContext::Global)
+        .expect("the global inheritance chain should return to layer.conf");
+    assert_eq!(global_cycle.first(), global_cycle.last());
+    assert_eq!(global_cycle.len(), 4);
+
+    let recipe_dependencies = index.dependencies_from(&recipe_base);
+    assert_eq!(recipe_dependencies.len(), 1);
+    assert_eq!(
+        recipe_dependencies[0].to(),
+        fs::canonicalize(&recipe_helper).unwrap()
     );
 }
 

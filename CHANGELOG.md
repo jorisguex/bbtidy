@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Workspace class resolution now distinguishes BitBake's global and recipe
+  parsing contexts, searches `classes-global` or `classes-recipe` before the
+  shared `classes` fallback, and avoids false unresolved-inherit findings for
+  global classes.
+
+### Added
+
+- Static `INHERIT` and `USER_CLASSES` configuration assignments now contribute
+  context-aware class dependencies and cycle analysis to complete workspace
+  indexes.
+
 ## [0.1.0-alpha.4] - 2026-08-03
 
 ### Fixed

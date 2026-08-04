@@ -15,6 +15,8 @@ pub enum WorkspaceSearchScope {
     Bbpath,
     /// A class found in a classes-recipe directory on BBPATH.
     ClassesRecipe,
+    /// A class found in a classes-global directory on BBPATH.
+    ClassesGlobal,
     /// A class found in a classes directory on BBPATH.
     Classes,
 }
@@ -26,9 +28,19 @@ impl WorkspaceSearchScope {
             Self::CurrentFile => "the current file directory",
             Self::Bbpath => "BBPATH",
             Self::ClassesRecipe => "classes-recipe on BBPATH",
+            Self::ClassesGlobal => "classes-global on BBPATH",
             Self::Classes => "classes on BBPATH",
         }
     }
+}
+
+/// Selects the BitBake class namespace used while parsing metadata.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum WorkspaceClassContext {
+    /// Configuration parsing and classes inherited through `INHERIT`.
+    Global,
+    /// Recipe parsing and classes inherited with the `inherit` directive.
+    Recipe,
 }
 
 /// Identifies the directive semantics used for a metadata file lookup.
@@ -50,6 +62,8 @@ pub enum WorkspaceDependencyKind {
     Require,
     Inherit,
     InheritDefer,
+    InheritGlobal,
+    UserClasses,
 }
 
 impl WorkspaceDependencyKind {
@@ -61,6 +75,8 @@ impl WorkspaceDependencyKind {
             Self::Require => "require",
             Self::Inherit => "inherit",
             Self::InheritDefer => "inherit_defer",
+            Self::InheritGlobal => "INHERIT",
+            Self::UserClasses => "USER_CLASSES",
         }
     }
 }
@@ -140,7 +156,7 @@ impl<'a> WorkspaceCandidate<'a> {
 pub struct WorkspaceIndex {
     layers: Vec<LayerIndex>,
     search_paths: Vec<SearchPath>,
-    dependencies: BTreeMap<PathBuf, Vec<DependencyEdge>>,
+    dependencies: BTreeMap<DependencyNode, Vec<DependencyEdge>>,
 }
 
 impl WorkspaceIndex {
@@ -193,22 +209,41 @@ impl WorkspaceIndex {
             .any(|layer| layer.is_complete() && layer.files.contains(&path))
     }
 
-    /// Returns all matching static class definitions in BitBake search order.
+    /// Returns all matching recipe class definitions in BitBake search order.
     ///
     /// For inherit, BitBake searches all classes-recipe directories on
     /// BBPATH before searching the ordinary classes directories. The returned
     /// candidates retain layer, collection, priority, and scope information so
     /// callers can explain or validate the resolution.
     pub fn class_candidates(&self, class: &str) -> Vec<WorkspaceCandidate<'_>> {
+        self.class_candidates_for(class, WorkspaceClassContext::Recipe)
+    }
+
+    /// Returns all matching static class definitions for a BitBake parse context.
+    ///
+    /// Global metadata searches `classes-global` before the shared `classes`
+    /// directory. Recipe metadata searches `classes-recipe` before `classes`.
+    pub fn class_candidates_for(
+        &self,
+        class: &str,
+        context: WorkspaceClassContext,
+    ) -> Vec<WorkspaceCandidate<'_>> {
         if class.is_empty() || class.contains(['/', '\\']) {
             return Vec::new();
         }
 
         let mut candidates = Vec::new();
-        for (directory, scope) in [
-            ("classes-recipe", WorkspaceSearchScope::ClassesRecipe),
-            ("classes", WorkspaceSearchScope::Classes),
-        ] {
+        let scoped_directories = match context {
+            WorkspaceClassContext::Global => [
+                ("classes-global", WorkspaceSearchScope::ClassesGlobal),
+                ("classes", WorkspaceSearchScope::Classes),
+            ],
+            WorkspaceClassContext::Recipe => [
+                ("classes-recipe", WorkspaceSearchScope::ClassesRecipe),
+                ("classes", WorkspaceSearchScope::Classes),
+            ],
+        };
+        for (directory, scope) in scoped_directories {
             for search_path in &self.search_paths {
                 let layer = &self.layers[search_path.layer_index];
                 let candidate = search_path
@@ -229,10 +264,33 @@ impl WorkspaceIndex {
     /// Call class_candidates when callers need to inspect every possible
     /// definition.
     pub fn resolve_class(&self, class: &str) -> Option<&Path> {
-        self.class_candidates(class)
+        self.resolve_class_for(class, WorkspaceClassContext::Recipe)
+    }
+
+    /// Resolves a static class name for a BitBake parse context.
+    pub fn resolve_class_for(&self, class: &str, context: WorkspaceClassContext) -> Option<&Path> {
+        self.class_candidates_for(class, context)
             .into_iter()
             .next()
             .map(|candidate| candidate.path)
+    }
+
+    /// Returns the class namespace implied by an independently linted path.
+    ///
+    /// Configuration files and files in `classes-global` use global class
+    /// lookup. Recipes, recipe classes, and otherwise ambiguous includes use
+    /// recipe lookup. The dependency graph retains both contexts for shared
+    /// includes and classes.
+    pub fn class_context_for_path(&self, path: &Path) -> WorkspaceClassContext {
+        self.class_contexts_for_path(path)[0]
+    }
+
+    /// Returns every class namespace in which a metadata file can be parsed.
+    ///
+    /// Generic classes and includes can be reached from either configuration
+    /// or recipe parsing, so both contexts are returned for those paths.
+    pub fn class_contexts_for_path(&self, path: &Path) -> Vec<WorkspaceClassContext> {
+        dependency_contexts_for_path(&canonicalize_for_lookup(path)).to_vec()
     }
 
     /// Returns all matching static metadata files for a directive.
@@ -316,17 +374,27 @@ impl WorkspaceIndex {
     /// arguments and unresolved optional includes are deliberately omitted.
     pub fn dependencies_from(&self, path: &Path) -> Vec<WorkspaceDependency<'_>> {
         let path = canonicalize_for_lookup(path);
-        let Some((from, edges)) = self.dependencies.get_key_value(&path) else {
-            return Vec::new();
-        };
-        edges
-            .iter()
-            .map(|edge| WorkspaceDependency {
-                from: from.as_path(),
-                to: edge.to.as_path(),
-                kind: edge.kind,
-            })
-            .collect()
+        let mut dependencies = Vec::new();
+        let mut seen = BTreeSet::new();
+        for context in dependency_contexts_for_path(&path) {
+            let lookup = DependencyNode {
+                path: path.clone(),
+                context: *context,
+            };
+            let Some((from, edges)) = self.dependencies.get_key_value(&lookup) else {
+                continue;
+            };
+            for edge in edges {
+                if seen.insert((edge.kind, edge.to.path.as_path())) {
+                    dependencies.push(WorkspaceDependency {
+                        from: from.path.as_path(),
+                        to: edge.to.path.as_path(),
+                        kind: edge.kind,
+                    });
+                }
+            }
+        }
+        dependencies
     }
 
     /// Returns a deterministic cycle witness if a resolved edge from `from`
@@ -336,12 +404,29 @@ impl WorkspaceIndex {
     /// entry. An empty or dynamically unresolved graph never produces a
     /// cycle witness.
     pub fn dependency_cycle(&self, from: &Path, to: &Path) -> Option<Vec<PathBuf>> {
+        self.class_contexts_for_path(from)
+            .into_iter()
+            .find_map(|context| self.dependency_cycle_for(from, to, context))
+    }
+
+    /// Returns a deterministic cycle witness in a specific BitBake parse context.
+    pub fn dependency_cycle_for(
+        &self,
+        from: &Path,
+        to: &Path,
+        context: WorkspaceClassContext,
+    ) -> Option<Vec<PathBuf>> {
         let from = canonicalize_for_lookup(from);
         let to = canonicalize_for_lookup(to);
         if from == to {
             return Some(vec![from.clone(), from]);
         }
 
+        let from = DependencyNode {
+            path: from,
+            context,
+        };
+        let to = DependencyNode { path: to, context };
         let mut queue = VecDeque::from([to.clone()]);
         let mut visited = BTreeSet::from([to.clone()]);
         let mut parents = BTreeMap::new();
@@ -365,7 +450,7 @@ impl WorkspaceIndex {
                     tail.reverse();
                     let mut cycle = vec![from];
                     cycle.extend(tail);
-                    return Some(cycle);
+                    return Some(cycle.into_iter().map(|node| node.path).collect());
                 }
                 queue.push_back(next);
             }
@@ -373,7 +458,7 @@ impl WorkspaceIndex {
         None
     }
 
-    fn build_dependencies(&self) -> BTreeMap<PathBuf, Vec<DependencyEdge>> {
+    fn build_dependencies(&self) -> BTreeMap<DependencyNode, Vec<DependencyEdge>> {
         let mut dependencies = BTreeMap::new();
         for layer in &self.layers {
             if !layer.is_complete() {
@@ -386,9 +471,17 @@ impl WorkspaceIndex {
                 let Ok(tree) = parse(&source) else {
                     continue;
                 };
-                let edges = collect_dependency_edges(self, path, &tree);
-                if !edges.is_empty() {
-                    dependencies.insert(path.clone(), edges);
+                for context in dependency_contexts_for_path(path) {
+                    let edges = collect_dependency_edges(self, path, &tree, *context);
+                    if !edges.is_empty() {
+                        dependencies.insert(
+                            DependencyNode {
+                                path: path.clone(),
+                                context: *context,
+                            },
+                            edges,
+                        );
+                    }
                 }
             }
         }
@@ -417,8 +510,14 @@ impl WorkspaceIndex {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct DependencyNode {
+    path: PathBuf,
+    context: WorkspaceClassContext,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct DependencyEdge {
-    to: PathBuf,
+    to: DependencyNode,
     kind: WorkspaceDependencyKind,
 }
 
@@ -555,65 +654,80 @@ fn collect_dependency_edges(
     index: &WorkspaceIndex,
     from: &Path,
     tree: &SyntaxTree<'_>,
+    context: WorkspaceClassContext,
 ) -> Vec<DependencyEdge> {
     let mut edges = Vec::new();
 
     for node in tree.nodes() {
-        let SyntaxKind::Directive(directive) = node.kind() else {
-            continue;
-        };
-        let arguments = directive.arguments();
-        let arguments = &arguments[..comment_start(arguments).unwrap_or(arguments.len())];
+        match node.kind() {
+            SyntaxKind::Directive(directive) => {
+                let arguments = directive.arguments();
+                let arguments = &arguments[..comment_start(arguments).unwrap_or(arguments.len())];
 
-        match directive.keyword() {
-            DirectiveKeyword::Include
-            | DirectiveKeyword::IncludeAll
-            | DirectiveKeyword::Require => {
-                let (kind, directive_kind, include_all) = match directive.keyword() {
-                    DirectiveKeyword::Include => (
-                        WorkspaceDependencyKind::Include,
-                        WorkspaceFileDirective::Include,
-                        false,
-                    ),
-                    DirectiveKeyword::IncludeAll => (
-                        WorkspaceDependencyKind::IncludeAll,
-                        WorkspaceFileDirective::IncludeAll,
-                        true,
-                    ),
-                    DirectiveKeyword::Require => (
-                        WorkspaceDependencyKind::Require,
-                        WorkspaceFileDirective::Require,
-                        false,
-                    ),
-                    _ => unreachable!("matched only file dependency directives"),
-                };
-                for target in static_directive_words(arguments) {
-                    let candidates = index.file_candidates_for(from, target, directive_kind);
-                    if include_all {
-                        edges.extend(candidates.into_iter().map(|candidate| DependencyEdge {
-                            to: candidate.path().to_path_buf(),
-                            kind,
-                        }));
-                    } else if let Some(candidate) = candidates.first() {
-                        edges.push(DependencyEdge {
-                            to: candidate.path().to_path_buf(),
-                            kind,
-                        });
+                match directive.keyword() {
+                    DirectiveKeyword::Include
+                    | DirectiveKeyword::IncludeAll
+                    | DirectiveKeyword::Require => {
+                        let (kind, directive_kind, include_all) = match directive.keyword() {
+                            DirectiveKeyword::Include => (
+                                WorkspaceDependencyKind::Include,
+                                WorkspaceFileDirective::Include,
+                                false,
+                            ),
+                            DirectiveKeyword::IncludeAll => (
+                                WorkspaceDependencyKind::IncludeAll,
+                                WorkspaceFileDirective::IncludeAll,
+                                true,
+                            ),
+                            DirectiveKeyword::Require => (
+                                WorkspaceDependencyKind::Require,
+                                WorkspaceFileDirective::Require,
+                                false,
+                            ),
+                            _ => unreachable!("matched only file dependency directives"),
+                        };
+                        for target in static_directive_words(arguments) {
+                            let candidates =
+                                index.file_candidates_for(from, target, directive_kind);
+                            if include_all {
+                                edges.extend(candidates.into_iter().map(|candidate| {
+                                    dependency_edge(candidate.path(), context, kind)
+                                }));
+                            } else if let Some(candidate) = candidates.first() {
+                                edges.push(dependency_edge(candidate.path(), context, kind));
+                            }
+                        }
                     }
+                    DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
+                        let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
+                            WorkspaceDependencyKind::Inherit
+                        } else {
+                            WorkspaceDependencyKind::InheritDefer
+                        };
+                        for class in static_directive_words(arguments) {
+                            if let Some(candidate) = index
+                                .class_candidates_for(class, context)
+                                .into_iter()
+                                .next()
+                            {
+                                edges.push(dependency_edge(candidate.path(), context, kind));
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
-            DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
-                let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
-                    WorkspaceDependencyKind::Inherit
-                } else {
-                    WorkspaceDependencyKind::InheritDefer
+            SyntaxKind::Assignment(assignment) if context == WorkspaceClassContext::Global => {
+                let Some(kind) = global_class_assignment_kind(assignment.name()) else {
+                    continue;
                 };
-                for class in static_directive_words(arguments) {
-                    if let Some(candidate) = index.class_candidates(class).into_iter().next() {
-                        edges.push(DependencyEdge {
-                            to: candidate.path().to_path_buf(),
-                            kind,
-                        });
+                for class in static_assignment_words(assignment.value()) {
+                    if let Some(candidate) = index
+                        .class_candidates_for(&class, context)
+                        .into_iter()
+                        .next()
+                    {
+                        edges.push(dependency_edge(candidate.path(), context, kind));
                     }
                 }
             }
@@ -624,6 +738,58 @@ fn collect_dependency_edges(
     edges.sort();
     edges.dedup();
     edges
+}
+
+pub(crate) fn global_class_assignment_kind(name: &str) -> Option<WorkspaceDependencyKind> {
+    let mut components = name.split(':');
+    let base_name = components.next()?;
+    if components.any(|component| component == "remove") {
+        return None;
+    }
+    match base_name {
+        "INHERIT" => Some(WorkspaceDependencyKind::InheritGlobal),
+        "USER_CLASSES" => Some(WorkspaceDependencyKind::UserClasses),
+        _ => None,
+    }
+}
+
+fn dependency_edge(
+    path: &Path,
+    context: WorkspaceClassContext,
+    kind: WorkspaceDependencyKind,
+) -> DependencyEdge {
+    DependencyEdge {
+        to: DependencyNode {
+            path: path.to_path_buf(),
+            context,
+        },
+        kind,
+    }
+}
+
+fn dependency_contexts_for_path(path: &Path) -> &'static [WorkspaceClassContext] {
+    const GLOBAL: &[WorkspaceClassContext] = &[WorkspaceClassContext::Global];
+    const RECIPE: &[WorkspaceClassContext] = &[WorkspaceClassContext::Recipe];
+    const SHARED: &[WorkspaceClassContext] =
+        &[WorkspaceClassContext::Recipe, WorkspaceClassContext::Global];
+
+    if path.extension().and_then(|extension| extension.to_str()) == Some("conf")
+        || path
+            .components()
+            .any(|component| component.as_os_str() == "classes-global")
+    {
+        GLOBAL
+    } else if matches!(
+        path.extension().and_then(|extension| extension.to_str()),
+        Some("bb" | "bbappend")
+    ) || path
+        .components()
+        .any(|component| component.as_os_str() == "classes-recipe")
+    {
+        RECIPE
+    } else {
+        SHARED
+    }
 }
 
 fn parse_layer_metadata(root: &Path, files: &BTreeSet<PathBuf>) -> LayerMetadata {
@@ -734,6 +900,16 @@ fn static_directive_words(text: &str) -> Vec<&str> {
         words.push(word);
     }
     words
+}
+
+fn static_assignment_words(value: &str) -> Vec<String> {
+    let Some(value) = scalar_value(value) else {
+        return Vec::new();
+    };
+    static_directive_words(&value)
+        .into_iter()
+        .map(str::to_owned)
+        .collect()
 }
 
 fn scalar_value(value: &str) -> Option<String> {

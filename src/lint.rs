@@ -1,7 +1,8 @@
+use crate::workspace::global_class_assignment_kind;
 use crate::{
     AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceCandidate,
-    WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col,
-    parse, split_line_ending,
+    WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex,
+    comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -328,7 +329,32 @@ fn check_workspace_references(
         return;
     }
 
+    let class_contexts = workspace.class_contexts_for_path(path);
+    let class_context = class_contexts[0];
     for node in tree.nodes() {
+        if let SyntaxKind::Assignment(assignment) = node.kind()
+            && class_contexts.contains(&WorkspaceClassContext::Global)
+        {
+            if let Some(kind) = global_class_assignment_kind(assignment.name())
+                && let Some((value, value_offset)) = simple_quoted_value(assignment.value())
+            {
+                for (relative_offset, class) in static_words(value) {
+                    check_class_reference(
+                        tree,
+                        path,
+                        workspace,
+                        &[WorkspaceClassContext::Global],
+                        assignment.value_range().start() + value_offset,
+                        relative_offset,
+                        class,
+                        kind,
+                        diagnostics,
+                    );
+                }
+            }
+            continue;
+        }
+
         let SyntaxKind::Directive(directive) = node.kind() else {
             continue;
         };
@@ -373,6 +399,7 @@ fn check_workspace_references(
                             workspace,
                             directive.arguments_range().start(),
                             relative_offset,
+                            class_context,
                             WorkspaceDependencyKind::Require,
                             candidate,
                             diagnostics,
@@ -382,47 +409,22 @@ fn check_workspace_references(
             }
             DirectiveKeyword::Inherit | DirectiveKeyword::InheritDefer => {
                 for (relative_offset, class) in static_words(arguments) {
-                    let candidates = workspace.class_candidates(class);
-                    if candidates.is_empty() {
-                        let rule = &LINT_RULES[6];
-                        let offset = directive.arguments_range().start() + relative_offset;
-                        let (line, column) = get_line_col(tree.source(), offset);
-                        diagnostics.push(LintDiagnostic::new(
-                            rule,
-                            line,
-                            column,
-                            format!("inherited class '{class}' was not found in indexed layers"),
-                        ));
-                        continue;
-                    }
-                    if let Some(message) = ambiguity_message(&candidates) {
-                        let rule = &LINT_RULES[8];
-                        let offset = directive.arguments_range().start() + relative_offset;
-                        let (line, column) = get_line_col(tree.source(), offset);
-                        diagnostics.push(LintDiagnostic::new(
-                            rule,
-                            line,
-                            column,
-                            format!("inherited class '{class}' {message}"),
-                        ));
-                    }
-                    if let Some(candidate) = candidates.first().copied() {
-                        let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
-                            WorkspaceDependencyKind::Inherit
-                        } else {
-                            WorkspaceDependencyKind::InheritDefer
-                        };
-                        check_dependency_cycle(
-                            tree,
-                            path,
-                            workspace,
-                            directive.arguments_range().start(),
-                            relative_offset,
-                            kind,
-                            candidate,
-                            diagnostics,
-                        );
-                    }
+                    let kind = if matches!(directive.keyword(), DirectiveKeyword::Inherit) {
+                        WorkspaceDependencyKind::Inherit
+                    } else {
+                        WorkspaceDependencyKind::InheritDefer
+                    };
+                    check_class_reference(
+                        tree,
+                        path,
+                        workspace,
+                        &class_contexts,
+                        directive.arguments_range().start(),
+                        relative_offset,
+                        class,
+                        kind,
+                        diagnostics,
+                    );
                 }
             }
             DirectiveKeyword::Include | DirectiveKeyword::IncludeAll => {
@@ -455,6 +457,7 @@ fn check_workspace_references(
                             workspace,
                             directive.arguments_range().start(),
                             relative_offset,
+                            class_context,
                             kind,
                             candidate,
                             diagnostics,
@@ -468,17 +471,81 @@ fn check_workspace_references(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn check_class_reference(
+    tree: &SyntaxTree<'_>,
+    path: &std::path::Path,
+    workspace: &WorkspaceIndex,
+    contexts: &[WorkspaceClassContext],
+    arguments_start: usize,
+    relative_offset: usize,
+    class: &str,
+    kind: WorkspaceDependencyKind,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    let resolutions = contexts
+        .iter()
+        .copied()
+        .filter_map(|context| {
+            let candidates = workspace.class_candidates_for(class, context);
+            (!candidates.is_empty()).then_some((context, candidates))
+        })
+        .collect::<Vec<_>>();
+    if resolutions.is_empty() {
+        let rule = &LINT_RULES[6];
+        let offset = arguments_start + relative_offset;
+        let (line, column) = get_line_col(tree.source(), offset);
+        diagnostics.push(LintDiagnostic::new(
+            rule,
+            line,
+            column,
+            format!("inherited class '{class}' was not found in indexed layers"),
+        ));
+        return;
+    }
+
+    let (context, candidates) = resolutions
+        .iter()
+        .find(|(_, candidates)| ambiguity_message(candidates).is_none())
+        .unwrap_or(&resolutions[0]);
+    if let Some(message) = ambiguity_message(candidates) {
+        let rule = &LINT_RULES[8];
+        let offset = arguments_start + relative_offset;
+        let (line, column) = get_line_col(tree.source(), offset);
+        diagnostics.push(LintDiagnostic::new(
+            rule,
+            line,
+            column,
+            format!("inherited class '{class}' {message}"),
+        ));
+    }
+    if let Some(candidate) = candidates.first().copied() {
+        check_dependency_cycle(
+            tree,
+            path,
+            workspace,
+            arguments_start,
+            relative_offset,
+            *context,
+            kind,
+            candidate,
+            diagnostics,
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn check_dependency_cycle(
     tree: &SyntaxTree<'_>,
     from: &std::path::Path,
     workspace: &WorkspaceIndex,
     arguments_start: usize,
     relative_offset: usize,
+    context: WorkspaceClassContext,
     kind: WorkspaceDependencyKind,
     candidate: WorkspaceCandidate<'_>,
     diagnostics: &mut Vec<LintDiagnostic>,
 ) {
-    let Some(cycle) = workspace.dependency_cycle(from, candidate.path()) else {
+    let Some(cycle) = workspace.dependency_cycle_for(from, candidate.path(), context) else {
         return;
     };
 

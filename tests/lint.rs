@@ -165,6 +165,118 @@ fn workspace_lint_reports_static_cycles_and_skips_dynamic_references() {
     assert!(diagnostics[3].message().contains("classes on BBPATH"));
 }
 
+#[test]
+fn workspace_lint_uses_global_and_recipe_class_namespaces() {
+    let layer = TemporaryLayer::new("lint-global-class-scope");
+    let configuration_source = concat!(
+        "BBPATH .= \":${LAYERDIR}\"\n",
+        "INHERIT += \"global-base missing-global ${DYNAMIC}\"\n",
+        "INHERIT:remove = \"missing-removed\"\n",
+        "USER_CLASSES += \"metrics\"\n",
+    );
+    let configuration = layer.write("conf/layer.conf", configuration_source);
+    let global_base = layer.write(
+        "classes-global/global-base.bbclass",
+        "inherit global-helper recipe-only\n",
+    );
+    let global_helper = layer.write(
+        "classes-global/global-helper.bbclass",
+        "ORIGIN = \"global\"\n",
+    );
+    let global_only = layer.write(
+        "classes-global/global-only.bbclass",
+        "ORIGIN = \"global\"\n",
+    );
+    let recipe_helper = layer.write(
+        "classes-recipe/recipe-helper.bbclass",
+        "ORIGIN = \"recipe\"\n",
+    );
+    let recipe_only = layer.write(
+        "classes-recipe/recipe-only.bbclass",
+        "ORIGIN = \"recipe\"\n",
+    );
+    let metrics = layer.write("classes/metrics.bbclass", "ORIGIN = \"shared\"\n");
+    let recipe_source = "inherit recipe-helper global-only\n";
+    let recipe = layer.write("recipes-example/example.bb", recipe_source);
+    let index = WorkspaceIndex::from_paths([
+        configuration.clone(),
+        global_base.clone(),
+        global_helper,
+        global_only,
+        recipe_helper,
+        recipe_only,
+        metrics,
+        recipe.clone(),
+    ])
+    .unwrap();
+
+    let configuration_diagnostics = lint_with_workspace(
+        configuration_source,
+        &configuration,
+        &index,
+        &LintOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(configuration_diagnostics.len(), 1);
+    assert_eq!(configuration_diagnostics[0].rule_id(), "BBT007");
+    assert!(
+        configuration_diagnostics[0]
+            .message()
+            .contains("missing-global")
+    );
+
+    let global_diagnostics = lint_with_workspace(
+        "inherit global-helper recipe-only\n",
+        &global_base,
+        &index,
+        &LintOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(global_diagnostics.len(), 1);
+    assert_eq!(global_diagnostics[0].rule_id(), "BBT007");
+    assert!(global_diagnostics[0].message().contains("recipe-only"));
+
+    let recipe_diagnostics =
+        lint_with_workspace(recipe_source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert_eq!(recipe_diagnostics.len(), 1);
+    assert_eq!(recipe_diagnostics[0].rule_id(), "BBT007");
+    assert!(recipe_diagnostics[0].message().contains("global-only"));
+}
+
+#[test]
+fn workspace_lint_reports_global_inherit_cycles() {
+    let layer = TemporaryLayer::new("lint-global-inherit-cycle");
+    let configuration_source = "BBPATH .= \":${LAYERDIR}\"\nINHERIT += \"global-base\"\n";
+    let configuration = layer.write("conf/layer.conf", configuration_source);
+    let global_base = layer.write(
+        "classes-global/global-base.bbclass",
+        "require conf/layer.conf\n",
+    );
+    let index = WorkspaceIndex::from_paths([configuration.clone(), global_base]).unwrap();
+
+    let diagnostics = lint_with_workspace(
+        configuration_source,
+        &configuration,
+        &index,
+        &LintOptions::default(),
+    )
+    .unwrap();
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].rule_id(), "BBT010");
+    assert_eq!((diagnostics[0].line(), diagnostics[0].column()), (2, 13));
+    assert!(
+        diagnostics[0]
+            .message()
+            .contains("static INHERIT dependency")
+    );
+    assert!(
+        diagnostics[0]
+            .message()
+            .contains("classes-global on BBPATH")
+    );
+}
+
 struct TemporaryLayer {
     root: PathBuf,
 }
