@@ -130,12 +130,19 @@ formatted versions of each supported manifest:
 7. The formatted corpus passes the same BitBake parse-only target.
 8. Structural coverage does not regress beyond the approved manifest
    thresholds.
-9. Diagnostics and machine-readable reports are deterministic.
-10. No operational error causes a partial batch rewrite.
+9. The complete copied repository tree is unchanged except for the discovered
+   metadata files, and the formatter's reported change count matches the tree
+   diff.
+10. Where configured, selected `bitbake -e` semantic probe values are equal
+    before and after formatting after temporary corpus paths are normalized.
+11. Diagnostics and machine-readable reports are deterministic.
+12. No operational error causes a partial batch rewrite.
 
 The release record must identify the bbtidy version, source commit, corpus
 commits, BitBake version, runner environment, command lines, result summaries,
-and links to the original and formatted parse logs.
+and links to the original and formatted parse logs. The machine-readable
+evidence bundle must contain `manifest.json`, `summary.json`, `commands.json`,
+`metrics/source.json`, `metrics/formatted.json`, and the command logs.
 
 Parseability is a required compatibility signal, not a complete semantic
 equivalence proof. Release notes must not describe the parse gate as proving

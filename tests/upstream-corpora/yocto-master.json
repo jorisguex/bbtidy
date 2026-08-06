@@ -74,6 +74,21 @@
       "meta-openembedded/meta-oe",
       "meta-openembedded/meta-python",
       "meta-openembedded/meta-networking"
+    ],
+    "semantic_probes": [
+      {
+        "name": "core-image-minimal-metadata",
+        "target": "core-image-minimal",
+        "variables": [
+          "PN",
+          "PV",
+          "PR",
+          "DEPENDS",
+          "RDEPENDS",
+          "SRC_URI",
+          "SRCREV"
+        ]
+      }
     ]
   }
 }

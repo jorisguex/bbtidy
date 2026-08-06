@@ -311,7 +311,9 @@ bbtidy continuously tests the currently supported Yocto Project release lines.
 Support means that a pinned corpus from the listed release is formatted
 losslessly and idempotently, structural CST coverage stays within its checked-in
 thresholds, and both the original and formatted layers pass a real
-`bitbake --parse-only core-image-minimal` run.
+`bitbake --parse-only core-image-minimal` run. Supported manifests also define
+semantic probes: selected `bitbake -e` variables must match before and after
+formatting after corpus-local paths are normalized.
 
 | Support tier | Yocto release | BitBake | CI policy |
 | --- | --- | --- | --- |
@@ -338,11 +340,21 @@ Run a stable corpus check locally after building a release binary:
 ```bash
 cargo build --locked --release
 python3 scripts/check_upstream_corpus.py \
-  --manifest tests/upstream-corpora/yocto-5.0-scarthgap.json
+  --manifest tests/upstream-corpora/yocto-5.0-scarthgap.json \
+  --workspace compatibility-workspace \
+  --evidence-dir compatibility-evidence
 ```
 
 Use `--skip-bitbake` for formatter, lint, preservation, and CST checks on hosts
-that cannot run BitBake. This does not satisfy the supported-release CI gate.
+that cannot run BitBake. This does not satisfy the supported-release CI gate;
+the evidence bundle records BitBake parsing and semantic probes as skipped.
+
+The evidence directory contains the copied manifest, source and formatted CST
+metrics, every verification command with its log, and `summary.json` with the
+resolved repository commits, bbtidy revision, runner details, tree changes,
+preservation counts, parse result, and semantic probe values. A pre-existing
+evidence directory is rejected so an artifact cannot silently mix results from
+multiple runs.
 
 ## Development
 

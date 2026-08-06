@@ -66,9 +66,20 @@ jobs:
       - name: Test compatibility harness
         run: python -m unittest discover -s tests -p "test_upstream_corpus.py"
       - name: Check pinned upstream corpus
-        run: python scripts/check_upstream_corpus.py --manifest "${{ matrix.manifest }}"
+        run: >-
+          python scripts/check_upstream_corpus.py
+          --manifest "${{ matrix.manifest }}"
+          --workspace compatibility-workspace
+          --evidence-dir compatibility-evidence
         env:
           LANG: en_US.UTF-8
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: compatibility-evidence-${{ matrix.name }}
+          path: compatibility-evidence
+          if-no-files-found: warn
 
   development:
     name: Yocto master (non-blocking)
@@ -95,8 +106,17 @@ jobs:
         run: >-
           python scripts/check_upstream_corpus.py
           --manifest tests/upstream-corpora/yocto-master.json
+          --workspace compatibility-workspace
+          --evidence-dir compatibility-evidence
         env:
           LANG: en_US.UTF-8
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: compatibility-evidence-yocto-master
+          path: compatibility-evidence
+          if-no-files-found: warn
 
   community:
     name: Community layers (non-blocking)
@@ -116,3 +136,12 @@ jobs:
           python scripts/check_upstream_corpus.py
           --manifest tests/upstream-corpora/community-master.json
           --skip-bitbake
+          --workspace compatibility-workspace
+          --evidence-dir compatibility-evidence
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: compatibility-evidence-community
+          path: compatibility-evidence
+          if-no-files-found: warn

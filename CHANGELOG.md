@@ -22,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - A development-tier compatibility corpus with pinned Arm, TI, and
   virtualization layer samples, focused syntax-boundary fixtures, and checked-in
   CST baseline metrics.
+- A differential compatibility verification harness that checks the complete
+  disposable repository tree, idempotence, BitBake semantic probes, and emits
+  machine-readable evidence bundles with command logs.
 
 ## [0.1.0-alpha.4] - 2026-08-03
 

@@ -4,10 +4,14 @@ from pathlib import Path
 
 from scripts.check_upstream_corpus import (
     CompatibilityError,
+    compare_semantic_probes,
     discover_metadata_files,
     load_manifest,
+    normalize_semantic_values,
     opaque_regions,
+    parse_semantic_values,
     verify_syntax_metrics,
+    verify_tree_preservation,
     workflow_command_value,
 )
 
@@ -43,6 +47,12 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(len(community["layers"]), 3)
         self.assertIn("_baseline_metrics", community)
         self.assertEqual(community["_baseline_metrics"]["source"]["files"], 667)
+        for manifest in loaded:
+            if manifest["tier"] == "supported":
+                self.assertEqual(
+                    [probe["name"] for probe in manifest["bitbake"]["semantic_probes"]],
+                    ["core-image-minimal-metadata"],
+                )
 
     def test_manifest_rejects_floating_revisions(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -141,6 +151,64 @@ class SyntaxMetricsTests(unittest.TestCase):
                 2,
                 baseline,
             )
+
+
+class SemanticProbeTests(unittest.TestCase):
+    def test_parses_and_normalizes_selected_bitbake_variables(self):
+        values = parse_semantic_values(
+            'PN="core-image-minimal"\n'
+            'export DEPENDS=" a b "\n'
+            'SRC_URI="/tmp/build/downloads/source.tar.gz"\n',
+            ["PN", "DEPENDS", "SRC_URI", "MISSING"],
+        )
+
+        self.assertEqual(values["PN"], '"core-image-minimal"')
+        self.assertEqual(values["MISSING"], None)
+        self.assertEqual(
+            normalize_semantic_values(values, [Path("/tmp/build")])["SRC_URI"],
+            '"<CORPUS>/downloads/source.tar.gz"',
+        )
+
+    def test_rejects_semantic_differences(self):
+        source = {
+            "probe": {"values": {"PN": '"example"', "PV": '"1.0"'}}
+        }
+        formatted = {
+            "probe": {"values": {"PN": '"changed"', "PV": '"1.0"'}}
+        }
+
+        with self.assertRaisesRegex(CompatibilityError, "changed variables: PN"):
+            compare_semantic_probes(source, formatted)
+
+
+class TreeVerificationTests(unittest.TestCase):
+    def test_allows_only_expected_metadata_changes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source"
+            formatted = Path(temporary) / "formatted"
+            (source / "repo" / "meta").mkdir(parents=True)
+            (formatted / "repo" / "meta").mkdir(parents=True)
+            (source / "repo" / "meta" / "example.bb").write_text(
+                'SUMMARY = "before"\n', encoding="utf-8"
+            )
+            (formatted / "repo" / "meta" / "example.bb").write_text(
+                'SUMMARY = "after"\n', encoding="utf-8"
+            )
+            (source / "repo" / "README").write_text("payload\n", encoding="utf-8")
+            (formatted / "repo" / "README").write_text("payload\n", encoding="utf-8")
+
+            self.assertEqual(
+                verify_tree_preservation(
+                    source, formatted, {"repo/meta/example.bb"}
+                ),
+                ["repo/meta/example.bb"],
+            )
+
+            (formatted / "repo" / "README").write_text(
+                "changed\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(CompatibilityError, "allowlist"):
+                verify_tree_preservation(source, formatted, {"repo/meta/example.bb"})
 
 
 class DiscoveryTests(unittest.TestCase):
