@@ -3,3 +3,4 @@
 /fuzz/artifacts/
 __pycache__/
 *.py[cod]
+*.bbtidy.*.tmp

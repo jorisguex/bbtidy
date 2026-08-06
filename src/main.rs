@@ -1,6 +1,7 @@
 use bbtidy::{
-    Config, LintDiagnostic, LintSeverity, SyntaxKind, Token, WorkspaceIndex, format_with_options,
-    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
+    Config, LintDiagnostic, LintSeverity, SafetyOptions, SyntaxKind, Token, WorkspaceIndex,
+    format_with_options, get_line_col, lint_rules, lint_with_options, lint_with_workspace,
+    load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -65,6 +66,14 @@ struct FormatArgs {
     /// Print a unified diff instead of formatted source
     #[arg(long, conflicts_with = "write")]
     diff: bool,
+
+    /// Override the configured maximum number of files for this invocation.
+    #[arg(long, value_name = "N")]
+    max_files: Option<usize>,
+
+    /// Override the configured maximum total source size in bytes.
+    #[arg(long, value_name = "BYTES")]
+    max_bytes: Option<u64>,
 
     #[command(flatten)]
     inputs: InputArgs,
@@ -150,10 +159,24 @@ fn run_format(args: FormatArgs, config: &Config) -> i32 {
         return EXIT_ERROR;
     }
 
+    let limits = SafetyOptions {
+        max_files: args.max_files.unwrap_or(config.safety.max_files),
+        max_bytes: args.max_bytes.unwrap_or(config.safety.max_bytes),
+    };
+    if let Err(error) = validate_input_limits(&inputs, limits) {
+        eprintln!("error: {error}");
+        return EXIT_ERROR;
+    }
+
     let formatted_inputs = match format_inputs(&inputs, &config.format) {
         Ok(formatted_inputs) => formatted_inputs,
         Err(()) => return EXIT_ERROR,
     };
+
+    if let Err(error) = validate_formatted_limits(&formatted_inputs, limits) {
+        eprintln!("error: {error}");
+        return EXIT_ERROR;
+    }
 
     if args.write {
         write_inputs(&formatted_inputs)
@@ -511,6 +534,67 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
     }
 }
 
+fn validate_input_limits(inputs: &[Input], limits: SafetyOptions) -> Result<(), String> {
+    if limits.max_files == 0 {
+        return Err("safety limit max_files must be greater than zero".to_owned());
+    }
+    if limits.max_bytes == 0 {
+        return Err("safety limit max_bytes must be greater than zero".to_owned());
+    }
+    if inputs.len() > limits.max_files {
+        return Err(format!(
+            "safety limit exceeded: {} files discovered, maximum is {}",
+            inputs.len(),
+            limits.max_files
+        ));
+    }
+
+    let mut bytes = 0_u64;
+    for input in inputs {
+        let Input::File(path) = input else {
+            continue;
+        };
+        let size = fs::metadata(path)
+            .map_err(|error| format!("could not inspect {}: {error}", path.display()))?
+            .len();
+        bytes = bytes
+            .checked_add(size)
+            .ok_or_else(|| "safety limit exceeded: source size overflowed".to_owned())?;
+    }
+    if bytes > limits.max_bytes {
+        return Err(format!(
+            "safety limit exceeded: {} bytes discovered, maximum is {}",
+            bytes, limits.max_bytes
+        ));
+    }
+    Ok(())
+}
+
+fn validate_formatted_limits(
+    inputs: &[FormattedInput],
+    limits: SafetyOptions,
+) -> Result<(), String> {
+    if inputs.len() > limits.max_files {
+        return Err(format!(
+            "safety limit exceeded: {} files read, maximum is {}",
+            inputs.len(),
+            limits.max_files
+        ));
+    }
+    let bytes = inputs.iter().try_fold(0_u64, |total, input| {
+        total
+            .checked_add(input.original.len() as u64)
+            .ok_or_else(|| "safety limit exceeded: source size overflowed".to_owned())
+    })?;
+    if bytes > limits.max_bytes {
+        return Err(format!(
+            "safety limit exceeded: {} bytes read, maximum is {}",
+            bytes, limits.max_bytes
+        ));
+    }
+    Ok(())
+}
+
 fn resolve_inputs(paths: &[PathBuf], config: &Config) -> Result<Vec<Input>, String> {
     let stdin_count = paths.iter().filter(|path| path.as_os_str() == "-").count();
     if stdin_count > 1 {
@@ -657,23 +741,256 @@ fn read_input(input: &Input) -> Result<(String, String), String> {
     }
 }
 
+struct PendingWrite {
+    path: PathBuf,
+    original: String,
+    temporary_path: PathBuf,
+    backup_path: PathBuf,
+}
+
 fn write_inputs(inputs: &[FormattedInput]) -> i32 {
-    for input in inputs {
-        if input.original == input.formatted {
-            continue;
+    let changed = inputs
+        .iter()
+        .filter(|input| input.original != input.formatted)
+        .collect::<Vec<_>>();
+    if changed.is_empty() {
+        return 0;
+    }
+
+    let pending = match stage_writes(&changed) {
+        Ok(pending) => pending,
+        Err(error) => {
+            eprintln!("error: could not prepare repository-wide write: {error}");
+            return EXIT_ERROR;
         }
+    };
+    if let Err(error) = commit_writes(&pending) {
+        eprintln!("error: could not commit repository-wide write: {error}");
+        return EXIT_ERROR;
+    }
+
+    for input in changed {
+        println!("formatted: {}", input.label);
+    }
+    0
+}
+
+fn stage_writes(inputs: &[&FormattedInput]) -> io::Result<Vec<PendingWrite>> {
+    let mut pending = Vec::with_capacity(inputs.len());
+
+    for input in inputs {
         let path = input
             .path
             .as_deref()
-            .expect("write mode rejects standard input");
-        if let Err(error) = write_atomically(path, input.formatted.as_bytes()) {
-            eprintln!("error: could not write {}: {error}", input.label);
-            return EXIT_ERROR;
+            .expect("write mode rejects standard input")
+            .to_path_buf();
+        let metadata = fs::symlink_metadata(&path)?;
+        if metadata.file_type().is_symlink() {
+            cleanup_pending(&pending);
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("refusing to replace symbolic link {}", path.display()),
+            ));
         }
-        println!("formatted: {}", input.label);
+        let current = fs::read_to_string(&path)?;
+        if current != input.original {
+            cleanup_pending(&pending);
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                format!("{} changed while it was being formatted", path.display()),
+            ));
+        }
+
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let file_name = path
+            .file_name()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "path has no file name"))?;
+        let temporary_path = match create_temporary_file(
+            parent,
+            file_name,
+            "output",
+            input.formatted.as_bytes(),
+            &metadata,
+        ) {
+            Ok(path) => path,
+            Err(error) => {
+                cleanup_pending(&pending);
+                return Err(error);
+            }
+        };
+        let backup_path = match create_temporary_file(
+            parent,
+            file_name,
+            "backup",
+            input.original.as_bytes(),
+            &metadata,
+        ) {
+            Ok(path) => path,
+            Err(error) => {
+                let _ = fs::remove_file(&temporary_path);
+                cleanup_pending(&pending);
+                return Err(error);
+            }
+        };
+        pending.push(PendingWrite {
+            path,
+            original: input.original.clone(),
+            temporary_path,
+            backup_path,
+        });
     }
 
-    0
+    Ok(pending)
+}
+
+fn create_temporary_file(
+    parent: &Path,
+    file_name: &std::ffi::OsStr,
+    purpose: &str,
+    contents: &[u8],
+    metadata: &fs::Metadata,
+) -> io::Result<PathBuf> {
+    for attempt in 0..100 {
+        let temporary_name = format!(
+            ".{}.bbtidy.{}.{}.{}.tmp",
+            file_name.to_string_lossy(),
+            process::id(),
+            purpose,
+            attempt
+        );
+        let temporary_path = parent.join(temporary_name);
+        let mut temporary_file = match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary_path)
+        {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        };
+
+        let result = (|| {
+            temporary_file.write_all(contents)?;
+            temporary_file.flush()?;
+            temporary_file.sync_all()?;
+            fs::set_permissions(&temporary_path, metadata.permissions())?;
+            temporary_file.sync_all()
+        })();
+        if let Err(error) = result {
+            let _ = fs::remove_file(&temporary_path);
+            return Err(error);
+        }
+        return Ok(temporary_path);
+    }
+
+    Err(io::Error::new(
+        io::ErrorKind::AlreadyExists,
+        "could not allocate a temporary output file",
+    ))
+}
+
+fn commit_writes(pending: &[PendingWrite]) -> io::Result<()> {
+    let mut committed = 0;
+    for item in pending {
+        let preflight = (|| {
+            let metadata = fs::symlink_metadata(&item.path)?;
+            if metadata.file_type().is_symlink() {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!(
+                        "{} became a symbolic link during formatting",
+                        item.path.display()
+                    ),
+                ));
+            }
+            let current = fs::read_to_string(&item.path)?;
+            if current != item.original {
+                return Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    format!(
+                        "{} changed while writes were being committed",
+                        item.path.display()
+                    ),
+                ));
+            }
+            Ok(())
+        })();
+        if let Err(error) = preflight {
+            let rollback = rollback_writes(pending, committed);
+            return Err(combine_transaction_errors(error, rollback));
+        }
+
+        if let Err(error) = fs::rename(&item.temporary_path, &item.path) {
+            let rollback = rollback_writes(pending, committed);
+            return Err(combine_transaction_errors(error, rollback));
+        }
+        committed += 1;
+        if let Err(error) = sync_parent(item.path.parent().unwrap_or_else(|| Path::new("."))) {
+            let rollback = rollback_writes(pending, committed);
+            return Err(combine_transaction_errors(error, rollback));
+        }
+    }
+
+    for item in pending {
+        fs::remove_file(&item.backup_path)?;
+        sync_parent(item.path.parent().unwrap_or_else(|| Path::new(".")))?;
+    }
+    Ok(())
+}
+
+fn rollback_writes(pending: &[PendingWrite], committed: usize) -> io::Result<()> {
+    let mut first_error = None;
+    for item in pending[..committed].iter().rev() {
+        let result = (|| {
+            fs::remove_file(&item.path)?;
+            fs::rename(&item.backup_path, &item.path)?;
+            sync_parent(item.path.parent().unwrap_or_else(|| Path::new(".")))
+        })();
+        if let Err(error) = result {
+            if first_error.is_none() {
+                first_error = Some(error);
+            }
+        }
+    }
+    for item in &pending[committed..] {
+        if let Err(error) = fs::remove_file(&item.temporary_path)
+            && error.kind() != io::ErrorKind::NotFound
+            && first_error.is_none()
+        {
+            first_error = Some(error);
+        }
+        if let Err(error) = fs::remove_file(&item.backup_path)
+            && error.kind() != io::ErrorKind::NotFound
+            && first_error.is_none()
+        {
+            first_error = Some(error);
+        }
+    }
+    match first_error {
+        Some(error) => Err(error),
+        None => Ok(()),
+    }
+}
+
+fn cleanup_pending(pending: &[PendingWrite]) {
+    for item in pending {
+        let _ = fs::remove_file(&item.temporary_path);
+        let _ = fs::remove_file(&item.backup_path);
+    }
+}
+
+fn combine_transaction_errors(error: io::Error, rollback: io::Result<()>) -> io::Error {
+    match rollback {
+        Ok(()) => error,
+        Err(rollback_error) => {
+            io::Error::other(format!("{error}; rollback also failed: {rollback_error}"))
+        }
+    }
+}
+
+fn sync_parent(parent: &Path) -> io::Result<()> {
+    let directory = OpenOptions::new().read(true).open(parent)?;
+    directory.sync_all()
 }
 
 fn print_diffs(inputs: &[FormattedInput]) -> i32 {
@@ -702,54 +1019,55 @@ fn print_diffs(inputs: &[FormattedInput]) -> i32 {
     0
 }
 
-fn write_atomically(path: &Path, contents: &[u8]) -> io::Result<()> {
-    let metadata = fs::symlink_metadata(path)?;
-    if metadata.file_type().is_symlink() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "refusing to replace a symbolic link",
-        ));
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    let parent = path.parent().unwrap_or_else(|| Path::new("."));
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "path has no file name"))?;
-
-    for attempt in 0..100 {
-        let temporary_name = format!(
-            ".{}.bbtidy.{}.{}.tmp",
-            file_name.to_string_lossy(),
+    #[test]
+    fn transaction_rolls_back_when_a_later_file_changes() {
+        let root = std::env::temp_dir().join(format!(
+            "bbtidy-transaction-{}-{}",
             process::id(),
-            attempt
-        );
-        let temporary_path = parent.join(temporary_name);
-        let mut temporary_file = match OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary_path)
-        {
-            Ok(file) => file,
-            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(error) => return Err(error),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let first_path = root.join("a.bb");
+        let second_path = root.join("b.bb");
+        fs::write(&first_path, "A=\"a\"\n").unwrap();
+        fs::write(&second_path, "B=\"b\"\n").unwrap();
+        let first = FormattedInput {
+            label: first_path.display().to_string(),
+            path: Some(first_path.clone()),
+            original: "A=\"a\"\n".to_owned(),
+            formatted: "A = \"a\"\n".to_owned(),
+        };
+        let second = FormattedInput {
+            label: second_path.display().to_string(),
+            path: Some(second_path.clone()),
+            original: "B=\"b\"\n".to_owned(),
+            formatted: "B = \"b\"\n".to_owned(),
         };
 
-        let result = (|| {
-            temporary_file.write_all(contents)?;
-            temporary_file.flush()?;
-            temporary_file.sync_all()?;
-            fs::set_permissions(&temporary_path, metadata.permissions())?;
-            fs::rename(&temporary_path, path)
-        })();
-
-        if result.is_err() {
-            let _ = fs::remove_file(&temporary_path);
-        }
-        return result;
+        let pending = stage_writes(&[&first, &second]).unwrap();
+        fs::write(&second_path, "B=\"concurrent\"\n").unwrap();
+        assert!(commit_writes(&pending).is_err());
+        assert_eq!(fs::read_to_string(&first_path).unwrap(), "A=\"a\"\n");
+        assert_eq!(
+            fs::read_to_string(&second_path).unwrap(),
+            "B=\"concurrent\"\n"
+        );
+        cleanup_pending(&pending);
+        assert!(!fs::read_dir(&root).unwrap().any(|entry| {
+            entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .contains(".bbtidy.")
+        }));
+        fs::remove_dir_all(root).unwrap();
     }
-
-    Err(io::Error::new(
-        io::ErrorKind::AlreadyExists,
-        "could not allocate a temporary output file",
-    ))
 }

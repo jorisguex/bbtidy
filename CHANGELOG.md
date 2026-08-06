@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
 - A differential compatibility verification harness that checks the complete
   disposable repository tree, idempotence, BitBake semantic probes, and emits
   machine-readable evidence bundles with command logs.
+- Transactional repository-wide writes with staged recovery copies,
+  concurrent-change detection, symbolic-link refusal, and configurable file and
+  source-size safety limits.
 
 ## [0.1.0-alpha.4] - 2026-08-03
 

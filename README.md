@@ -148,8 +148,10 @@ Standard input must be the only input, and `--write` cannot be used with it.
 `format` writes formatted source to standard output and requires one input
 unless `--diff` or `--write` is selected. `format --diff`, `lint`, and `lex` can
 process multiple inputs without changing them. Before `format --write` changes
-any files, every input is read and formatted successfully; each changed file is
-then replaced atomically.
+any files, every input is read, formatted, staged, and checked for concurrent
+changes. Changed files are then replaced as one transactional batch; if a
+commit step fails, previously replaced files are restored from their staged
+recovery copies. Symbolic links are never replaced.
 
 ### Configuration
 
@@ -175,6 +177,10 @@ BBT004 = "info"
 
 [paths]
 exclude = ["vendor/**", "**/files/**"]
+
+[safety]
+max_files = 10000
+max_bytes = 268435456
 ```
 
 `metadata_list_layout` defaults to `preserve`. The opt-in `one-per-line` mode
@@ -185,6 +191,13 @@ item is already one static whitespace-free token on a continuation line with
 consistent line endings. Dynamic expansions, escaped or quoted items,
 multi-item lines, generic variables, and malformed or mixed-line-ending values
 remain unchanged apart from normal assignment spacing.
+
+The safety limits default to 10,000 files and 256 MiB of original source per
+`format` invocation. They apply after recursive discovery and exclusions, so a
+repository-wide write cannot silently expand beyond a bounded scope. Override
+them in `[safety]` or for one invocation with `--max-files` and `--max-bytes`.
+Zero is rejected. A file that changes after it was read is also rejected rather
+than overwritten.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. Exclusion globs are relative to the

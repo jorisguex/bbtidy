@@ -8,12 +8,33 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const CONFIG_FILE_NAME: &str = ".bbtidy.toml";
+const DEFAULT_MAX_FILES: usize = 10_000;
+const DEFAULT_MAX_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Limits the amount of source a single format invocation may process.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SafetyOptions {
+    /// Maximum number of discovered or explicitly supplied files.
+    pub max_files: usize,
+    /// Maximum total size of the original source files in bytes.
+    pub max_bytes: u64,
+}
+
+impl Default for SafetyOptions {
+    fn default() -> Self {
+        Self {
+            max_files: DEFAULT_MAX_FILES,
+            max_bytes: DEFAULT_MAX_BYTES,
+        }
+    }
+}
 
 /// Resolved bbtidy configuration for one CLI invocation.
 #[derive(Clone, Debug)]
 pub struct Config {
     pub format: FormatOptions,
     pub lint: LintOptions,
+    pub safety: SafetyOptions,
     base_dir: PathBuf,
     excludes: GlobSet,
 }
@@ -23,6 +44,7 @@ impl Config {
         Self {
             format: FormatOptions::default(),
             lint: LintOptions::default(),
+            safety: SafetyOptions::default(),
             base_dir,
             excludes: empty_glob_set(),
         }
@@ -100,6 +122,21 @@ impl Config {
             ConfigError::new(format!("could not build path exclusions: {error}"))
         })?;
 
+        let safety = SafetyOptions {
+            max_files: file_config.safety.max_files.unwrap_or(DEFAULT_MAX_FILES),
+            max_bytes: file_config.safety.max_bytes.unwrap_or(DEFAULT_MAX_BYTES),
+        };
+        if safety.max_files == 0 {
+            return Err(ConfigError::new(
+                "safety.max_files must be greater than zero",
+            ));
+        }
+        if safety.max_bytes == 0 {
+            return Err(ConfigError::new(
+                "safety.max_bytes must be greater than zero",
+            ));
+        }
+
         Ok(Self {
             format: FormatOptions {
                 max_top_level_blank_lines: file_config
@@ -112,6 +149,7 @@ impl Config {
                     .unwrap_or(FormatOptions::default().metadata_list_layout),
             },
             lint: LintOptions::from_parts(disabled_rules, severity_overrides),
+            safety,
             base_dir: base_dir.to_path_buf(),
             excludes,
         })
@@ -189,6 +227,8 @@ struct FileConfig {
     lint: FileLintConfig,
     #[serde(default)]
     paths: FilePathsConfig,
+    #[serde(default)]
+    safety: FileSafetyConfig,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -212,6 +252,13 @@ struct FileLintConfig {
 struct FilePathsConfig {
     #[serde(default)]
     exclude: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileSafetyConfig {
+    max_files: Option<usize>,
+    max_bytes: Option<u64>,
 }
 
 fn validate_rule_id(known_rules: &BTreeSet<&str>, rule_id: &str) -> Result<(), ConfigError> {
@@ -246,6 +293,7 @@ mod tests {
 
         assert_eq!(config.format, FormatOptions::default());
         assert_eq!(config.lint, LintOptions::default());
+        assert_eq!(config.safety, SafetyOptions::default());
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
     }
 
@@ -266,6 +314,10 @@ BBT010 = "info"
 
 [paths]
 exclude = ["vendor/**", "**/files/**"]
+
+[safety]
+max_files = 500
+max_bytes = 1048576
 "#,
         );
 
@@ -274,6 +326,8 @@ exclude = ["vendor/**", "**/files/**"]
             config.format.metadata_list_layout,
             MetadataListLayout::OnePerLine
         );
+        assert_eq!(config.safety.max_files, 500);
+        assert_eq!(config.safety.max_bytes, 1_048_576);
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));
         assert!(config.is_excluded(Path::new("/project/recipes/example/files/data.inc")));
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
@@ -310,6 +364,16 @@ exclude = ["["]
         .unwrap();
         let error = Config::from_file_config(invalid_glob, Path::new("/project")).unwrap_err();
         assert!(error.to_string().contains("invalid path exclusion '['"));
+
+        let zero_files: FileConfig = toml::from_str(
+            r#"
+[safety]
+max_files = 0
+"#,
+        )
+        .unwrap();
+        let error = Config::from_file_config(zero_files, Path::new("/project")).unwrap_err();
+        assert!(error.to_string().contains("safety.max_files"));
     }
 
     #[test]

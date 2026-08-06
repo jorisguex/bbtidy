@@ -207,6 +207,88 @@ fn config_excludes_paths_from_directory_processing() {
 }
 
 #[test]
+fn format_write_enforces_repository_file_limit_before_rewriting() {
+    let directory = TemporaryDirectory::new("safety-file-limit");
+    let config = directory.write(".bbtidy.toml", "[safety]\nmax_files = 1\n");
+    let first = directory.write("first.bb", UNFORMATTED);
+    let second = directory.write("second.bb", UNFORMATTED);
+
+    let output = run([
+        "format",
+        "--write",
+        "--config",
+        config.to_str().unwrap(),
+        directory.path().to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
+    );
+    assert_eq!(fs::read_to_string(first).unwrap(), UNFORMATTED);
+    assert_eq!(fs::read_to_string(second).unwrap(), UNFORMATTED);
+}
+
+#[test]
+fn format_write_enforces_repository_byte_limit_before_rewriting() {
+    let directory = TemporaryDirectory::new("safety-byte-limit");
+    let config = directory.write(".bbtidy.toml", "[safety]\nmax_bytes = 4\n");
+    let file = directory.write("example.bb", UNFORMATTED);
+
+    let output = run([
+        "format",
+        "--write",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
+    );
+    assert_eq!(fs::read_to_string(file).unwrap(), UNFORMATTED);
+}
+
+#[cfg(unix)]
+#[test]
+fn format_write_rejects_symlinks_before_changing_any_file() {
+    use std::os::unix::fs::symlink;
+
+    let directory = TemporaryDirectory::new("safety-symlink");
+    let first = directory.write("a.bb", UNFORMATTED);
+    let target = directory.write("target.bb", UNFORMATTED);
+    let link = directory.path().join("z.bb");
+    symlink(&target, &link).unwrap();
+
+    let output = run([
+        "format",
+        "--write",
+        first.to_str().unwrap(),
+        link.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("symbolic link")
+    );
+    assert_eq!(fs::read_to_string(&first).unwrap(), UNFORMATTED);
+    assert_eq!(fs::read_to_string(&target).unwrap(), UNFORMATTED);
+    assert!(
+        fs::symlink_metadata(&link)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+}
+
+#[test]
 fn invalid_config_is_an_operational_error() {
     let directory = TemporaryDirectory::new("config-invalid");
     let config = directory.write(".bbtidy.toml", "[lint]\ndisable = [\"BBT999\"]\n");

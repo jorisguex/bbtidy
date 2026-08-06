@@ -17,7 +17,8 @@ its supported formatting operations are:
   real BitBake parse check;
 - deterministic, with stable file ordering, diagnostics, and machine-readable
   output; and
-- fail-safe, refusing incomplete input and avoiding partial batch writes.
+- fail-safe, refusing incomplete input, bounding repository-wide work, and
+  avoiding partial batch writes.
 
 These guarantees apply to bbtidy's formatting and static analysis behavior.
 They do not prove that a complete BitBake build produces identical task hashes,
@@ -73,7 +74,10 @@ list layout. It does not interpret or rewrite embedded shell or Python bodies.
 By default, bbtidy preserves continuation tails, comments, argument contents,
 unknown top-level syntax, and embedded code byte-for-byte. Structurally
 incomplete input is an operational error. In `--write` mode, all inputs must be
-read and formatted successfully before any file is replaced.
+read, formatted, staged, and checked for concurrent changes before any file is
+replaced. The complete write set is committed transactionally with recovery
+copies; symbolic links are never replaced. Repository-wide formatting is also
+bounded by configurable file-count and source-byte limits.
 
 ### `check`
 
@@ -137,6 +141,8 @@ formatted versions of each supported manifest:
     before and after formatting after temporary corpus paths are normalized.
 11. Diagnostics and machine-readable reports are deterministic.
 12. No operational error causes a partial batch rewrite.
+13. Repository-wide runs respect the configured file-count and source-byte
+    limits, and write runs refuse symbolic links and concurrent source changes.
 
 The release record must identify the bbtidy version, source commit, corpus
 commits, BitBake version, runner environment, command lines, result summaries,
