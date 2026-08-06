@@ -17,11 +17,16 @@ class ManifestTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         manifests = sorted((root / "tests" / "upstream-corpora").glob("*.json"))
 
-        self.assertEqual(len(manifests), 3)
+        self.assertEqual(len(manifests), 4)
         loaded = [load_manifest(path) for path in manifests]
         self.assertEqual(
             {manifest["id"] for manifest in loaded},
-            {"yocto-5.0-scarthgap", "yocto-6.0-wrynose", "yocto-master"},
+            {
+                "community-master",
+                "yocto-5.0-scarthgap",
+                "yocto-6.0-wrynose",
+                "yocto-master",
+            },
         )
         self.assertEqual(
             {
@@ -31,6 +36,13 @@ class ManifestTests(unittest.TestCase):
             },
             {("5.0", "2.8"), ("6.0", "2.18")},
         )
+        community = next(
+            manifest for manifest in loaded if manifest["id"] == "community-master"
+        )
+        self.assertEqual(community["tier"], "development")
+        self.assertEqual(len(community["layers"]), 3)
+        self.assertIn("_baseline_metrics", community)
+        self.assertEqual(community["_baseline_metrics"]["source"]["files"], 667)
 
     def test_manifest_rejects_floating_revisions(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -105,6 +117,29 @@ class SyntaxMetricsTests(unittest.TestCase):
                 formatted,
                 {"minimum_structured_nodes": 10, "maximum_unknown_nodes": 1},
                 2,
+            )
+
+    def test_rejects_checked_in_baseline_metric_changes(self):
+        source = {
+            "version": 1,
+            "files": 2,
+            "structured_nodes": 10,
+            "total_nodes": 12,
+            "trivia_nodes": 2,
+            "unknown_bytes": 0,
+            "unknown_nodes": 0,
+        }
+        formatted = dict(source)
+        baseline = {"source": dict(source), "formatted": dict(formatted)}
+        formatted["total_nodes"] = 13
+
+        with self.assertRaisesRegex(CompatibilityError, "baseline"):
+            verify_syntax_metrics(
+                source,
+                formatted,
+                {"minimum_structured_nodes": 1, "maximum_unknown_nodes": 1},
+                2,
+                baseline,
             )
 
 

@@ -20,6 +20,15 @@ METADATA_EXTENSIONS = {".bb", ".bbappend", ".bbclass", ".conf", ".inc"}
 FUNCTION_START = re.compile(r"^[^ \t#\r\n].*\(\s*\)\s*\{\s*(?:#.*)?(?:\r?\n)?$")
 PYTHON_DEF_START = re.compile(r"^def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*:")
 REVISION = re.compile(r"^[0-9a-f]{40}$")
+BASELINE_METRIC_FIELDS = (
+    "files",
+    "structured_nodes",
+    "total_nodes",
+    "trivia_nodes",
+    "unknown_bytes",
+    "unknown_nodes",
+    "version",
+)
 
 
 class CompatibilityError(RuntimeError):
@@ -125,6 +134,46 @@ def load_manifest(path):
         for field in ("minimum_structured_nodes", "maximum_unknown_nodes")
     ):
         raise CompatibilityError("upstream corpus has invalid syntax metric thresholds")
+
+    baseline_reference = syntax_metrics.get("baseline_metrics")
+    if baseline_reference is not None:
+        if not isinstance(baseline_reference, str) or not baseline_reference:
+            raise CompatibilityError("upstream corpus has an invalid baseline metrics path")
+        manifest_directory = path.resolve().parent
+        baseline_path = (manifest_directory / baseline_reference).resolve()
+        try:
+            baseline_path.relative_to(manifest_directory)
+        except ValueError as error:
+            raise CompatibilityError(
+                "upstream corpus baseline metrics must be inside the manifest directory"
+            ) from error
+        try:
+            baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise CompatibilityError(
+                "could not read upstream corpus baseline metrics {}: {}".format(
+                    baseline_path, error
+                )
+            ) from error
+        if (
+            baseline.get("schema") != 1
+            or baseline.get("corpus_id") != corpus_id
+            or not isinstance(baseline.get("source"), dict)
+            or not isinstance(baseline.get("formatted"), dict)
+        ):
+            raise CompatibilityError(
+                "upstream corpus baseline metrics have an invalid schema"
+            )
+        for label in ("source", "formatted"):
+            metrics = baseline[label]
+            if not all(
+                isinstance(metrics.get(field), int) and metrics[field] >= 0
+                for field in BASELINE_METRIC_FIELDS
+            ):
+                raise CompatibilityError(
+                    "upstream corpus {} baseline metrics are invalid".format(label)
+                )
+        manifest["_baseline_metrics"] = baseline
 
     return manifest
 
@@ -368,7 +417,9 @@ def syntax_stats(bbtidy, inputs):
         ) from error
 
 
-def verify_syntax_metrics(source, formatted, thresholds, total_files):
+def verify_syntax_metrics(
+    source, formatted, thresholds, total_files, baseline_metrics=None
+):
     for label, metrics in (("source", source), ("formatted", formatted)):
         if metrics.get("version") != 1 or metrics.get("files") != total_files:
             raise CompatibilityError(
@@ -393,6 +444,17 @@ def verify_syntax_metrics(source, formatted, thresholds, total_files):
                 source["unknown_nodes"], formatted["unknown_nodes"]
             )
         )
+    if baseline_metrics is not None:
+        for label, metrics in (("source", source), ("formatted", formatted)):
+            expected = baseline_metrics[label]
+            for field in BASELINE_METRIC_FIELDS:
+                if metrics.get(field) != expected[field]:
+                    raise CompatibilityError(
+                        "{} syntax metric {} changed from {} to {}; update the "
+                        "pinned baseline only with an explicit compatibility review".format(
+                            label, field, expected[field], metrics.get(field)
+                        )
+                    )
 
 
 def run_bitbake_parse(root, build_root, configuration):
@@ -472,7 +534,11 @@ def check_compatibility(arguments, workspace):
     run([arguments.bbtidy, "check"] + inputs)
     formatted_metrics = syntax_stats(arguments.bbtidy, inputs)
     verify_syntax_metrics(
-        source_metrics, formatted_metrics, manifest["syntax_metrics"], total_files
+        source_metrics,
+        formatted_metrics,
+        manifest["syntax_metrics"],
+        total_files,
+        manifest.get("_baseline_metrics"),
     )
     linted = run([arguments.bbtidy, "lint"] + inputs, accepted=(0, 1))
     lint_findings = len([line for line in linted.stdout.splitlines() if line.strip()])

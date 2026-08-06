@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "id": "community-master",
+  "tier": "development",
+  "yocto_version": "master",
+  "bitbake_version": "master",
+  "snapshot": "Pinned community layer sample, 2026-08-06",
+  "repositories": [
+    {
+      "name": "poky",
+      "url": "https://github.com/yoctoproject/poky.git",
+      "revision": "5c2b3d184065b0a15695bad7db455ef65653e4c6",
+      "sparse_paths": [
+        ".templateconf",
+        "bitbake/",
+        "meta/",
+        "meta-poky/",
+        "scripts/",
+        "oe-init-build-env"
+      ]
+    },
+    {
+      "name": "meta-arm",
+      "url": "https://git.yoctoproject.org/meta-arm",
+      "revision": "b08f6b0b5eabe54e974782e1998a2a854d23c5fa",
+      "sparse_paths": [
+        "meta-arm/conf/",
+        "meta-arm/classes/",
+        "meta-arm/recipes-*/"
+      ]
+    },
+    {
+      "name": "meta-ti",
+      "url": "https://github.com/TexasInstruments/meta-ti.git",
+      "revision": "8b9b4854295491a0272722fe4fb2e0aa773d0a6d",
+      "sparse_paths": [
+        "meta-ti-bsp/conf/",
+        "meta-ti-bsp/classes/",
+        "meta-ti-bsp/recipes-*/"
+      ]
+    },
+    {
+      "name": "meta-virtualization",
+      "url": "https://git.yoctoproject.org/meta-virtualization",
+      "revision": "e4aed393ce551b3141d4594330fc654abaa2d4cf",
+      "sparse_paths": [
+        "conf/",
+        "classes/",
+        "recipes-*"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "name": "meta-arm",
+      "repository": "meta-arm",
+      "path": "meta-arm",
+      "minimum_files": 100
+    },
+    {
+      "name": "meta-ti-bsp",
+      "repository": "meta-ti",
+      "path": "meta-ti-bsp",
+      "minimum_files": 100
+    },
+    {
+      "name": "meta-virtualization",
+      "repository": "meta-virtualization",
+      "path": ".",
+      "minimum_files": 100
+    }
+  ],
+  "syntax_metrics": {
+    "minimum_structured_nodes": 22271,
+    "maximum_unknown_nodes": 30,
+    "baseline_metrics": "baselines/community-master.json"
+  },
+  "bitbake": {
+    "init_repository": "poky",
+    "template": "meta-poky/conf/templates/default",
+    "target": "core-image-minimal",
+    "additional_layers": [
+      "meta-arm/meta-arm",
+      "meta-ti/meta-ti-bsp",
+      "meta-virtualization"
+    ]
+  }
+}

@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - A beta support contract defining supported Yocto and BitBake versions,
   formatter and linter guarantees, unsupported boundaries, compatibility
   evidence, and the policy for compatibility changes.
+- A development-tier compatibility corpus with pinned Arm, TI, and
+  virtualization layer samples, focused syntax-boundary fixtures, and checked-in
+  CST baseline metrics.
 
 ## [0.1.0-alpha.4] - 2026-08-03
 

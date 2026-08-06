@@ -325,6 +325,14 @@ review any CST metric movement, and require the complete differential parse
 check to pass. The moving `master` corpus follows upstream branch heads to
 surface upcoming syntax changes without changing the release gate.
 
+The development-tier `community-master.json` manifest adds pinned samples from
+the Arm platform/toolchain, TI BSP, and virtualization layer families. It runs
+the formatter, lint, preservation, and CST checks on every listed metadata file
+but skips the BitBake parse until the complete dependency stacks for those
+layers are pinned. Its source and formatted CST metrics are recorded in
+`tests/upstream-corpora/baselines/community-master.json` and must remain stable
+unless an explicit compatibility review approves the change.
+
 Run a stable corpus check locally after building a release binary:
 
 ```bash
@@ -423,7 +431,8 @@ handling, and the no-write guarantee for malformed input.
 
 The extended compatibility check uses commit-pinned snapshots of
 OpenEmbedded-Core and the `meta-oe`, `meta-python`, and `meta-networking`
-layers. The revisions and minimum corpus sizes are recorded in
+layers, plus the development-tier community sample described above. The
+revisions and minimum corpus sizes are recorded in
 `tests/upstream-corpora/`; upstream repositories are downloaded into a
 temporary workspace and are not vendored in this repository.
 
@@ -447,6 +456,16 @@ on a non-Linux development machine:
 ```bash
 python3 scripts/check_upstream_corpus.py \
     --source-root /path/containing/poky-and-meta-openembedded \
+    --skip-bitbake
+```
+
+To run the pinned community sample locally, use an existing directory
+containing the four repositories named in its manifest:
+
+```bash
+python3 scripts/check_upstream_corpus.py \
+    --manifest tests/upstream-corpora/community-master.json \
+    --source-root /path/containing/poky-meta-arm-meta-ti-meta-virtualization \
     --skip-bitbake
 ```
 

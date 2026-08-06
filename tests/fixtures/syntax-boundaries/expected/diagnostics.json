@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "diagnostics": {
+    "directives.inc": [],
+    "legacy-overrides.bb": [],
+    "modern.bb": [],
+    "opaque-and-dynamic.bb": [],
+    "unsupported-top-level.conf": []
+  }
+}

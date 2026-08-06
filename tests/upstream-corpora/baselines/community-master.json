@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "corpus_id": "community-master",
+  "generated_at": "2026-08-06",
+  "source": {
+    "files": 667,
+    "structured_nodes": 22271,
+    "total_nodes": 32301,
+    "trivia_nodes": 10000,
+    "unknown_bytes": 1753,
+    "unknown_nodes": 30,
+    "version": 1
+  },
+  "formatted": {
+    "files": 667,
+    "structured_nodes": 22271,
+    "total_nodes": 32269,
+    "trivia_nodes": 9968,
+    "unknown_bytes": 1753,
+    "unknown_nodes": 30,
+    "version": 1
+  },
+  "observations": {
+    "files_changed_on_first_format": 64,
+    "lint_diagnostics": 508,
+    "opaque_regions_preserved": 628,
+    "excluded_payload_files_unchanged": 16,
+    "bitbake_parse": "skipped_development_corpus"
+  }
+}
