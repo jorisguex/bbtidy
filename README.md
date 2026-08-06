@@ -1,13 +1,17 @@
 # bbtidy
 
-Experimental formatter, linter, and lexer for BitBake metadata.
+Conservative formatter, linter, and lexer for BitBake metadata.
 
 ## Description
 
-`bbtidy` is an experimental tool for formatting and inspecting BitBake recipes
-and configuration files. It provides a lexer, a conservative formatter for
-top-level metadata assignments, and file-local or layer-aware linting suitable
+`bbtidy` is a conservative tool for formatting and inspecting BitBake recipes
+and configuration files. It provides a lexer, a formatter for supported
+top-level metadata boundaries, and file-local or layer-aware linting suitable
 for CI.
+
+Current releases are alpha prereleases. The intended beta compatibility,
+safety, and support commitments are defined in the [beta support
+contract](docs/beta-support-contract.md).
 
 ## Features
 
@@ -299,6 +303,10 @@ embedded shell or Python code.
 
 ## BitBake version conformance
 
+The [beta support contract](docs/beta-support-contract.md) is the authoritative
+definition of supported versions, guarantees, limitations, and release
+evidence. The summary below describes the current support matrix.
+
 bbtidy continuously tests the currently supported Yocto Project release lines.
 Support means that a pinned corpus from the listed release is formatted
 losslessly and idempotently, structural CST coverage stays within its checked-in
@@ -416,7 +424,7 @@ handling, and the no-write guarantee for malformed input.
 The extended compatibility check uses commit-pinned snapshots of
 OpenEmbedded-Core and the `meta-oe`, `meta-python`, and `meta-networking`
 layers. The revisions and minimum corpus sizes are recorded in
-`tests/upstream-corpus.json`; upstream repositories are downloaded into a
+`tests/upstream-corpora/`; upstream repositories are downloaded into a
 temporary workspace and are not vendored in this repository.
 
 On a supported Linux build host with the standard Yocto host packages

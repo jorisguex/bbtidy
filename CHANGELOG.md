@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file.
 - Static `INHERIT` and `USER_CLASSES` configuration assignments now contribute
   context-aware class dependencies and cycle analysis to complete workspace
   indexes.
+- A beta support contract defining supported Yocto and BitBake versions,
+  formatter and linter guarantees, unsupported boundaries, compatibility
+  evidence, and the policy for compatibility changes.
 
 ## [0.1.0-alpha.4] - 2026-08-03
 

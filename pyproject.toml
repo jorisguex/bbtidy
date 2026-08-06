@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bbtidy"
-description = "Experimental formatter, linter, and lexer for BitBake metadata"
+description = "Conservative formatter, linter, and lexer for BitBake metadata"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
