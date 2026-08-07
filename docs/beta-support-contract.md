@@ -3,6 +3,8 @@
 This document defines what bbtidy beta releases support, what they deliberately
 do not support, and the evidence required before a release can claim support.
 It is the authoritative compatibility and safety contract for the beta series.
+The [beta user guide](beta-user-guide.md) provides the corresponding install,
+rollout, CI, and issue-reporting workflow.
 
 ## Contract summary
 
@@ -24,6 +26,10 @@ These guarantees apply to bbtidy's formatting and static analysis behavior.
 They do not prove that a complete BitBake build produces identical task hashes,
 packages, runtime behavior, or performance. Users must continue to run their
 normal BitBake build and test validation.
+
+The contract applies to a release only when that release is identified as a
+beta release in its release notes. Alpha prereleases are evaluation builds and
+must not be represented as having completed the beta support gate.
 
 ## Support tiers
 
@@ -118,6 +124,24 @@ The workspace model is intentionally conservative. It understands the static
 layer metadata and search behavior documented by bbtidy, but it does not
 execute BitBake variable expansion or Python expressions. Users requiring full
 BitBake semantics must run BitBake itself.
+
+## User acceptance checklist
+
+Before enabling bbtidy as a required repository check, users should:
+
+1. Pin the bbtidy version and record `bbtidy --version` in CI output.
+2. Run `bbtidy check` and `bbtidy lint` on a representative layer without
+   allowing either command to write files.
+3. Review `bbtidy format --diff` output and confirm that only intended metadata
+   boundaries change.
+4. Run the project's normal BitBake parse, build, package, and runtime tests.
+5. Enable `format --write` only in a clean branch or worktree with an agreed
+   configuration and explicit safety limits.
+6. Re-run `check`, the relevant BitBake validation, and the project's normal
+   tests after writing.
+
+This checklist is an adoption control, not additional compatibility evidence
+for a release. The release evidence requirements below remain authoritative.
 
 ## Evidence required for a release
 

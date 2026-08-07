@@ -11,7 +11,8 @@ for CI.
 
 Current releases are alpha prereleases. The intended beta compatibility,
 safety, and support commitments are defined in the [beta support
-contract](docs/beta-support-contract.md).
+contract](docs/beta-support-contract.md). The practical rollout steps are in
+the [beta user guide](docs/beta-user-guide.md).
 
 ## Features
 
@@ -537,7 +538,7 @@ To publish a release:
 
 1. Update the version in `Cargo.toml` and finalize the changelog.
 2. Create a tag that exactly matches the Cargo version, such as
-   `v0.1.0-alpha.3`.
+   `v0.1.0-alpha.4`.
 3. Push the tag. The release workflows run their validation gates. The Python
    workflow builds and smoke-tests the wheels and source distribution, then
    publishes through PyPI Trusted Publishing and creates the GitHub Release.
