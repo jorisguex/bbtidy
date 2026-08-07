@@ -77,7 +77,7 @@ jobs:
           LANG: en_US.UTF-8
       - name: Upload compatibility evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: compatibility-evidence-${{ matrix.artifact }}
           path: compatibility-evidence
@@ -114,7 +114,7 @@ jobs:
           LANG: en_US.UTF-8
       - name: Upload compatibility evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: compatibility-evidence-yocto-master
           path: compatibility-evidence
@@ -142,7 +142,7 @@ jobs:
           --evidence-dir compatibility-evidence
       - name: Upload compatibility evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: compatibility-evidence-community
           path: compatibility-evidence
