@@ -1,7 +1,7 @@
 use bbtidy::{
-    Config, LintDiagnostic, LintSeverity, SafetyOptions, SyntaxKind, Token, WorkspaceIndex,
-    format_with_options, get_line_col, lint_rules, lint_with_options, lint_with_workspace,
-    load_config, parse,
+    Config, LintDiagnostic, LintFailurePolicy, LintSeverity, SafetyOptions, SyntaxKind, Token,
+    WorkspaceIndex, format_with_options, get_line_col, lint_rules, lint_with_options,
+    lint_with_workspace, load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -85,6 +85,10 @@ struct LintArgs {
     #[arg(long, value_enum, default_value_t = LintOutput::Text, value_name = "FORMAT")]
     output: LintOutput,
 
+    /// Set the minimum diagnostic severity that fails the command.
+    #[arg(long, value_enum, value_name = "SEVERITY")]
+    fail_on: Option<LintFailureArg>,
+
     #[command(flatten)]
     inputs: InputArgs,
 }
@@ -94,6 +98,25 @@ enum LintOutput {
     Text,
     Json,
     Sarif,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum LintFailureArg {
+    Info,
+    Warning,
+    Error,
+    Never,
+}
+
+impl From<LintFailureArg> for LintFailurePolicy {
+    fn from(value: LintFailureArg) -> Self {
+        match value {
+            LintFailureArg::Info => Self::Info,
+            LintFailureArg::Warning => Self::Warning,
+            LintFailureArg::Error => Self::Error,
+            LintFailureArg::Never => Self::Never,
+        }
+    }
 }
 
 #[derive(Args)]
@@ -220,6 +243,10 @@ fn run_check(args: InputArgs, config: &Config) -> i32 {
 }
 
 fn run_lint(args: LintArgs, config: &Config) -> i32 {
+    let mut lint_options = config.lint.clone();
+    if let Some(fail_on) = args.fail_on {
+        lint_options.set_fail_on(fail_on.into());
+    }
     let inputs = match resolve_inputs(&args.inputs.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
@@ -238,7 +265,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
-    let mut had_findings = false;
+    let mut had_blocking_findings = false;
     let mut had_error = false;
     let machine_output = args.output != LintOutput::Text;
     let mut collected = Vec::new();
@@ -254,12 +281,12 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             }
         };
         let diagnostics = match input {
-            Input::Stdin => lint_with_options(&text, &config.lint),
-            Input::File(path) => lint_with_workspace(&text, path, &workspace, &config.lint),
+            Input::Stdin => lint_with_options(&text, &lint_options),
+            Input::File(path) => lint_with_workspace(&text, path, &workspace, &lint_options),
         };
         match diagnostics {
             Ok(diagnostics) => {
-                had_findings |= !diagnostics.is_empty();
+                had_blocking_findings |= lint_options.has_blocking_findings(&diagnostics);
                 if machine_output {
                     collected.extend(diagnostics.into_iter().map(|diagnostic| {
                         ReportedDiagnostic {
@@ -307,7 +334,11 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             eprintln!("error: could not write standard output: {error}");
             return EXIT_ERROR;
         }
-        if had_findings { EXIT_DIFFERENCES } else { 0 }
+        if had_blocking_findings {
+            EXIT_DIFFERENCES
+        } else {
+            0
+        }
     }
 }
 

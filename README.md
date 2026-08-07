@@ -171,6 +171,7 @@ metadata_list_layout = "preserve" # or "one-per-line"
 
 [lint]
 disable = ["BBT003"]
+fail_on = "warning" # info, warning, error, or never
 
 [lint.severity]
 BBT001 = "error"
@@ -201,15 +202,20 @@ Zero is rejected. A file that changes after it was read is also rejected rather
 than overwritten.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
-are `info`, `warning`, or `error`. Exclusion globs are relative to the
-configuration file’s directory and apply to explicit files and recursively
-discovered files. Standard input is never excluded. Unknown keys, rule IDs,
-severity values, malformed TOML, and invalid globs are operational errors.
+are `info`, `warning`, or `error`. `fail_on` controls the minimum effective
+severity that makes `lint` exit with code `1`; it defaults to `warning`, and
+`never` makes lint advisory while still reporting findings. The command-line
+`--fail-on` option overrides the configuration for one invocation. Exclusion
+globs are relative to the configuration file’s directory and apply to
+explicit files and recursively discovered files. Standard input is never
+excluded. Unknown keys, rule IDs, severity values, failure policies,
+malformed TOML, and invalid globs are operational errors.
 
 ### Exit codes
 
 - `0`: the command completed successfully.
-- `1`: `check` found formatting differences or `lint` found diagnostics.
+- `1`: `check` found formatting differences or `lint` found diagnostics at or
+  above its configured `fail_on` threshold.
 - `2`: command usage, input/output, lexing, formatting, or lint analysis failed.
 
 Operational diagnostics are written to standard error. Lexer error tokens

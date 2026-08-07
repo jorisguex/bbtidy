@@ -1,6 +1,6 @@
 use bbtidy::{
-    LintOptions, LintSeverity, WorkspaceIndex, lint, lint_rules, lint_with_options,
-    lint_with_workspace,
+    LintFailurePolicy, LintOptions, LintSeverity, WorkspaceIndex, lint, lint_rules,
+    lint_with_options, lint_with_workspace,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -60,6 +60,30 @@ fn public_lint_options_filter_rules_and_override_severity() {
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].rule_id(), "BBT005");
     assert_eq!(diagnostics[0].severity(), LintSeverity::Error);
+}
+
+#[test]
+fn lint_failure_policy_uses_effective_diagnostic_severity() {
+    let warning_diagnostics = lint("SRCREV = \"${AUTOREV}\"\n").unwrap();
+    let mut options = LintOptions::default();
+
+    assert_eq!(options.fail_on(), LintFailurePolicy::Warning);
+    assert!(options.has_blocking_findings(&warning_diagnostics));
+
+    options.set_fail_on(LintFailurePolicy::Error);
+    assert!(!options.has_blocking_findings(&warning_diagnostics));
+
+    options.set_fail_on(LintFailurePolicy::Never);
+    assert!(!options.has_blocking_findings(&warning_diagnostics));
+
+    options.set_fail_on(LintFailurePolicy::Info);
+    options.set_severity("BBT004", LintSeverity::Info);
+    let info_diagnostics = lint_with_options("SRCREV = \"${AUTOREV}\"\n", &options).unwrap();
+    assert_eq!(info_diagnostics[0].severity(), LintSeverity::Info);
+    assert!(options.has_blocking_findings(&info_diagnostics));
+
+    options.set_fail_on(LintFailurePolicy::Warning);
+    assert!(!options.has_blocking_findings(&info_diagnostics));
 }
 
 #[test]

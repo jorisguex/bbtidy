@@ -24,6 +24,8 @@ class DocumentationTests(unittest.TestCase):
             "bitbake --parse-only",
             "max_files",
             "max_bytes",
+            "fail_on",
+            "--fail-on",
             "installation method",
         ):
             self.assertIn(required_text, guide)

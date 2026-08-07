@@ -10,8 +10,9 @@ mod workspace;
 pub use config::{Config, ConfigError, SafetyOptions, discover_config, load_config};
 pub use formatter::{FormatOptions, MetadataListLayout, format_syntax, format_syntax_with_options};
 pub use lint::{
-    LintDiagnostic, LintOptions, LintRule, LintSeverity, lint, lint_rules, lint_syntax,
-    lint_syntax_with_options, lint_syntax_with_workspace, lint_with_options, lint_with_workspace,
+    LintDiagnostic, LintFailurePolicy, LintOptions, LintRule, LintSeverity, lint, lint_rules,
+    lint_syntax, lint_syntax_with_options, lint_syntax_with_workspace, lint_with_options,
+    lint_with_workspace,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,

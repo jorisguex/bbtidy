@@ -105,7 +105,10 @@ that no enabled rule found a diagnostic in the analyzed scope; it does not mean
 that the entire BitBake build is free of issues.
 
 Text diagnostics, versioned JSON, and SARIF output must describe the same
-findings in deterministic source order.
+findings in deterministic source order. The lint process exits `1` only when a
+finding meets the configured failure threshold. The default threshold is
+`warning`; `info`, `warning`, `error`, and `never` are supported policies, and
+the CLI `--fail-on` value overrides `[lint].fail_on` for one invocation.
 
 ### `lex`
 

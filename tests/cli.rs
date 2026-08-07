@@ -184,6 +184,50 @@ fn config_filters_lint_rules_and_overrides_severity() {
 }
 
 #[test]
+fn lint_failure_threshold_controls_status_without_filtering_findings() {
+    let directory = TemporaryDirectory::new("lint-failure-threshold");
+    let file = directory.write("example.bb", "SRCREV = \"${AUTOREV}\"\n");
+    let path = file.to_str().unwrap();
+
+    let default = run(["lint", path]);
+    assert_eq!(default.status.code(), Some(1));
+
+    let error_threshold = run(["lint", "--fail-on", "error", path]);
+    assert_eq!(error_threshold.status.code(), Some(0));
+    assert!(
+        String::from_utf8(error_threshold.stdout)
+            .unwrap()
+            .contains("warning[BBT004]")
+    );
+
+    let info_threshold = run(["lint", "--fail-on", "info", path]);
+    assert_eq!(info_threshold.status.code(), Some(1));
+
+    let never_threshold = run(["lint", "--fail-on", "never", path]);
+    assert_eq!(never_threshold.status.code(), Some(0));
+
+    let json = run(["lint", "--output", "json", "--fail-on", "error", path]);
+    assert_eq!(json.status.code(), Some(0));
+    let report: Value = serde_json::from_slice(&json.stdout).unwrap();
+    assert_eq!(report["diagnostics"].as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn lint_failure_threshold_cli_overrides_config() {
+    let directory = TemporaryDirectory::new("lint-failure-threshold-config");
+    let config = directory.write(".bbtidy.toml", "[lint]\nfail_on = \"never\"\n");
+    let file = directory.write("example.bb", "SRCREV = \"${AUTOREV}\"\n");
+    let path = file.to_str().unwrap();
+    let config_path = config.to_str().unwrap();
+
+    let from_config = run(["lint", "--config", config_path, path]);
+    assert_eq!(from_config.status.code(), Some(0));
+
+    let from_cli = run(["lint", "--config", config_path, "--fail-on", "info", path]);
+    assert_eq!(from_cli.status.code(), Some(1));
+}
+
+#[test]
 fn config_excludes_paths_from_directory_processing() {
     let directory = TemporaryDirectory::new("config-exclude");
     let config = directory.write(".bbtidy.toml", "[paths]\nexclude = [\"ignored/**\"]\n");

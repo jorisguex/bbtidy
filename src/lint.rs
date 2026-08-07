@@ -105,6 +105,55 @@ impl fmt::Display for LintSeverity {
     }
 }
 
+/// Controls which lint severities cause the CLI to exit with a finding status.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum LintFailurePolicy {
+    Info,
+    #[default]
+    Warning,
+    Error,
+    Never,
+}
+
+impl FromStr for LintFailurePolicy {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "info" => Ok(Self::Info),
+            "warning" => Ok(Self::Warning),
+            "error" => Ok(Self::Error),
+            "never" => Ok(Self::Never),
+            _ => Err(format!(
+                "invalid lint failure policy '{value}'; expected info, warning, error, or never"
+            )),
+        }
+    }
+}
+
+impl fmt::Display for LintFailurePolicy {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Info => formatter.write_str("info"),
+            Self::Warning => formatter.write_str("warning"),
+            Self::Error => formatter.write_str("error"),
+            Self::Never => formatter.write_str("never"),
+        }
+    }
+}
+
+impl LintFailurePolicy {
+    /// Returns whether a diagnostic at `severity` should fail a lint command.
+    pub const fn is_blocking(self, severity: LintSeverity) -> bool {
+        match self {
+            Self::Info => true,
+            Self::Warning => matches!(severity, LintSeverity::Warning | LintSeverity::Error),
+            Self::Error => matches!(severity, LintSeverity::Error),
+            Self::Never => false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LintRule {
     id: &'static str,
@@ -145,11 +194,13 @@ impl LintRule {
     }
 }
 
-/// Configuration for selecting lint rules and overriding their severities.
+/// Configuration for selecting lint rules, overriding their severities, and
+/// deciding which findings fail a lint command.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct LintOptions {
     disabled_rules: BTreeSet<String>,
     severity_overrides: BTreeMap<String, LintSeverity>,
+    fail_on: LintFailurePolicy,
 }
 
 impl LintOptions {
@@ -163,13 +214,32 @@ impl LintOptions {
         self.severity_overrides.insert(rule_id.into(), severity);
     }
 
+    /// Sets the minimum effective severity that fails a lint command.
+    pub fn set_fail_on(&mut self, policy: LintFailurePolicy) {
+        self.fail_on = policy;
+    }
+
+    /// Returns the policy used to decide whether findings fail a lint command.
+    pub const fn fail_on(&self) -> LintFailurePolicy {
+        self.fail_on
+    }
+
+    /// Returns whether any diagnostic meets this options' failure threshold.
+    pub fn has_blocking_findings(&self, diagnostics: &[LintDiagnostic]) -> bool {
+        diagnostics
+            .iter()
+            .any(|diagnostic| self.fail_on.is_blocking(diagnostic.severity()))
+    }
+
     pub(crate) fn from_parts(
         disabled_rules: BTreeSet<String>,
         severity_overrides: BTreeMap<String, LintSeverity>,
+        fail_on: LintFailurePolicy,
     ) -> Self {
         Self {
             disabled_rules,
             severity_overrides,
+            fail_on,
         }
     }
 

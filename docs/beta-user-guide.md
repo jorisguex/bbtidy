@@ -76,12 +76,21 @@ bbtidy check meta-my-layer/
 bbtidy lint --output sarif meta-my-layer/ > bbtidy.sarif
 ```
 
+Lint exits with code `1` only when a finding meets the configured failure
+threshold. The default is warning-level gating. Use `--fail-on error` to make
+warnings advisory, or `--fail-on never` for report-only mode:
+
+```bash
+bbtidy lint --fail-on error meta-my-layer/
+bbtidy lint --fail-on never --output sarif meta-my-layer/ > bbtidy.sarif
+```
+
 The exit codes are:
 
 | Code | Meaning |
 | --- | --- |
 | `0` | The command completed successfully; `check` found no changes and `lint` found no findings. |
-| `1` | `check` found formatting differences or `lint` found diagnostics. |
+| `1` | `check` found formatting differences or `lint` found diagnostics at or above its `fail_on` threshold. |
 | `2` | Usage, discovery, parsing, formatting, lint analysis, or output failed. |
 
 `format --diff` is a reporting command and returns `0` when it successfully
@@ -98,6 +107,7 @@ metadata_list_layout = "preserve"
 
 [lint]
 disable = []
+fail_on = "warning"
 
 [paths]
 exclude = ["vendor/**", "**/files/**"]

@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Severity-aware lint gating with configurable `fail_on` thresholds and a
+  `--fail-on` command-line override; the default warning-level behavior is
+  unchanged.
 - A beta user guide covering installation, safe rollout, CI integration,
   repository-wide safety controls, BitBake validation, and compatibility issue
   reports.

@@ -1,4 +1,6 @@
-use crate::{FormatOptions, LintOptions, LintSeverity, MetadataListLayout, lint_rules};
+use crate::{
+    FormatOptions, LintFailurePolicy, LintOptions, LintSeverity, MetadataListLayout, lint_rules,
+};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -105,6 +107,12 @@ impl Config {
             let severity = severity.parse::<LintSeverity>().map_err(ConfigError::new)?;
             severity_overrides.insert(rule_id, severity);
         }
+        let fail_on = file_config
+            .lint
+            .fail_on
+            .unwrap_or_else(|| LintFailurePolicy::default().to_string())
+            .parse::<LintFailurePolicy>()
+            .map_err(ConfigError::new)?;
 
         let mut glob_builder = GlobSetBuilder::new();
         for pattern in file_config.paths.exclude {
@@ -148,7 +156,7 @@ impl Config {
                     .metadata_list_layout
                     .unwrap_or(FormatOptions::default().metadata_list_layout),
             },
-            lint: LintOptions::from_parts(disabled_rules, severity_overrides),
+            lint: LintOptions::from_parts(disabled_rules, severity_overrides, fail_on),
             safety,
             base_dir: base_dir.to_path_buf(),
             excludes,
@@ -245,6 +253,7 @@ struct FileLintConfig {
     disable: Vec<String>,
     #[serde(default)]
     severity: BTreeMap<String, String>,
+    fail_on: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -307,6 +316,7 @@ metadata_list_layout = "one-per-line"
 
 [lint]
 disable = ["BBT003", "BBT010"]
+fail_on = "error"
 
 [lint.severity]
 BBT001 = "error"
@@ -326,6 +336,7 @@ max_bytes = 1048576
             config.format.metadata_list_layout,
             MetadataListLayout::OnePerLine
         );
+        assert_eq!(config.lint.fail_on(), LintFailurePolicy::Error);
         assert_eq!(config.safety.max_files, 500);
         assert_eq!(config.safety.max_bytes, 1_048_576);
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));
@@ -354,6 +365,21 @@ BBT001 = "fatal"
         .unwrap();
         let error = Config::from_file_config(invalid_severity, Path::new("/project")).unwrap_err();
         assert!(error.to_string().contains("invalid lint severity 'fatal'"));
+
+        let invalid_failure_policy: FileConfig = toml::from_str(
+            r#"
+[lint]
+fail_on = "fatal"
+"#,
+        )
+        .unwrap();
+        let error =
+            Config::from_file_config(invalid_failure_policy, Path::new("/project")).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("invalid lint failure policy 'fatal'")
+        );
 
         let invalid_glob: FileConfig = toml::from_str(
             r#"
