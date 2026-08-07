@@ -73,13 +73,13 @@ newer.
 To inspect the tokens in a recipe:
 
 ```bash
-bbtidy lex sample.bb
+bbtidy lex examples/sample.bb
 ```
 
 To print a formatted file without modifying it:
 
 ```bash
-bbtidy format messy.bb
+bbtidy format examples/messy.bb
 ```
 
 Standard input is accepted as `-`:
