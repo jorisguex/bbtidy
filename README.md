@@ -431,8 +431,12 @@ Release artifact expectations are defined once in
 `release-metadata.json`. The release workflows derive their wheel matrix,
 standalone-binary names, and Linux container smoke tests from that manifest.
 The `verify_release_artifacts.py` helper rejects missing or unexpected wheel
-platforms, mismatched embedded package metadata, unsafe source-distribution
-paths, and an incomplete source-distribution set before publication.
+platforms, mismatched embedded package metadata, unsafe ZIP/TAR members,
+archive links and non-regular files, missing wheel metadata files, and an
+incomplete source-distribution set before publication. Release metadata also
+requires unique, safe identifiers for every wheel and binary matrix entry.
+Both publication workflows run the Python packaging tests, workflow-pin
+validation, and Cargo package inspection before publication.
 
 Build and verify the Python wheel and source distribution with:
 

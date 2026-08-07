@@ -2,11 +2,12 @@
 """Verify the exact wheel and source-distribution set before publication."""
 
 import argparse
+import stat
 import sys
 import tarfile
 import zipfile
 from email.parser import Parser
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 try:
     from scripts.prepare_release_binaries import wheel_metadata
@@ -17,6 +18,24 @@ except ImportError:
 
 
 PACKAGE_NAME = "bbtidy"
+
+
+def validate_archive_names(names, source):
+    seen = set()
+    for name in names:
+        if not name or "\x00" in name or "\\" in name:
+            raise RuntimeError("{} contains an invalid archive path: {!r}".format(source, name))
+        path = PurePosixPath(name)
+        if path.is_absolute() or "." in path.parts or ".." in path.parts:
+            raise RuntimeError("{} contains an unsafe archive path: {}".format(source, name))
+        if name in seen:
+            raise RuntimeError("{} contains a duplicate archive path: {}".format(source, name))
+        seen.add(name)
+
+
+def zip_member_is_symlink(info):
+    mode = (info.external_attr >> 16) & 0o170000
+    return stat.S_ISLNK(mode)
 
 
 def parse_metadata(raw):
@@ -49,10 +68,16 @@ def verify_wheel(path, expected_version, expected_extension=None):
         )
     try:
         with zipfile.ZipFile(path) as archive:
+            members = archive.infolist()
+            validate_archive_names(
+                [member.filename for member in members], path.name
+            )
+            if any(zip_member_is_symlink(member) for member in members):
+                raise RuntimeError("{} contains a symbolic link".format(path.name))
             metadata_files = [
-                name
-                for name in archive.namelist()
-                if name.endswith(".dist-info/METADATA")
+                member.filename
+                for member in members
+                if member.filename.endswith(".dist-info/METADATA")
             ]
             if len(metadata_files) != 1:
                 raise RuntimeError(
@@ -63,11 +88,28 @@ def verify_wheel(path, expected_version, expected_extension=None):
             verify_package_metadata(
                 archive.read(metadata_files[0]), expected_version, path.name
             )
+            dist_info = metadata_files[0].rsplit("/", 1)[0]
+            wheel_metadata_files = [
+                member.filename
+                for member in members
+                if member.filename == dist_info + "/WHEEL"
+            ]
+            record_files = [
+                member.filename
+                for member in members
+                if member.filename == dist_info + "/RECORD"
+            ]
+            if len(wheel_metadata_files) != 1 or len(record_files) != 1:
+                raise RuntimeError(
+                    "{} must contain exactly one WHEEL and RECORD metadata file".format(
+                        path.name
+                    )
+                )
             executables = [
-                name
-                for name in archive.namelist()
-                if name.rsplit("/", 1)[-1] in {"bbtidy", "bbtidy.exe"}
-                and ".data/scripts/" in name
+                member.filename
+                for member in members
+                if member.filename.rsplit("/", 1)[-1] in {"bbtidy", "bbtidy.exe"}
+                and ".data/scripts/" in member.filename
             ]
             if len(executables) != 1:
                 raise RuntimeError(
@@ -84,6 +126,11 @@ def verify_wheel(path, expected_version, expected_extension=None):
                             path.name, actual_executable, expected_executable
                         )
                     )
+            executable_info = archive.getinfo(executables[0])
+            if executable_info.file_size == 0:
+                raise RuntimeError(
+                    "{} contains an empty bbtidy executable".format(path.name)
+                )
     except (OSError, zipfile.BadZipFile) as error:
         raise RuntimeError("could not read wheel {}: {}".format(path.name, error)) from error
     return platform
@@ -100,14 +147,24 @@ def verify_sdist(path, expected_version):
     try:
         with tarfile.open(path, mode="r:gz") as archive:
             members = archive.getmembers()
+            expected_root = expected_name[:-7]
             for member in members:
                 parts = member.name.split("/")
-                if member.name.startswith("/") or ".." in parts:
+                if (
+                    member.name.startswith("/")
+                    or ".." in parts
+                    or "\\" in member.name
+                    or not (member.name == expected_root or member.name.startswith(expected_root + "/"))
+                    or not (member.isdir() or member.isfile())
+                    or member.issym()
+                    or member.islnk()
+                ):
                     raise RuntimeError(
                         "source distribution contains an unsafe path: {}".format(
                             member.name
                         )
                     )
+            validate_archive_names([member.name for member in members], path.name)
             metadata_members = [
                 member
                 for member in members

@@ -13,7 +13,12 @@ from scripts.prepare_release_binaries import (
     SUPPORTED_PLATFORMS,
     prepare_release_binaries,
 )
-from scripts.release_metadata import load_release_metadata, release_context, wheel_entries
+from scripts.release_metadata import (
+    load_release_metadata,
+    release_context,
+    validate_release_metadata,
+    wheel_entries,
+)
 from scripts.smoke_test_package import select_distribution
 from scripts.verify_release_artifacts import verify_distributions
 
@@ -72,6 +77,13 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_release_context_rejects_a_tag_not_matching_cargo_version(self):
         with self.assertRaisesRegex(ValueError, "does not match Cargo version"):
             release_context("v0.0.0")
+
+    def test_manifest_rejects_unsafe_asset_identifiers(self):
+        metadata = load_release_metadata()
+        metadata["wheel_matrix"][0]["binary_asset"] = "../release"
+
+        with self.assertRaisesRegex(ValueError, "safe identifier"):
+            validate_release_metadata(metadata)
 
 
 class DistributionSelectionTests(unittest.TestCase):
@@ -202,6 +214,10 @@ class ReleaseArtifactTests(unittest.TestCase):
                     "bbtidy-{}.dist-info/WHEEL".format(version),
                     "Wheel-Version: 1.0\n\n",
                 )
+                archive.writestr(
+                    "bbtidy-{}.dist-info/RECORD".format(version),
+                    "",
+                )
 
         sdist = directory / "bbtidy-{}.tar.gz".format(version)
         payload = "Metadata-Version: 2.1\nName: bbtidy\nVersion: {}\n\n".format(
@@ -241,6 +257,31 @@ class ReleaseArtifactTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "has version"):
                 verify_distributions(directory)
 
+    def test_rejects_unsafe_wheel_archive_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            self.write_distribution_set(directory)
+            wheel = next(directory.glob("bbtidy-*.whl"))
+            with zipfile.ZipFile(wheel, "a") as archive:
+                archive.writestr("../escape", b"unsafe")
+
+            with self.assertRaisesRegex(RuntimeError, "unsafe archive path"):
+                verify_distributions(directory)
+
+    def test_rejects_unsafe_source_distribution_members(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            self.write_distribution_set(directory)
+            version = pep440_version(cargo_version())
+            sdist = directory / "bbtidy-{}.tar.gz".format(version)
+            with tarfile.open(sdist, "w:gz") as archive:
+                unsafe = tarfile.TarInfo("../escape")
+                unsafe.size = 6
+                archive.addfile(unsafe, io.BytesIO(b"unsafe"))
+
+            with self.assertRaisesRegex(RuntimeError, "unsafe path"):
+                verify_distributions(directory)
+
 
 class ReleaseWorkflowTests(unittest.TestCase):
     def test_crates_publication_is_tag_gated_with_manual_validation(self):
@@ -278,6 +319,15 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('test "$actual_version" = "$expected_version"', workflow)
         self.assertIn("SHA256SUMS", workflow)
         self.assertIn("needs: [verify-distributions, verify-release-binaries]", workflow)
+        self.assertIn("cargo publish --locked --dry-run", workflow)
+        self.assertIn("cargo package --locked --list", workflow)
+
+    def test_release_workflows_run_packaging_and_workflow_validation(self):
+        root = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+        crates = (root / "publish-crates.yml").read_text(encoding="utf-8")
+
+        self.assertIn('python -m unittest discover -s tests -p "test_*.py"', crates)
+        self.assertIn("python scripts/check_workflows.py", crates)
 
 
 if __name__ == "__main__":

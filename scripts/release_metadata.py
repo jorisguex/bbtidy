@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -28,6 +29,7 @@ REQUIRED_FIELDS = MATRIX_FIELDS + (
     "binary_asset",
     "binary_extension",
 )
+SAFE_ASSET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 
 def load_release_metadata(path=METADATA_PATH):
@@ -75,6 +77,13 @@ def validate_release_metadata(metadata):
                 valid_type = isinstance(entry[field], str)
             if not valid_type:
                 raise ValueError("release matrix field '{}' has an invalid type".format(field))
+        for field in ("name", "runner", "target", "manylinux", "wheel_platform", "binary_asset"):
+            if not entry[field] or not SAFE_ASSET_NAME.fullmatch(entry[field]):
+                raise ValueError(
+                    "release matrix field '{}' must be a non-empty safe identifier".format(
+                        field
+                    )
+                )
         if entry["name"] in names:
             raise ValueError("duplicate release matrix name: {}".format(entry["name"]))
         if entry["wheel_platform"] in wheel_platforms:
@@ -102,12 +111,26 @@ def validate_release_metadata(metadata):
             raise ValueError("non-Windows release binaries cannot use an extension")
 
         is_linux = entry["wheel_platform"].startswith(("manylinux_", "musllinux_"))
+        if is_linux and entry["manylinux"] not in ("2_17", "musllinux_1_2"):
+            raise ValueError(
+                "Linux release entry has an invalid manylinux mode: {}".format(
+                    entry["name"]
+                )
+            )
+        if not is_linux and entry["manylinux"] != "off":
+            raise ValueError(
+                "non-Linux release entries must use manylinux='off': {}".format(
+                    entry["name"]
+                )
+            )
         container = entry.get("container")
         if is_linux:
             if not isinstance(container, dict):
                 raise ValueError("Linux release entries require a container verifier")
             if not isinstance(container.get("platform"), str) or not isinstance(
                 container.get("image"), str
+            ) or not container["platform"] or not container["image"] or any(
+                character.isspace() for character in container["image"]
             ):
                 raise ValueError("Linux container verifiers require platform and image")
         elif container is not None:

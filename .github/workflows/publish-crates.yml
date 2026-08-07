@@ -19,6 +19,12 @@ jobs:
       - name: Validate release metadata
         run: python scripts/release_metadata.py
 
+      - name: Run packaging helper tests
+        run: python -m unittest discover -s tests -p "test_*.py"
+
+      - name: Validate workflow pins
+        run: python scripts/check_workflows.py
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 

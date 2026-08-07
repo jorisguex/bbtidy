@@ -143,6 +143,10 @@ formatted versions of each supported manifest:
 12. No operational error causes a partial batch rewrite.
 13. Repository-wide runs respect the configured file-count and source-byte
     limits, and write runs refuse symbolic links and concurrent source changes.
+14. Release artifacts match the checked-in release manifest; archives contain
+    only safe regular-file members, required package metadata, and the expected
+    versioned executable; and both publication workflows pass their packaging
+    and workflow-validation gates before publication is enabled.
 
 The release record must identify the bbtidy version, source commit, corpus
 commits, BitBake version, runner environment, command lines, result summaries,

@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Strengthened release validation with safe archive-member checks, required
+  wheel metadata files, strict release-matrix identifiers, and matching Cargo,
+  Python packaging, and workflow-pin gates in both publication workflows.
 - Static `INHERIT` and `USER_CLASSES` configuration assignments now contribute
   context-aware class dependencies and cycle analysis to complete workspace
   indexes.
