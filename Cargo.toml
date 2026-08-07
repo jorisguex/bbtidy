@@ -17,7 +17,7 @@ logos = "0.15.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 similar = "3.1.1"
-toml = "0.9.8"
+toml = "1.1.4"
 
 [dev-dependencies]
 proptest = "1.6.0"
