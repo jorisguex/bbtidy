@@ -300,6 +300,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         )
         self.assertIn("needs: package", workflow)
         self.assertIn("scripts/release_metadata.py", workflow)
+        self.assertIn("actions/setup-python@", workflow)
+        self.assertIn('python-version: "3.12"', workflow)
         self.assertIn("cargo publish --locked --dry-run", workflow)
         self.assertIn("cargo package --locked --list", workflow)
 
@@ -315,6 +317,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("verify-distributions:", workflow)
         self.assertIn("fromJSON(needs.validate.outputs.matrix)", workflow)
         self.assertIn("scripts/verify_release_artifacts.py", workflow)
+        self.assertGreaterEqual(workflow.count("actions/setup-python@"), 5)
+        self.assertIn('python-version: "3.12"', workflow)
         self.assertIn("docker/setup-qemu-action@", workflow)
         self.assertIn('test "$actual_version" = "$expected_version"', workflow)
         self.assertIn("SHA256SUMS", workflow)
