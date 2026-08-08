@@ -232,13 +232,15 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
                 comment = false;
                 command_position = true;
                 line_start = index + 1;
+                index += 1;
+            } else {
+                index = next_char_boundary(source, index);
             }
-            index += 1;
             continue;
         }
         if escaped {
             escaped = false;
-            index += 1;
+            index = next_char_boundary(source, index);
             continue;
         }
         if byte == b'\\' && quote != Some(b'\'') {
@@ -249,8 +251,10 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
         if let Some(delimiter) = quote {
             if byte == delimiter {
                 quote = None;
+                index += 1;
+            } else {
+                index = next_char_boundary(source, index);
             }
-            index += 1;
             continue;
         }
 
@@ -331,7 +335,7 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
         if word_start.is_none() {
             word_start = Some(index);
         }
-        index += 1;
+        index = next_char_boundary(source, index);
     }
     emit_shell_word(
         source,
@@ -341,6 +345,13 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
         &mut tokens,
     );
     tokens
+}
+
+fn next_char_boundary(source: &str, index: usize) -> usize {
+    source[index..]
+        .chars()
+        .next()
+        .map_or(source.len(), |character| index + character.len_utf8())
 }
 
 fn emit_shell_word<'a>(
@@ -420,14 +431,16 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
         if comment {
             if byte == b'\n' {
                 comment = false;
+                index += 1;
+            } else {
+                index = next_char_boundary(source, index);
             }
-            index += 1;
             continue;
         }
         if let Some(active) = quote {
             if escaped {
                 escaped = false;
-                index += 1;
+                index = next_char_boundary(source, index);
                 continue;
             }
             if byte == b'\\'
@@ -453,7 +466,7 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
                 }
                 quote = None;
             } else {
-                index += 1;
+                index = next_char_boundary(source, index);
             }
             continue;
         }
@@ -497,7 +510,7 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
                 ));
             }
         }
-        index += 1;
+        index = next_char_boundary(source, index);
     }
 
     if let Some(active) = quote {
@@ -629,7 +642,7 @@ fn python_line_triple_state(line: &str, state: &mut Option<[u8; 3]>) -> bool {
                 *state = None;
                 index += 3;
             } else {
-                index += 1;
+                index = next_char_boundary(line, index);
             }
             continue;
         }
@@ -641,7 +654,7 @@ fn python_line_triple_state(line: &str, state: &mut Option<[u8; 3]>) -> bool {
             } else if byte == delimiter {
                 quote = None;
             }
-            index += 1;
+            index = next_char_boundary(line, index);
             continue;
         }
         if byte == b'#' {
@@ -657,7 +670,7 @@ fn python_line_triple_state(line: &str, state: &mut Option<[u8; 3]>) -> bool {
             }
             continue;
         }
-        index += 1;
+        index = next_char_boundary(line, index);
     }
     was_active
 }
@@ -728,7 +741,7 @@ fn python_delimiter_depths(source: &str) -> Vec<usize> {
                     triple_quote = None;
                     index += 3;
                 } else {
-                    index += 1;
+                    index = next_char_boundary(line, index);
                 }
                 continue;
             }
@@ -740,7 +753,7 @@ fn python_delimiter_depths(source: &str) -> Vec<usize> {
                 } else if byte == delimiter {
                     quote = None;
                 }
-                index += 1;
+                index = next_char_boundary(line, index);
                 continue;
             }
             if byte == b'#' {
@@ -761,7 +774,7 @@ fn python_delimiter_depths(source: &str) -> Vec<usize> {
                 b')' | b']' | b'}' => depth = depth.saturating_sub(1),
                 _ => {}
             }
-            index += 1;
+            index = next_char_boundary(line, index);
         }
     }
     depths
@@ -887,5 +900,17 @@ mod tests {
                 .iter()
                 .any(|diagnostic| { diagnostic.kind() == BodyDiagnosticKind::PythonIndentation })
         );
+    }
+
+    #[test]
+    fn body_analysis_keeps_ranges_on_unicode_boundaries() {
+        let source = "echo �é\nif true; then echo ☃; fi\n";
+        for diagnostic in analyze_shell_body(source)
+            .into_iter()
+            .chain(analyze_python_body(source))
+        {
+            assert!(source.is_char_boundary(diagnostic.range().start()));
+            assert!(source.is_char_boundary(diagnostic.range().end()));
+        }
     }
 }

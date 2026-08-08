@@ -25,8 +25,8 @@ the [beta user guide](docs/beta-user-guide.md).
   overrides, key expansion, variable flags, multiline quoted values, and current
   BitBake directives.
 - **Safe formatting boundaries**: Normalizes top-level assignments, directives,
-  and function headers while preserving continuation tails, comments, blank
-  lines, embedded function bodies, and unsupported syntax.
+  and configured list layouts while preserving continuation tails, comments,
+  blank lines, embedded functions, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
 - **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`,

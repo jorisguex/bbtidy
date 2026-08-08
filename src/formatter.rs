@@ -39,10 +39,9 @@ impl Default for FormatOptions {
 
 /// Formats a previously parsed syntax tree without reparsing its source.
 ///
-/// Assignment operators, directive keywords, and safe function declaration
-/// headers are normalized at the top-level boundary. Continuation tails,
-/// comments, unsupported syntax, and embedded shell or Python bodies remain
-/// byte-for-byte unchanged.
+/// Assignment operators and directive keywords are normalized at the top-level
+/// boundary. Continuation tails, comments, unsupported syntax, and embedded
+/// shell or Python functions remain byte-for-byte unchanged.
 pub fn format_syntax(tree: &SyntaxTree<'_>) -> String {
     format_syntax_with_options(tree, &FormatOptions::default())
 }
@@ -60,7 +59,6 @@ pub fn format_syntax_with_options(tree: &SyntaxTree<'_>, options: &FormatOptions
             SyntaxKind::Directive(directive) => {
                 format_directive(&mut output, node, directive, options)
             }
-            SyntaxKind::Function(function) => format_function(&mut output, node, function),
             _ => output.push_str(node.text()),
         }
     }
@@ -480,39 +478,6 @@ fn format_directive_list(
     }
 }
 
-fn format_function(
-    output: &mut String,
-    node: &SyntaxNode<'_>,
-    function: &crate::FunctionSyntax<'_>,
-) {
-    let first_line_end = node
-        .text()
-        .find('\n')
-        .map_or(node.text().len(), |index| index + 1);
-    let first_line = &node.text()[..first_line_end];
-    let (content, line_ending) = split_line_ending(first_line);
-    let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
-    let code_end = crate::comment_start(content).unwrap_or(content.len());
-    let opening_brace = content[..code_end]
-        .rfind('{')
-        .expect("function syntax contains an opening brace");
-
-    output.push_str(&content[..leading]);
-    if function.is_fakeroot() {
-        output.push_str("fakeroot ");
-    }
-    if function.function_kind() == crate::FunctionKind::Python {
-        output.push_str("python ");
-    }
-    if let Some(name) = function.name() {
-        output.push_str(name);
-    }
-    output.push_str("() {");
-    output.push_str(&content[opening_brace + 1..]);
-    output.push_str(line_ending);
-    output.push_str(&node.text()[first_line_end..]);
-}
-
 fn append_normalized_blank_line(output: &mut String, line: &str, options: &FormatOptions) {
     let (_, line_ending) = split_line_ending(line);
     if line_ending.is_empty() || trailing_blank_lines(output) >= options.max_top_level_blank_lines {
@@ -775,7 +740,7 @@ mod tests {
     }
 
     #[test]
-    fn formats_function_headers_without_touching_opaque_bodies() {
+    fn preserves_function_headers_and_opaque_bodies() {
         let input = concat!(
             "fakeroot   python do_install:append ( )   {  # keep this comment\n",
             "    value=unchanged\n",
@@ -784,14 +749,7 @@ mod tests {
             "    value = }\n",
             "}\n",
         );
-        let expected = concat!(
-            "fakeroot python do_install:append() {  # keep this comment\n",
-            "    value=unchanged\n",
-            "}\n",
-            "python () {\n",
-            "    value = }\n",
-            "}\n",
-        );
+        let expected = input;
 
         assert_eq!(crate::format(input).unwrap(), expected);
     }

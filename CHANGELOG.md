@@ -33,10 +33,9 @@ All notable changes to this project will be documented in this file.
 - Project/build-context discovery for semantic analysis, with configuration,
   `BBTIDY_BITBAKE_BUILD_DIR`/`BUILDDIR` environment support, conventional
   ancestor search, ambiguity detection, and JSON/text provenance reporting.
-- A more capable safe formatter that canonicalizes shell and Python function
-  headers without touching their opaque bodies and extends opt-in static-list
-  layout to common package, dependency, feature, directive, and
-  legacy-override values.
+- A more capable safe formatter that extends opt-in static-list layout to
+  common package, dependency, feature, directive, and legacy-override values
+  while preserving opaque shell and Python functions byte-for-byte.
 - An authoritative `semantic` command and Rust API that invoke BitBake in an
   existing build directory, expose fully expanded target environments, and
   convert BitBake parse diagnostics into structured text and JSON reports.
