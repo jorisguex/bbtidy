@@ -639,7 +639,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 19);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 33);
     assert_eq!(
         run["tool"]["driver"]["rules"]
             .as_array()
@@ -688,7 +688,16 @@ fn lint_sarif_output_contains_formal_fix_metadata() {
 #[test]
 fn workspace_cycles_are_reported_in_json_and_sarif() {
     let directory = TemporaryDirectory::new("lint-workspace-cycle");
-    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    directory.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
     directory.write("recipes-example/example/helper.inc", "require example.bb\n");
     let recipe = directory.write(
         "recipes-example/example/example.bb",
@@ -760,7 +769,16 @@ fn machine_lint_output_is_not_partial_when_analysis_fails() {
 #[test]
 fn lint_directories_report_unresolved_static_layer_references() {
     let directory = TemporaryDirectory::new("lint-semantic");
-    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    directory.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
     directory.write("classes/base.bbclass", "BASE = \"1\"\n");
     directory.write("recipes-example/common.inc", "COMMON = \"1\"\n");
     let recipe = directory.write(
@@ -794,7 +812,16 @@ fn lint_directories_report_unresolved_static_layer_references() {
 #[test]
 fn lint_reports_broader_recipe_metadata_rules_in_machine_output() {
     let directory = TemporaryDirectory::new("lint-recipe-metadata");
-    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    directory.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
     let recipe = directory.write("recipes-example/example.bb", "SUMMARY = \"example\"\n");
 
     let output = run([

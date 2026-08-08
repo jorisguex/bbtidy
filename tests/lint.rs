@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 19);
+    assert_eq!(rules.len(), 33);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -132,6 +132,109 @@ fn broader_lint_rules_cover_common_source_mistakes() {
             .contains("inherit directive has no target")
     );
     assert!(diagnostics[4].message().contains("declared more than once"));
+}
+
+#[test]
+fn broader_recipe_qa_rules_cover_identity_sources_packages_and_uri_parameters() {
+    let layer = TemporaryLayer::new("lint-recipe-qa");
+    let configuration = layer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
+    let source = concat!(
+        "PN = \"other\"\n",
+        "PV = \"2.0\"\n",
+        "LICENSE = \"MIT\"\n",
+        "LIC_FILES_CHKSUM = \"file://LICENSE\"\n",
+        "SRC_URI = \"https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https\"\n",
+        "PACKAGECONFIG = \"defined missing\"\n",
+        "PACKAGECONFIG[defined] = \"--enable-defined\"\n",
+        "PACKAGES = \"${PN} pkg pkg\"\n",
+        "FILES:missing = \"/missing\"\n",
+    );
+    let recipe = layer.write("recipes-example/wrong_1.0.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    let ids = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.rule_id())
+        .collect::<Vec<_>>();
+
+    for expected in [
+        "BBT020", "BBT021", "BBT022", "BBT023", "BBT024", "BBT025", "BBT026", "BBT027", "BBT028",
+    ] {
+        assert!(ids.contains(&expected), "missing {expected} in {ids:?}");
+    }
+}
+
+#[test]
+fn broader_recipe_qa_accepts_valid_checksums_packageconfig_and_package_scope() {
+    let layer = TemporaryLayer::new("lint-recipe-qa-clean");
+    let configuration = layer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
+    let source = concat!(
+        "SUMMARY = \"example\"\n",
+        "DESCRIPTION = \"example\"\n",
+        "LICENSE = \"MIT\"\n",
+        "LIC_FILES_CHKSUM = \"file://LICENSE;md5=0123456789abcdef0123456789abcdef\"\n",
+        "SRC_URI = \"https://example.invalid/source.tar.gz;sha256sum=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n",
+        "PACKAGECONFIG = \"feature\"\n",
+        "PACKAGECONFIG[feature] = \"--enable-feature,--disable-feature,feature-dependency\"\n",
+        "PACKAGES = \"valid valid-dev\"\n",
+        "FILES:valid-dev = \"/usr/include\"\n",
+    );
+    let recipe = layer.write("recipes-example/valid_1.0.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert!(
+        diagnostics.is_empty(),
+        "unexpected diagnostics for valid recipe QA metadata: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn layer_qa_rules_validate_collections_patterns_priorities_dependencies_and_compatibility() {
+    let layer = TemporaryLayer::new("lint-layer-qa");
+    let source = concat!(
+        "BBPATH .= \":${LAYERDIR}\"\n",
+        "BBFILE_COLLECTIONS = \"test test\"\n",
+        "BBFILE_PATTERN_test = \"\"\n",
+        "BBFILE_PRIORITY_test = \"not-an-integer\"\n",
+        "LAYERDEPENDS_test = \"missing\"\n",
+    );
+    let configuration = layer.write("conf/layer.conf", source);
+    let index = WorkspaceIndex::from_paths([configuration.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &configuration, &index, &LintOptions::default()).unwrap();
+    let ids = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.rule_id())
+        .collect::<Vec<_>>();
+
+    assert!(ids.contains(&"BBT029"));
+    assert!(ids.contains(&"BBT030"));
+    assert!(ids.contains(&"BBT031"));
+    assert!(ids.contains(&"BBT032"));
+    assert!(ids.contains(&"BBT033"));
 }
 
 #[test]
@@ -293,6 +396,10 @@ fn workspace_lint_uses_global_and_recipe_class_namespaces() {
     let layer = TemporaryLayer::new("lint-global-class-scope");
     let configuration_source = concat!(
         "BBPATH .= \":${LAYERDIR}\"\n",
+        "BBFILE_COLLECTIONS += \"test\"\n",
+        "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+        "BBFILE_PRIORITY_test = \"1\"\n",
+        "LAYERSERIES_COMPAT_test = \"test\"\n",
         "INHERIT += \"global-base missing-global ${DYNAMIC}\"\n",
         "INHERIT:remove = \"missing-removed\"\n",
         "USER_CLASSES += \"metrics\"\n",
@@ -374,7 +481,14 @@ fn workspace_lint_uses_global_and_recipe_class_namespaces() {
 #[test]
 fn workspace_lint_reports_global_inherit_cycles() {
     let layer = TemporaryLayer::new("lint-global-inherit-cycle");
-    let configuration_source = "BBPATH .= \":${LAYERDIR}\"\nINHERIT += \"global-base\"\n";
+    let configuration_source = concat!(
+        "BBPATH .= \":${LAYERDIR}\"\n",
+        "BBFILE_COLLECTIONS += \"test\"\n",
+        "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+        "BBFILE_PRIORITY_test = \"1\"\n",
+        "LAYERSERIES_COMPAT_test = \"test\"\n",
+        "INHERIT += \"global-base\"\n",
+    );
     let configuration = layer.write("conf/layer.conf", configuration_source);
     let global_base = layer.write(
         "classes-global/global-base.bbclass",
@@ -392,7 +506,7 @@ fn workspace_lint_reports_global_inherit_cycles() {
 
     assert_eq!(diagnostics.len(), 1);
     assert_eq!(diagnostics[0].rule_id(), "BBT010");
-    assert_eq!((diagnostics[0].line(), diagnostics[0].column()), (2, 13));
+    assert_eq!((diagnostics[0].line(), diagnostics[0].column()), (6, 13));
     assert!(
         diagnostics[0]
             .message()

@@ -32,6 +32,10 @@ class DocumentationTests(unittest.TestCase):
             "BBTIDY_BITBAKE_BUILD_DIR",
             "BUILDDIR",
             "--project-dir",
+            "BBT020",
+            "BBT033",
+            "LIC_FILES_CHKSUM",
+            "LAYERSERIES_COMPAT",
             "installation method",
         ):
             self.assertIn(required_text, guide)

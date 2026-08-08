@@ -209,6 +209,18 @@ impl WorkspaceIndex {
             .any(|layer| layer.is_complete() && layer.files.contains(&path))
     }
 
+    /// Returns every statically declared layer collection in the indexed
+    /// workspace.
+    ///
+    /// The result is useful for validating `LAYERDEPENDS_*` without exposing
+    /// the index's internal layer representation.
+    pub fn collection_names(&self) -> BTreeSet<String> {
+        self.layers
+            .iter()
+            .flat_map(|layer| layer.metadata.collections.iter().cloned())
+            .collect()
+    }
+
     /// Returns all matching recipe class definitions in BitBake search order.
     ///
     /// For inherit, BitBake searches all classes-recipe directories on

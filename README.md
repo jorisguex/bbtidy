@@ -46,6 +46,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **BitBake-backed semantic linting**: Optionally runs the configured BitBake
   parser and target environment queries, reports source-aware BitBake findings,
   and applies selected metadata rules to fully resolved values.
+- **Broader recipe and layer QA**: Checks recipe identity/version alignment,
+  license and source checksums, `PACKAGECONFIG`, package-scoped variables and
+  lists, `SRC_URI` parameters, and layer collection metadata.
 
 ## Installation
 
@@ -332,8 +335,23 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT017` | `duplicate-function` | A task or function is declared more than once in one file | Manual |
 | `BBT018` | `empty-directive` | A static dependency directive has no target | Manual |
 | `BBT019` | `bitbake-diagnostic` | A BitBake parse or target-query diagnostic | Manual |
+| `BBT020` | `recipe-name` | An explicit `PN` does not match the recipe filename | Manual |
+| `BBT021` | `recipe-version` | An explicit `PV` does not match the recipe filename | Manual |
+| `BBT022` | `license-checksum` | A non-`CLOSED` recipe lacks valid license file checksums | Manual |
+| `BBT023` | `source-checksum` | A remote source archive lacks a valid checksum | Manual |
+| `BBT024` | `packageconfig` | An enabled `PACKAGECONFIG` feature has no definition | Manual |
+| `BBT025` | `packageconfig-format` | A `PACKAGECONFIG[feature]` definition has the wrong field count | Manual |
+| `BBT026` | `package-scope` | A package-scoped variable names an undeclared package | Manual |
+| `BBT027` | `package-list` | `PACKAGES` declares the same package more than once | Manual |
+| `BBT028` | `uri-parameters` | A `SRC_URI` parameter is invalid or conflicts with its transport | Manual |
+| `BBT029` | `layer-collections` | Layer collection metadata is missing or duplicated | Manual |
+| `BBT030` | `layer-pattern` | A layer collection lacks a non-empty `BBFILE_PATTERN_*` | Manual |
+| `BBT031` | `layer-priority` | A layer collection lacks an integer `BBFILE_PRIORITY_*` | Manual |
+| `BBT032` | `layer-depends` | `LAYERDEPENDS_*` names an unknown collection | Manual |
+| `BBT033` | `layer-series-compat` | A layer collection lacks `LAYERSERIES_COMPAT_*` | Manual |
 
-Rules `BBT001` through `BBT018` are warnings; `BBT019` adopts BitBake's
+Rules `BBT001` through `BBT018` and `BBT020` through `BBT033` are warnings;
+`BBT019` adopts BitBake's
 severity for each semantic diagnostic. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
 `LintRule`, and `LintSeverity` Rust APIs. `apply_lint_fixes` validates all
@@ -345,7 +363,10 @@ Static semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. Recipe metadata rules `BBT011` through `BBT013` run only
 when a `.bb` file belongs to a complete indexed layer; isolated files and
-standard input remain file-local. When `lint` receives a complete layer directory, it
+standard input do not receive those path-dependent findings. Recipe QA rules
+`BBT020` through `BBT028` run on `.bb` files and validate static filename
+identity, license/source checksums, `PACKAGECONFIG` definitions, package
+declarations/scopes, and `SRC_URI` parameters. When `lint` receives a complete layer directory, it
 indexes the supplied metadata into a static dependency graph. The graph follows
 the effective target of `include`, `require`, `inherit`, and `inherit_defer`,
 and every target of `include_all`; it reports cycles but skips dynamic and
@@ -368,6 +389,11 @@ priority, and search scope. The public `WorkspaceCandidate`,
 `WorkspaceClassContext`, and `WorkspaceDependency` APIs expose the corresponding
 resolution and graph information. Single-file and standard-input linting remain
 file-local, and dynamic references are skipped.
+
+Layer QA rules `BBT029` through `BBT033` validate static collection names,
+patterns, priorities, collection dependencies, and series compatibility in
+complete `conf/layer.conf` files. Dynamic collection declarations and values
+remain outside the static boundary and are left for BitBake-backed analysis.
 
 When `lint --semantic` is selected, BitBake becomes the authoritative semantic
 boundary. Its parse diagnostics are emitted as `BBT019`; target environment

@@ -93,9 +93,19 @@ bbtidy lint --semantic \
 
 This runs the BitBake parse and target environment queries in addition to the
 static lint rules. BitBake diagnostics are reported as `BBT019`, and resolved
-metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, source
-revision, and `SRC_URI` values. It requires file inputs and an initialized
-build directory; standard input is not supported in semantic mode.
+metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, license and
+source checksums, source revision, and `SRC_URI` values. It requires file inputs
+and an initialized build directory; standard input is not supported in semantic
+mode.
+
+Offline linting also includes recipe QA rules `BBT020` through `BBT028` for
+static filename identity/version values, license and remote-source checksums,
+`LIC_FILES_CHKSUM`, `PACKAGECONFIG`, package declarations/scopes, and `SRC_URI`
+parameters. Layer QA rules `BBT029` through `BBT033` validate collection names,
+patterns, priorities, dependencies, and `LAYERSERIES_COMPAT` in
+`conf/layer.conf`.
+Dynamic values are skipped by these checks and should be validated with
+`lint --semantic` or the project's normal BitBake workflow.
 
 ## CI integration
 
@@ -124,7 +134,7 @@ bbtidy lint --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
-findings. `BBT003` through `BBT019` remain manual findings because changing
+findings. `BBT003` through `BBT033` remain manual findings because changing
 them requires project or BitBake semantics rather than a syntax-preserving
 edit.
 

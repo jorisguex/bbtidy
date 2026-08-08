@@ -11,6 +11,21 @@ use std::path::Path;
 use std::str::FromStr;
 
 const SUMMARY_LIMIT: usize = 80;
+const RULE_BITBAKE_DIAGNOSTIC: usize = 18;
+const RULE_RECIPE_NAME: usize = 19;
+const RULE_RECIPE_VERSION: usize = 20;
+const RULE_LICENSE_CHECKSUM: usize = 21;
+const RULE_SOURCE_CHECKSUM: usize = 22;
+const RULE_PACKAGECONFIG: usize = 23;
+const RULE_PACKAGECONFIG_FORMAT: usize = 24;
+const RULE_PACKAGE_SCOPE: usize = 25;
+const RULE_PACKAGE_LIST: usize = 26;
+const RULE_URI_PARAMETERS: usize = 27;
+const RULE_LAYER_COLLECTIONS: usize = 28;
+const RULE_LAYER_PATTERN: usize = 29;
+const RULE_LAYER_PRIORITY: usize = 30;
+const RULE_LAYER_DEPENDS: usize = 31;
+const RULE_LAYER_SERIES_COMPAT: usize = 32;
 
 static LINT_RULES: &[LintRule] = &[
     LintRule::new(
@@ -144,6 +159,104 @@ static LINT_RULES: &[LintRule] = &[
         "bitbake-diagnostic",
         LintSeverity::Error,
         "BitBake reported a semantic diagnostic.",
+        false,
+    ),
+    LintRule::new(
+        "BBT020",
+        "recipe-name",
+        LintSeverity::Warning,
+        "An explicit PN should match the recipe filename.",
+        false,
+    ),
+    LintRule::new(
+        "BBT021",
+        "recipe-version",
+        LintSeverity::Warning,
+        "An explicit PV should match the version in the recipe filename.",
+        false,
+    ),
+    LintRule::new(
+        "BBT022",
+        "license-checksum",
+        LintSeverity::Warning,
+        "Non-CLOSED recipes must provide valid license-file checksums.",
+        false,
+    ),
+    LintRule::new(
+        "BBT023",
+        "source-checksum",
+        LintSeverity::Warning,
+        "Remote source archives must provide a valid checksum.",
+        false,
+    ),
+    LintRule::new(
+        "BBT024",
+        "packageconfig",
+        LintSeverity::Warning,
+        "Enabled PACKAGECONFIG features must have flag definitions.",
+        false,
+    ),
+    LintRule::new(
+        "BBT025",
+        "packageconfig-format",
+        LintSeverity::Warning,
+        "PACKAGECONFIG flags must provide enable, disable, and dependency fields.",
+        false,
+    ),
+    LintRule::new(
+        "BBT026",
+        "package-scope",
+        LintSeverity::Warning,
+        "Package-scoped variables must refer to declared packages.",
+        false,
+    ),
+    LintRule::new(
+        "BBT027",
+        "package-list",
+        LintSeverity::Warning,
+        "PACKAGES must not contain duplicate package names.",
+        false,
+    ),
+    LintRule::new(
+        "BBT028",
+        "uri-parameters",
+        LintSeverity::Warning,
+        "SRC_URI entries must not contain invalid or conflicting parameters.",
+        false,
+    ),
+    LintRule::new(
+        "BBT029",
+        "layer-collections",
+        LintSeverity::Warning,
+        "A layer must declare nonempty BBFILE_COLLECTIONS metadata.",
+        false,
+    ),
+    LintRule::new(
+        "BBT030",
+        "layer-pattern",
+        LintSeverity::Warning,
+        "Every layer collection must define a BBFILE_PATTERN.",
+        false,
+    ),
+    LintRule::new(
+        "BBT031",
+        "layer-priority",
+        LintSeverity::Warning,
+        "Every layer collection must define an integer BBFILE_PRIORITY.",
+        false,
+    ),
+    LintRule::new(
+        "BBT032",
+        "layer-depends",
+        LintSeverity::Warning,
+        "LAYERDEPENDS entries must reference indexed layer collections.",
+        false,
+    ),
+    LintRule::new(
+        "BBT033",
+        "layer-series-compat",
+        LintSeverity::Warning,
+        "Every layer collection must declare LAYERSERIES_COMPAT.",
         false,
     ),
 ];
@@ -541,7 +654,7 @@ pub fn semantic_lint_diagnostics(
     report: &SemanticReport,
     options: &LintOptions,
 ) -> Vec<ExternalLintDiagnostic> {
-    let rule = &LINT_RULES[18];
+    let rule = &LINT_RULES[RULE_BITBAKE_DIAGNOSTIC];
     let mut findings = Vec::new();
 
     for diagnostic in report.diagnostics() {
@@ -655,20 +768,115 @@ pub fn semantic_lint_diagnostics(
 
         if let Some(value) = environment.get("SRC_URI") {
             for uri in value.split_whitespace() {
-                if !uri.starts_with("git://")
-                    || uri.split(';').any(|part| part.starts_with("protocol="))
+                if uri.starts_with("git://")
+                    && !uri.split(';').any(|part| part.starts_with("protocol="))
                 {
-                    continue;
+                    findings.push(ExternalLintDiagnostic {
+                        label: label.clone(),
+                        diagnostic: LintDiagnostic::external(
+                            &LINT_RULES[14],
+                            LINT_RULES[14].severity(),
+                            None,
+                            None,
+                            format!(
+                                "target '{}' resolves Git URI '{uri}' without a transport protocol",
+                                environment.target()
+                            ),
+                        ),
+                    });
                 }
+
+                if is_remote_archive(uri)
+                    && !has_valid_checksum(uri, "md5sum")
+                    && !has_valid_checksum(uri, "sha256sum")
+                {
+                    findings.push(ExternalLintDiagnostic {
+                        label: label.clone(),
+                        diagnostic: LintDiagnostic::external(
+                            &LINT_RULES[RULE_SOURCE_CHECKSUM],
+                            LINT_RULES[RULE_SOURCE_CHECKSUM].severity(),
+                            None,
+                            None,
+                            format!(
+                                "target '{}' resolves remote source URI '{uri}' without a valid md5sum or sha256sum",
+                                environment.target()
+                            ),
+                        ),
+                    });
+                }
+
+                let mut parameters = HashSet::new();
+                for parameter in uri.split(';').skip(1) {
+                    let Some((key, parameter_value)) = parameter.split_once('=') else {
+                        continue;
+                    };
+                    let invalid = key.is_empty()
+                        || !parameters.insert(key)
+                        || parameter_value.is_empty()
+                        || (key == "branch" && !uri.starts_with("git://"))
+                        || (key == "protocol" && !uri.starts_with("git://"))
+                        || (key == "protocol"
+                            && !matches!(
+                                parameter_value,
+                                "git" | "http" | "https" | "ssh" | "file"
+                            ));
+                    if !invalid {
+                        continue;
+                    }
+                    findings.push(ExternalLintDiagnostic {
+                        label: label.clone(),
+                        diagnostic: LintDiagnostic::external(
+                            &LINT_RULES[RULE_URI_PARAMETERS],
+                            LINT_RULES[RULE_URI_PARAMETERS].severity(),
+                            None,
+                            None,
+                            format!(
+                                "target '{}' resolves SRC_URI entry '{uri}' with invalid or conflicting parameter '{parameter}'",
+                                environment.target()
+                            ),
+                        ),
+                    });
+                }
+            }
+        }
+
+        if environment.get("LICENSE").is_some_and(|value| {
+            !value
+                .split_ascii_whitespace()
+                .any(|license| license == "CLOSED")
+        }) {
+            let checksum = environment.get("LIC_FILES_CHKSUM").unwrap_or_default();
+            let file_entries = checksum
+                .split_whitespace()
+                .filter(|uri| uri.starts_with("file://"))
+                .collect::<Vec<_>>();
+            if file_entries.is_empty() {
                 findings.push(ExternalLintDiagnostic {
                     label: label.clone(),
                     diagnostic: LintDiagnostic::external(
-                        &LINT_RULES[14],
-                        LINT_RULES[14].severity(),
+                        &LINT_RULES[RULE_LICENSE_CHECKSUM],
+                        LINT_RULES[RULE_LICENSE_CHECKSUM].severity(),
                         None,
                         None,
                         format!(
-                            "target '{}' resolves Git URI '{uri}' without a transport protocol",
+                            "target '{}' has non-CLOSED LICENSE but no resolved LIC_FILES_CHKSUM file entry",
+                            environment.target()
+                        ),
+                    ),
+                });
+            } else if file_entries
+                .iter()
+                .any(|uri| !has_valid_checksum(uri, "md5") && !has_valid_checksum(uri, "sha256"))
+            {
+                findings.push(ExternalLintDiagnostic {
+                    label,
+                    diagnostic: LintDiagnostic::external(
+                        &LINT_RULES[RULE_LICENSE_CHECKSUM],
+                        LINT_RULES[RULE_LICENSE_CHECKSUM].severity(),
+                        None,
+                        None,
+                        format!(
+                            "target '{}' resolves a license file without a valid md5 or sha256 checksum",
                             environment.target()
                         ),
                     ),
@@ -811,9 +1019,13 @@ pub fn lint_syntax_with_workspace(
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
     let mut diagnostics = collect_lint_diagnostics(tree);
+    check_recipe_qa(tree, path, &mut diagnostics);
     if workspace.is_complete_for(path) {
         check_recipe_metadata(tree, path, &mut diagnostics);
         check_workspace_references(tree, path, workspace, &mut diagnostics);
+        if is_layer_configuration(path) {
+            check_layer_qa(tree, workspace, &mut diagnostics);
+        }
     }
     finalize_diagnostics(diagnostics, options)
 }
@@ -1036,6 +1248,530 @@ fn check_recipe_metadata(
             message,
         ));
     }
+}
+
+fn check_recipe_qa(tree: &SyntaxTree<'_>, path: &Path, diagnostics: &mut Vec<LintDiagnostic>) {
+    if path.extension().and_then(|extension| extension.to_str()) != Some("bb") {
+        return;
+    }
+
+    check_recipe_identity(tree, path, diagnostics);
+    check_license_checksum(tree, diagnostics);
+    check_source_checksums(tree, diagnostics);
+    check_packageconfig(tree, diagnostics);
+    check_package_scope(tree, diagnostics);
+    check_uri_parameters(tree, diagnostics);
+}
+
+fn check_recipe_identity(
+    tree: &SyntaxTree<'_>,
+    path: &Path,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
+        return;
+    };
+    let Some((expected_name, expected_version)) = stem.rsplit_once('_') else {
+        return;
+    };
+    if expected_name.is_empty()
+        || expected_version.is_empty()
+        || expected_name.contains(['$', '%'])
+        || expected_version.contains(['$', '%'])
+    {
+        return;
+    }
+
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        let Some((value, _)) = simple_quoted_value(assignment.value()) else {
+            continue;
+        };
+        if assignment.name() == "PN" && !value.contains('$') && value != expected_name {
+            diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_RECIPE_NAME],
+                tree.source(),
+                assignment.name_range(),
+                format!("PN '{value}' does not match recipe filename name '{expected_name}'"),
+            ));
+        }
+        if assignment.name() == "PV" && !value.contains('$') && value != expected_version {
+            diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_RECIPE_VERSION],
+                tree.source(),
+                assignment.name_range(),
+                format!("PV '{value}' does not match recipe filename version '{expected_version}'"),
+            ));
+        }
+    }
+}
+
+fn check_license_checksum(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let mut license = None;
+    let mut license_checksum = None;
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        match assignment.name() {
+            "LICENSE" => license = Some(assignment),
+            "LIC_FILES_CHKSUM" => license_checksum = Some(assignment),
+            _ => {}
+        }
+    }
+    let Some(license) = license else {
+        return;
+    };
+    let Some((license_value, _)) = simple_quoted_value(license.value()) else {
+        return;
+    };
+    if license_value
+        .split_ascii_whitespace()
+        .any(|value| value == "CLOSED")
+    {
+        return;
+    }
+
+    let Some(checksum_assignment) = license_checksum else {
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_LICENSE_CHECKSUM],
+            tree.source(),
+            license.name_range(),
+            "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+        ));
+        return;
+    };
+    let Some((value, value_offset)) = simple_quoted_value(checksum_assignment.value()) else {
+        return;
+    };
+    let mut found_file = false;
+    for (relative_offset, uri) in static_words(value) {
+        if !uri.starts_with("file://") {
+            continue;
+        }
+        found_file = true;
+        let invalid = !has_valid_checksum(uri, "md5") && !has_valid_checksum(uri, "sha256");
+        if invalid {
+            let offset = checksum_assignment.value_range().start() + value_offset + relative_offset;
+            diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LICENSE_CHECKSUM],
+                tree.source(),
+                TextRange::new(offset, offset + uri.len()),
+                format!("license file URI '{uri}' is missing a valid md5 or sha256 checksum"),
+            ));
+        }
+    }
+    if !found_file && !value.trim().is_empty() {
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_LICENSE_CHECKSUM],
+            tree.source(),
+            checksum_assignment.name_range(),
+            "LIC_FILES_CHKSUM must contain at least one static file:// entry",
+        ));
+    }
+}
+
+fn check_source_checksums(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if !is_src_uri_name(assignment.name()) {
+            continue;
+        }
+        let Some((value, value_offset)) = simple_quoted_value(assignment.value()) else {
+            continue;
+        };
+        for (relative_offset, uri) in static_words(value) {
+            if !is_remote_archive(uri) {
+                continue;
+            }
+            if has_valid_checksum(uri, "md5sum") || has_valid_checksum(uri, "sha256sum") {
+                continue;
+            }
+            let offset = assignment.value_range().start() + value_offset + relative_offset;
+            diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_SOURCE_CHECKSUM],
+                tree.source(),
+                TextRange::new(offset, offset + uri.len()),
+                format!("remote source URI '{uri}' is missing a valid md5sum or sha256sum"),
+            ));
+        }
+    }
+}
+
+fn check_packageconfig(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let mut enabled = Vec::new();
+    let mut definitions = HashSet::new();
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if is_packageconfig_value(assignment.name())
+            && let Some((value, value_offset)) = simple_quoted_value(assignment.value())
+        {
+            for (relative_offset, feature) in static_words(value) {
+                enabled.push((
+                    feature.to_owned(),
+                    assignment.value_range().start() + value_offset + relative_offset,
+                    feature.len(),
+                ));
+            }
+        }
+        if let Some(feature) = packageconfig_feature(assignment.name()) {
+            definitions.insert(feature.to_owned());
+            let Some((value, _)) = simple_quoted_value(assignment.value()) else {
+                continue;
+            };
+            if value.contains('$') {
+                continue;
+            }
+            let fields = value.split(',').collect::<Vec<_>>();
+            if !(3..=4).contains(&fields.len()) {
+                diagnostics.push(LintDiagnostic::at(
+                    &LINT_RULES[RULE_PACKAGECONFIG_FORMAT],
+                    tree.source(),
+                    assignment.name_range(),
+                    format!(
+                        "PACKAGECONFIG feature '{feature}' has {} fields; expected 3 or 4",
+                        fields.len()
+                    ),
+                ));
+            }
+        }
+    }
+    for (feature, offset, length) in enabled {
+        if definitions.contains(&feature) {
+            continue;
+        }
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_PACKAGECONFIG],
+            tree.source(),
+            TextRange::new(offset, offset + length),
+            format!("PACKAGECONFIG feature '{feature}' has no PACKAGECONFIG[{feature}] definition"),
+        ));
+    }
+}
+
+fn check_package_scope(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let mut packages = BTreeSet::new();
+    let mut package_assignment = None;
+    let mut seen = HashSet::new();
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if assignment.name() != "PACKAGES" {
+            continue;
+        }
+        package_assignment = Some(assignment);
+        let Some((value, value_offset)) = simple_quoted_value(assignment.value()) else {
+            continue;
+        };
+        for (relative_offset, package) in static_words(value) {
+            if !seen.insert(package) {
+                let offset = assignment.value_range().start() + value_offset + relative_offset;
+                diagnostics.push(LintDiagnostic::at(
+                    &LINT_RULES[RULE_PACKAGE_LIST],
+                    tree.source(),
+                    TextRange::new(offset, offset + package.len()),
+                    format!("package '{package}' is listed more than once in PACKAGES"),
+                ));
+            }
+            packages.insert(package.to_owned());
+        }
+    }
+    if package_assignment.is_none() || packages.is_empty() {
+        return;
+    }
+
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        let Some(package) = package_scope(assignment.name()) else {
+            continue;
+        };
+        if package.contains('$') || packages.contains(package) {
+            continue;
+        }
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_PACKAGE_SCOPE],
+            tree.source(),
+            assignment.name_range(),
+            format!(
+                "{} is scoped to undeclared package '{package}'",
+                assignment.name()
+            ),
+        ));
+    }
+}
+
+fn check_uri_parameters(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if !is_src_uri_name(assignment.name()) {
+            continue;
+        }
+        let Some((value, value_offset)) = simple_quoted_value(assignment.value()) else {
+            continue;
+        };
+        for (relative_offset, uri) in static_words(value) {
+            let mut parameters = HashSet::new();
+            let is_git = uri.starts_with("git://");
+            for parameter in uri.split(';').skip(1) {
+                let Some((key, parameter_value)) = parameter.split_once('=') else {
+                    continue;
+                };
+                let invalid = key.is_empty()
+                    || !parameters.insert(key)
+                    || parameter_value.is_empty()
+                    || (key == "branch" && !is_git)
+                    || (key == "protocol" && !is_git)
+                    || (key == "protocol"
+                        && !matches!(parameter_value, "git" | "http" | "https" | "ssh" | "file"));
+                if !invalid {
+                    continue;
+                }
+                let offset = assignment.value_range().start()
+                    + value_offset
+                    + relative_offset
+                    + uri.find(parameter).unwrap_or(0);
+                diagnostics.push(LintDiagnostic::at(
+                    &LINT_RULES[RULE_URI_PARAMETERS],
+                    tree.source(),
+                    TextRange::new(offset, offset + parameter.len()),
+                    format!(
+                        "SRC_URI entry '{uri}' has invalid or conflicting parameter '{parameter}'"
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+fn check_layer_qa(
+    tree: &SyntaxTree<'_>,
+    workspace: &WorkspaceIndex,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    let source = tree.source();
+    let mut collections = BTreeMap::new();
+    let mut collection_count = 0;
+    let mut has_dynamic_collections = false;
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if assignment.name() != "BBFILE_COLLECTIONS" {
+            continue;
+        }
+        let Some((value, value_offset)) = simple_quoted_value(assignment.value()) else {
+            continue;
+        };
+        has_dynamic_collections |= value.contains('$') || value.contains('{');
+        for (relative_offset, collection) in static_words(value) {
+            collection_count += 1;
+            let offset = assignment.value_range().start() + value_offset + relative_offset;
+            if collections
+                .insert(
+                    collection.to_owned(),
+                    TextRange::new(offset, offset + collection.len()),
+                )
+                .is_some()
+            {
+                diagnostics.push(LintDiagnostic::at(
+                    &LINT_RULES[RULE_LAYER_COLLECTIONS],
+                    source,
+                    TextRange::new(offset, offset + collection.len()),
+                    format!("layer collection '{collection}' is declared more than once"),
+                ));
+            }
+        }
+    }
+    if collection_count == 0 {
+        if has_dynamic_collections {
+            return;
+        }
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_LAYER_COLLECTIONS],
+            source,
+            TextRange::new(source.len(), source.len()),
+            "layer is missing a static BBFILE_COLLECTIONS declaration",
+        ));
+        return;
+    }
+
+    let indexed_collections = workspace.collection_names();
+    for collection in collections.keys() {
+        let pattern_name = format!("BBFILE_PATTERN_{collection}");
+        match find_assignment(tree, &pattern_name) {
+            Some(assignment)
+                if scalar_value(assignment.value()).is_some_and(|value| !value.is_empty()) => {}
+            Some(assignment) => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_PATTERN],
+                source,
+                assignment.name_range(),
+                format!("{pattern_name} must not be empty"),
+            )),
+            None => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_PATTERN],
+                source,
+                TextRange::new(source.len(), source.len()),
+                format!("layer collection '{collection}' is missing {pattern_name}"),
+            )),
+        }
+
+        let priority_name = format!("BBFILE_PRIORITY_{collection}");
+        match find_assignment(tree, &priority_name) {
+            Some(assignment)
+                if scalar_value(assignment.value()).is_some_and(|value| value.contains('$')) => {}
+            Some(assignment)
+                if scalar_value(assignment.value())
+                    .and_then(|value| value.parse::<i32>().ok())
+                    .is_some() => {}
+            Some(assignment) => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_PRIORITY],
+                source,
+                assignment.name_range(),
+                format!("{priority_name} must be an integer"),
+            )),
+            None => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_PRIORITY],
+                source,
+                TextRange::new(source.len(), source.len()),
+                format!("layer collection '{collection}' is missing {priority_name}"),
+            )),
+        }
+
+        let compat_name = format!("LAYERSERIES_COMPAT_{collection}");
+        match find_assignment(tree, &compat_name) {
+            Some(assignment)
+                if scalar_value(assignment.value()).is_some_and(|value| !value.is_empty()) => {}
+            Some(assignment) => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_SERIES_COMPAT],
+                source,
+                assignment.name_range(),
+                format!("{compat_name} must not be empty"),
+            )),
+            None => diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_LAYER_SERIES_COMPAT],
+                source,
+                TextRange::new(source.len(), source.len()),
+                format!("layer collection '{collection}' is missing {compat_name}"),
+            )),
+        }
+
+        let depends_name = format!("LAYERDEPENDS_{collection}");
+        if let Some(assignment) = find_assignment(tree, &depends_name)
+            && let Some((value, value_offset)) = simple_quoted_value(assignment.value())
+        {
+            for (relative_offset, dependency) in static_words(value) {
+                if dependency.starts_with('(') || dependency.ends_with(')') {
+                    continue;
+                }
+                if indexed_collections.contains(dependency) {
+                    continue;
+                }
+                let offset = assignment.value_range().start() + value_offset + relative_offset;
+                diagnostics.push(LintDiagnostic::at(
+                    &LINT_RULES[RULE_LAYER_DEPENDS],
+                    source,
+                    TextRange::new(offset, offset + dependency.len()),
+                    format!("{depends_name} references unknown layer collection '{dependency}'"),
+                ));
+            }
+        }
+    }
+}
+
+fn find_assignment<'tree, 'source>(
+    tree: &'tree SyntaxTree<'source>,
+    name: &str,
+) -> Option<&'tree AssignmentSyntax<'source>> {
+    tree.nodes().iter().find_map(|node| match node.kind() {
+        SyntaxKind::Assignment(assignment) if assignment.name() == name => Some(assignment),
+        _ => None,
+    })
+}
+
+fn is_layer_configuration(path: &Path) -> bool {
+    path.file_name().and_then(|name| name.to_str()) == Some("layer.conf")
+        && path
+            .parent()
+            .and_then(|parent| parent.file_name())
+            .and_then(|name| name.to_str())
+            == Some("conf")
+}
+
+fn is_src_uri_name(name: &str) -> bool {
+    name == "SRC_URI" || name.starts_with("SRC_URI:") || name.starts_with("SRC_URI_")
+}
+
+fn is_packageconfig_value(name: &str) -> bool {
+    name == "PACKAGECONFIG"
+        || name.starts_with("PACKAGECONFIG:")
+        || name.starts_with("PACKAGECONFIG_")
+}
+
+fn packageconfig_feature(name: &str) -> Option<&str> {
+    let rest = name.strip_prefix("PACKAGECONFIG[")?;
+    let end = rest.find(']')?;
+    let suffix = &rest[end + 1..];
+    if suffix.is_empty() || suffix.starts_with(':') || suffix.starts_with('_') {
+        Some(&rest[..end])
+    } else {
+        None
+    }
+}
+
+fn package_scope(name: &str) -> Option<&str> {
+    for base in [
+        "FILES",
+        "RDEPENDS",
+        "RRECOMMENDS",
+        "RPROVIDES",
+        "RCONFLICTS",
+        "RREPLACES",
+    ] {
+        if let Some(rest) = name.strip_prefix(&format!("{base}:")) {
+            return rest.split(':').next();
+        }
+        if let Some(rest) = name.strip_prefix(&format!("{base}_")) {
+            return rest.split('_').next();
+        }
+    }
+    None
+}
+
+fn scalar_value(value: &str) -> Option<&str> {
+    let value = value.trim();
+    if value.starts_with(['\'', '"']) {
+        return simple_quoted_value(value).map(|(value, _)| value);
+    }
+    Some(value.split('#').next()?.trim())
+}
+
+fn has_valid_checksum(uri: &str, key: &str) -> bool {
+    uri.split(';').skip(1).any(|parameter| {
+        let Some(value) = parameter.strip_prefix(&format!("{key}=")) else {
+            return false;
+        };
+        let expected_length = if key == "md5" || key == "md5sum" {
+            32
+        } else {
+            64
+        };
+        value.len() == expected_length && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+    })
+}
+
+fn is_remote_archive(uri: &str) -> bool {
+    uri.starts_with("http://") || uri.starts_with("https://") || uri.starts_with("ftp://")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1528,7 +2264,9 @@ mod tests {
             [
                 "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007", "BBT008",
                 "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
-                "BBT017", "BBT018", "BBT019",
+                "BBT017", "BBT018", "BBT019", "BBT020", "BBT021", "BBT022", "BBT023", "BBT024",
+                "BBT025", "BBT026", "BBT027", "BBT028", "BBT029", "BBT030", "BBT031", "BBT032",
+                "BBT033",
             ]
         );
         assert!(

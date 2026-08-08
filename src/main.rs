@@ -384,6 +384,7 @@ fn analyze_semantic_lint(
             "SUMMARY",
             "DESCRIPTION",
             "LICENSE",
+            "LIC_FILES_CHKSUM",
             "SRCREV",
             "SRCPV",
             "SRC_URI",

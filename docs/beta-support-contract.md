@@ -111,8 +111,17 @@ that the entire BitBake build is free of issues.
 It requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
-metadata and source URI rules where applicable. Static linting remains the
-default and continues to avoid invoking BitBake.
+metadata, source checksum, and source URI rules where applicable. Static
+linting remains the default and continues to avoid invoking BitBake.
+
+The static catalog includes recipe and layer QA rules in `BBT020` through
+`BBT033`. Recipe QA validates explicit filename identity/version values,
+license and remote-source checksums, `PACKAGECONFIG` definitions, package
+declarations and scopes, and `SRC_URI` parameters on `.bb` files. Layer QA
+applies to complete indexed `conf/layer.conf` files and validates collection
+patterns, priorities, dependencies, and series compatibility. Dynamic values
+are skipped at the static boundary; these checks are not a substitute for a
+BitBake parse.
 
 Text diagnostics, versioned JSON, and SARIF output must describe the same
 findings in deterministic source order. The lint process exits `1` only when a
