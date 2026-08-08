@@ -5,6 +5,7 @@ mod body;
 mod config;
 mod formatter;
 mod lint;
+mod overrides;
 mod project;
 mod semantic;
 mod syntax;
@@ -20,6 +21,10 @@ pub use lint::{
     LintRule, LintSeverity, apply_lint_fixes, lint, lint_rules, lint_syntax,
     lint_syntax_with_options, lint_syntax_with_workspace, lint_with_bitbake, lint_with_options,
     lint_with_workspace, semantic_lint_diagnostics,
+};
+pub use overrides::{
+    OverrideKey, OverrideKeyError, OverrideOperation, OverrideResolution, parse_override_key,
+    parse_override_key_with_overrides, resolve_overrides, resolve_overrides_with_active,
 };
 pub use project::{
     BuildContext, BuildContextDiscoveryOptions, BuildContextError, BuildContextSource,

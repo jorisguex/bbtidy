@@ -354,8 +354,9 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT034` | `shell-syntax` | A shell function body has unmatched control-flow constructs | Manual |
 | `BBT035` | `python-syntax` | An embedded Python body has malformed syntax or delimiters | Manual |
 | `BBT036` | `python-indentation` | An embedded Python body has inconsistent indentation | Manual |
+| `BBT037` | `unknown-override` | A static override component is missing from `OVERRIDES` | Manual |
 
-Rules `BBT001` through `BBT018` and `BBT020` through `BBT036` are warnings;
+Rules `BBT001` through `BBT018` and `BBT020` through `BBT037` are warnings;
 `BBT019` adopts BitBake's
 severity for each semantic diagnostic. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
@@ -405,6 +406,14 @@ Python delimiters, compound-statement colons, multiline strings, and
 indentation. They are deliberately conservative: command expansion, external
 tools, shell semantics, Python imports, and runtime behavior are not evaluated.
 The formatter still treats all body text as immutable opaque payload.
+
+Override semantics are modeled statically when `OVERRIDES` and the relevant
+assignments are literal. Modern colon keys and legacy underscore keys are
+normalized, key expansion is applied when its referenced value is known, and
+`append`, `prepend`, and `remove` operations follow active override precedence.
+The public `OverrideKey`, `OverrideResolution`, `parse_override_key`, and
+`resolve_overrides` APIs expose this model. Dynamic expansion remains delegated
+to BitBake.
 
 When `lint --semantic` is selected, BitBake becomes the authoritative semantic
 boundary. Its parse diagnostics are emitted as `BBT019`; target environment
@@ -458,8 +467,9 @@ The `0.1.0-alpha.4` lexer recognizes:
   `EXPORT_FUNCTIONS`, `export` and `unset`
 - Single- and double-quoted values, including multiline values
 
-Legacy underscore overrides remain lexically accepted as identifier and
-variable-reference components. They are not interpreted as override operations.
+Legacy underscore overrides are interpreted when their suffix is unambiguous
+against the active `OVERRIDES` list; ambiguous or dynamic forms remain
+lossless and are left to BitBake.
 The formatter remains deliberately conservative: outside the opt-in static-list
 layout above, it does not wrap values, reindent continuation lines, or format
 embedded shell or Python code.

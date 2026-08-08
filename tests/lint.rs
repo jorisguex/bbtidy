@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 36);
+    assert_eq!(rules.len(), 37);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -176,6 +176,26 @@ fn body_lint_accepts_balanced_shell_and_python_bodies() {
         "    return d.getVar(\"VALUE\")\n",
     );
     assert!(lint(source).unwrap().is_empty());
+}
+
+#[test]
+fn lint_reports_static_override_components_missing_from_overrides() {
+    let source = concat!(
+        "OVERRIDES = \"machine:class-native\"\n",
+        "A:machine = \"machine\"\n",
+        "B:unknown = \"unknown\"\n",
+        "C:${DYNAMIC} = \"dynamic\"\n",
+        "RDEPENDS_${PN}_class-native = \"native\"\n",
+    );
+    let diagnostics = lint(source).unwrap();
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.rule_id())
+            .collect::<Vec<_>>(),
+        ["BBT037"]
+    );
+    assert!(diagnostics[0].message().contains("unknown"));
 }
 
 #[test]

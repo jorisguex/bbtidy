@@ -62,7 +62,8 @@ The beta contract does not promise compatibility for:
 - vendor-modified or otherwise unpinned BitBake forks;
 - dynamic file and class references that bbtidy cannot resolve statically;
 - external classes or files not included in the indexed input set;
-- legacy underscore overrides as semantic override operations; or
+- dynamically ambiguous legacy underscore overrides as semantic override
+  operations; or
 - generated build output unless it is explicitly supplied as an input.
 
 Unsupported input is preserved where possible. Preservation does not mean that
@@ -129,6 +130,13 @@ compound statements, and inconsistent Python indentation. The analysis is
 lexical and conservative: it does not execute shell/Python, resolve commands or
 imports, or inspect runtime behavior. Formatting continues to preserve every
 body byte.
+
+Override handling is static when the source provides literal `OVERRIDES` and
+assignment values. Modern colon syntax and unambiguous legacy underscore
+syntax are normalized, active override precedence is applied, and
+`append`/`prepend`/`remove` operations are resolved. Dynamic key expansion and
+runtime override selection remain outside the offline model; `BBT037` reports
+literal override components that are absent from a literal `OVERRIDES` list.
 
 Text diagnostics, versioned JSON, and SARIF output must describe the same
 findings in deterministic source order. The lint process exits `1` only when a

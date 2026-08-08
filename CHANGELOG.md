@@ -24,6 +24,9 @@ All notable changes to this project will be documented in this file.
 - Conservative shell and Python body analysis for shell control-flow pairing,
   Python syntax/delimiters, and Python indentation, with source ranges and
   byte-preserving body boundaries.
+- Full static override modeling for modern and legacy keys, active precedence,
+  key expansion, and `append`/`prepend`/`remove` operations, with public
+  resolver APIs and unknown-component diagnostics.
 - Structured lint diagnostics with source ranges, help, SARIF/JSON fix
   metadata, `--show-fixes`, and transactional `lint --fix` support for safe
   trailing-whitespace and final-newline edits.
@@ -223,4 +226,5 @@ All notable changes to this project will be documented in this file.
 - Layer-aware semantic checks only resolve files and classes supplied in the
   indexed input set; external BitBake classes and dynamic references are not
   evaluated.
-- Legacy underscore overrides are tokenized but not interpreted.
+- Dynamic and ambiguous legacy underscore overrides are preserved rather than
+  guessed by the static resolver.

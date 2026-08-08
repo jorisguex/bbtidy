@@ -112,6 +112,12 @@ control-flow pairing, Python delimiters/compound-statement syntax, and Python
 indentation. These checks do not execute code or external tools, and formatting
 continues to leave shell and Python body bytes unchanged.
 
+When `OVERRIDES` is statically known, lint also normalizes modern colon and
+unambiguous legacy underscore keys, resolves active precedence, and applies
+`append`, `prepend`, and `remove` operations. `BBT037` identifies literal
+override components missing from `OVERRIDES`; dynamic expansion remains a
+BitBake-semantic concern.
+
 ## CI integration
 
 Use `check` as the formatting gate and choose the lint output that matches the
@@ -139,7 +145,7 @@ bbtidy lint --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
-findings. `BBT003` through `BBT036` remain manual findings because changing
+findings. `BBT003` through `BBT037` remain manual findings because changing
 them requires project or BitBake semantics rather than a syntax-preserving
 edit.
 

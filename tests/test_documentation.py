@@ -36,6 +36,7 @@ class DocumentationTests(unittest.TestCase):
             "BBT033",
             "BBT034",
             "BBT036",
+            "BBT037",
             "LIC_FILES_CHKSUM",
             "LAYERSERIES_COMPAT",
             "installation method",

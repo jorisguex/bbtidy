@@ -6,6 +6,7 @@ use crate::{
     WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
 use crate::{BodyDiagnosticKind, FunctionKind, analyze_python_body, analyze_shell_body};
+use crate::{parse_override_key_with_overrides, resolve_overrides};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
 use std::path::Path;
@@ -30,6 +31,7 @@ const RULE_LAYER_SERIES_COMPAT: usize = 32;
 const RULE_SHELL_SYNTAX: usize = 33;
 const RULE_PYTHON_SYNTAX: usize = 34;
 const RULE_PYTHON_INDENTATION: usize = 35;
+const RULE_UNKNOWN_OVERRIDE: usize = 36;
 
 static LINT_RULES: &[LintRule] = &[
     LintRule::new(
@@ -282,6 +284,13 @@ static LINT_RULES: &[LintRule] = &[
         "python-indentation",
         LintSeverity::Warning,
         "Embedded Python bodies must use consistent indentation.",
+        false,
+    ),
+    LintRule::new(
+        "BBT037",
+        "unknown-override",
+        LintSeverity::Warning,
+        "Static override components should be listed in OVERRIDES.",
         false,
     ),
 ];
@@ -1063,9 +1072,52 @@ fn collect_lint_diagnostics(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
     check_assignments(tree, &mut diagnostics);
     check_duplicate_functions(tree, &mut diagnostics);
     check_body_diagnostics(tree, &mut diagnostics);
+    check_unknown_overrides(tree, &mut diagnostics);
     check_empty_directives(tree, &mut diagnostics);
     check_duplicate_inherits(tree, &mut diagnostics);
     diagnostics
+}
+
+fn check_unknown_overrides(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let resolution = resolve_overrides(tree);
+    if resolution.overrides().is_empty() {
+        return;
+    }
+    let active = resolution
+        .overrides()
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        let Ok(key) = parse_override_key_with_overrides(assignment.name(), &active) else {
+            continue;
+        };
+        if key.is_dynamic() || key.overrides().is_empty() {
+            continue;
+        }
+        let unknown = key
+            .overrides()
+            .iter()
+            .filter(|component| !resolution.overrides().contains(component))
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        if unknown.is_empty() {
+            continue;
+        }
+        diagnostics.push(LintDiagnostic::at(
+            &LINT_RULES[RULE_UNKNOWN_OVERRIDE],
+            tree.source(),
+            assignment.name_range(),
+            format!(
+                "assignment '{}' uses override component(s) not present in OVERRIDES: {}",
+                assignment.name(),
+                unknown.join(", ")
+            ),
+        ));
+    }
 }
 
 fn check_body_diagnostics(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -2333,7 +2385,7 @@ mod tests {
                 "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
                 "BBT017", "BBT018", "BBT019", "BBT020", "BBT021", "BBT022", "BBT023", "BBT024",
                 "BBT025", "BBT026", "BBT027", "BBT028", "BBT029", "BBT030", "BBT031", "BBT032",
-                "BBT033", "BBT034", "BBT035", "BBT036",
+                "BBT033", "BBT034", "BBT035", "BBT036", "BBT037",
             ]
         );
         assert!(
