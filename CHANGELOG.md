@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Structured lint diagnostics with source ranges, help, SARIF/JSON fix
+  metadata, `--show-fixes`, and transactional `lint --fix` support for safe
+  trailing-whitespace and final-newline edits.
 - Project/build-context discovery for semantic analysis, with configuration,
   `BBTIDY_BITBAKE_BUILD_DIR`/`BUILDDIR` environment support, conventional
   ancestor search, ambiguity detection, and JSON/text provenance reporting.

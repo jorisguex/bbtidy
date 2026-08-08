@@ -21,6 +21,8 @@ class DocumentationTests(unittest.TestCase):
             "bbtidy check",
             "bbtidy format --diff",
             "bbtidy format --write",
+            "bbtidy lint --show-fixes",
+            "bbtidy lint --fix",
             "bitbake --parse-only",
             "max_files",
             "max_bytes",

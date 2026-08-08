@@ -528,6 +528,98 @@ fn lint_json_output_has_a_stable_schema() {
     assert_eq!(diagnostics[0]["column"], 17);
     assert_eq!(diagnostics[0]["severity"], "warning");
     assert_eq!(diagnostics[0]["rule_id"], "BBT001");
+    assert_eq!(diagnostics[0]["end_line"], 1);
+    assert_eq!(diagnostics[0]["end_column"], 19);
+    assert_eq!(diagnostics[0]["fixable"], true);
+    assert_eq!(diagnostics[0]["fixes"][0]["replacement"], "");
+}
+
+#[test]
+fn lint_show_fixes_explains_safe_edits_without_changing_default_text() {
+    let directory = TemporaryDirectory::new("lint-show-fixes");
+    let file = directory.write("example.bb", "SUMMARY = \"demo\"  \n");
+
+    let output = run(["lint", "--show-fixes", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("warning[BBT001]: line ends with whitespace"));
+    assert!(stdout.contains("help: Remove the trailing spaces or tabs from this line."));
+    assert!(stdout.contains("fix: remove trailing whitespace (bytes 16..18)"));
+    assert_eq!(fs::read_to_string(file).unwrap(), "SUMMARY = \"demo\"  \n");
+}
+
+#[test]
+fn lint_fix_applies_safe_edits_and_reports_remaining_findings() {
+    let directory = TemporaryDirectory::new("lint-fix");
+    let file = directory.write(
+        "example.bb",
+        "SUMMARY = \"demo\"  \nSRCREV = \"${AUTOREV}\"",
+    );
+
+    let output = run(["lint", "--fix", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains(&format!("fixed: {} (2 edits)", file.display())));
+    assert!(stdout.contains("warning[BBT004]:"));
+    assert!(!stdout.contains("BBT001"));
+    assert!(!stdout.contains("BBT002"));
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        "SUMMARY = \"demo\"\nSRCREV = \"${AUTOREV}\"\n"
+    );
+
+    let second = run(["lint", "--fix", file.to_str().unwrap()]);
+    assert_eq!(second.status.code(), Some(1));
+    assert!(!String::from_utf8(second.stdout).unwrap().contains("fixed:"));
+}
+
+#[test]
+fn lint_fix_json_reports_applied_edits_and_empty_post_fix_findings() {
+    let directory = TemporaryDirectory::new("lint-fix-json");
+    let file = directory.write("example.bb", "SUMMARY = \"demo\"  ");
+
+    let output = run(["lint", "--fix", "--output", "json", file.to_str().unwrap()]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["diagnostics"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        report["fixes_applied"][0]["path"],
+        file.display().to_string()
+    );
+    assert_eq!(report["fixes_applied"][0]["count"], 2);
+    assert_eq!(fs::read_to_string(file).unwrap(), "SUMMARY = \"demo\"\n");
+}
+
+#[test]
+fn lint_fix_rejects_standard_input_before_reading_or_writing() {
+    let output = run_with_stdin(["lint", "--fix", "-"], "SUMMARY = \"demo\"");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("--fix cannot be used with standard input")
+    );
+}
+
+#[test]
+fn lint_fix_is_transactional_when_another_input_fails_analysis() {
+    let directory = TemporaryDirectory::new("lint-fix-transaction");
+    let fixable = directory.write("a.bb", "SUMMARY = \"demo\"  ");
+    directory.write("b.bb", "BROKEN = \"unterminated\n");
+
+    let output = run(["lint", "--fix", directory.path().to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(fs::read_to_string(fixable).unwrap(), "SUMMARY = \"demo\"  ");
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("could not lint")
+    );
 }
 
 #[test]
@@ -548,6 +640,15 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
     assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 10);
+    assert_eq!(
+        run["tool"]["driver"]["rules"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|rule| rule["id"] == "BBT001")
+            .unwrap()["properties"]["fixable"],
+        true
+    );
     let result = &run["results"][0];
     assert_eq!(result["ruleId"], "BBT004");
     assert_eq!(result["level"], "warning");
@@ -559,6 +660,29 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
         result["locations"][0]["physicalLocation"]["region"]["startLine"],
         1
     );
+}
+
+#[test]
+fn lint_sarif_output_contains_formal_fix_metadata() {
+    let directory = TemporaryDirectory::new("lint-sarif-fix");
+    let file = directory.write("example.bb", "SUMMARY = \"demo\"  \n");
+
+    let output = run(["lint", "--output", "sarif", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let result = &report["runs"][0]["results"][0];
+    assert_eq!(result["ruleId"], "BBT001");
+    assert_eq!(result["properties"]["fixable"], true);
+    assert_eq!(
+        result["fixes"][0]["description"]["text"],
+        "remove trailing whitespace"
+    );
+    assert_eq!(
+        result["fixes"][0]["artifactChanges"][0]["replacements"][0]["insertedContent"]["text"],
+        ""
+    );
+    assert!(result["properties"].get("help").is_some());
 }
 
 #[test]

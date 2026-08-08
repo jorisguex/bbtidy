@@ -64,10 +64,12 @@ Keep the generated diff and the BitBake results with the change review. For a
 large repository, start with one layer or recipe family and expand the scope
 only after the smaller run is understood.
 
-`format --diff`, `check`, and `lint` do not modify source files. `format --write`
-is the only documented repository-writing operation. Standard input
-must be the only input for a command that reads `-`, and `--write` cannot be
-combined with standard input.
+`format --diff`, `check`, and ordinary `lint` runs do not modify source files.
+`format --write` and `lint --fix` are the repository-writing operations.
+`lint --fix` applies only safe whitespace and final-newline edits, re-runs lint,
+and refuses standard input. Both write modes stage all changed files and use
+the same concurrent-change checks and rollback-capable transaction. A parse or
+analysis failure prevents any fix from being written.
 
 `semantic` reads the selected BitBake build context and delegates evaluation to
 the installed BitBake engine. It is the supported way to validate dynamic
@@ -97,6 +99,18 @@ warnings advisory, or `--fail-on never` for report-only mode:
 bbtidy lint --fail-on error meta-my-layer/
 bbtidy lint --fail-on never --output sarif meta-my-layer/ > bbtidy.sarif
 ```
+
+For a local cleanup pass, preview or apply the safe lint edits explicitly:
+
+```bash
+bbtidy lint --show-fixes meta-my-layer/
+bbtidy lint --fix meta-my-layer/
+```
+
+The fix command reports the edits it applied, then reports any remaining
+findings. `BBT003` through `BBT010` remain manual findings because changing
+them requires project or BitBake semantics rather than a syntax-preserving
+edit.
 
 The exit codes are:
 

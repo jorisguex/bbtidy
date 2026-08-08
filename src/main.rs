@@ -1,8 +1,8 @@
 use bbtidy::{
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
     LintSeverity, SafetyOptions, SemanticOptions, SyntaxKind, Token, WorkspaceIndex,
-    analyze_bitbake, discover_build_context_with_options, format_with_options, get_line_col,
-    lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
+    analyze_bitbake, apply_lint_fixes, discover_build_context_with_options, format_with_options,
+    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -92,6 +92,14 @@ struct LintArgs {
     /// Set the minimum diagnostic severity that fails the command.
     #[arg(long, value_enum, value_name = "SEVERITY")]
     fail_on: Option<LintFailureArg>,
+
+    /// Apply safe, machine-generated fixes and re-lint the resulting source.
+    #[arg(long)]
+    fix: bool,
+
+    /// Include help and edit details in human-readable diagnostics.
+    #[arg(long)]
+    show_fixes: bool,
 
     #[command(flatten)]
     inputs: InputArgs,
@@ -412,6 +420,16 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
+    if args.fix && inputs.iter().any(|input| matches!(input, Input::Stdin)) {
+        eprintln!("error: --fix cannot be used with standard input");
+        return EXIT_ERROR;
+    }
+    if args.fix
+        && let Err(error) = validate_input_limits(&inputs, config.safety)
+    {
+        eprintln!("error: {error}");
+        return EXIT_ERROR;
+    }
     let workspace_paths = inputs.iter().filter_map(|input| match input {
         Input::Stdin => None,
         Input::File(path) => Some(path),
@@ -423,11 +441,9 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
-    let mut had_blocking_findings = false;
     let mut had_error = false;
     let machine_output = args.output != LintOutput::Text;
-    let mut collected = Vec::new();
-    let mut stdout = io::stdout().lock();
+    let mut analyzed = Vec::with_capacity(inputs.len());
 
     for input in &inputs {
         let (label, text) = match read_input(input) {
@@ -444,34 +460,37 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         };
         match diagnostics {
             Ok(diagnostics) => {
-                had_blocking_findings |= lint_options.has_blocking_findings(&diagnostics);
-                if machine_output {
-                    collected.extend(diagnostics.into_iter().map(|diagnostic| {
-                        ReportedDiagnostic {
-                            label: label.clone(),
-                            diagnostic,
-                        }
-                    }));
-                } else {
-                    for diagnostic in diagnostics {
-                        if let Err(error) = writeln!(
-                            stdout,
-                            "{}:{}:{}: {}[{}]: {}",
-                            label,
-                            diagnostic.line(),
-                            diagnostic.column(),
-                            diagnostic.severity(),
-                            diagnostic.rule_id(),
-                            diagnostic.message()
-                        ) {
-                            if error.kind() == io::ErrorKind::BrokenPipe {
-                                return 0;
-                            }
-                            eprintln!("error: could not write standard output: {error}");
-                            return EXIT_ERROR;
+                let fixed = if args.fix {
+                    match apply_lint_fixes(&text, &diagnostics) {
+                        Ok(fixed) => fixed,
+                        Err(error) => {
+                            eprintln!("error: could not apply fixes to {label}: {error}");
+                            had_error = true;
+                            continue;
                         }
                     }
-                }
+                } else {
+                    text.clone()
+                };
+                let fixes_applied = if args.fix {
+                    diagnostics
+                        .iter()
+                        .map(|diagnostic| diagnostic.fixes().len())
+                        .sum()
+                } else {
+                    0
+                };
+                analyzed.push(AnalyzedLintInput {
+                    label,
+                    path: match input {
+                        Input::Stdin => None,
+                        Input::File(path) => Some(path.clone()),
+                    },
+                    original: text,
+                    fixed,
+                    diagnostics,
+                    fixes_applied,
+                });
             }
             Err(error) => {
                 eprintln!("error: could not lint {label}: {error}");
@@ -481,10 +500,81 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
     }
 
     if had_error {
-        EXIT_ERROR
-    } else {
-        if machine_output
-            && let Err(error) = write_lint_report(args.output, &collected, &mut stdout)
+        return EXIT_ERROR;
+    }
+
+    if args.fix {
+        let formatted = analyzed
+            .iter()
+            .map(|input| FormattedInput {
+                label: input.label.clone(),
+                path: input.path.clone(),
+                original: input.original.clone(),
+                formatted: input.fixed.clone(),
+            })
+            .collect::<Vec<_>>();
+        let changed = formatted
+            .iter()
+            .filter(|input| input.original != input.formatted)
+            .collect::<Vec<_>>();
+        if !changed.is_empty() {
+            let pending = match stage_writes(&changed) {
+                Ok(pending) => pending,
+                Err(error) => {
+                    eprintln!("error: could not prepare repository-wide lint fix: {error}");
+                    return EXIT_ERROR;
+                }
+            };
+            if let Err(error) = commit_writes(&pending) {
+                eprintln!("error: could not commit repository-wide lint fix: {error}");
+                return EXIT_ERROR;
+            }
+        }
+
+        for input in &mut analyzed {
+            if input.fixes_applied == 0 {
+                continue;
+            }
+            let path = input
+                .path
+                .as_deref()
+                .expect("lint fix mode rejects standard input");
+            input.diagnostics =
+                match lint_with_workspace(&input.fixed, path, &workspace, &lint_options) {
+                    Ok(diagnostics) => diagnostics,
+                    Err(error) => {
+                        eprintln!("error: could not re-lint {}: {error}", input.label);
+                        return EXIT_ERROR;
+                    }
+                };
+        }
+    }
+
+    let collected = analyzed
+        .iter()
+        .flat_map(|input| {
+            input
+                .diagnostics
+                .iter()
+                .cloned()
+                .map(|diagnostic| ReportedDiagnostic {
+                    label: input.label.clone(),
+                    diagnostic,
+                })
+        })
+        .collect::<Vec<_>>();
+    let applied_fixes = analyzed
+        .iter()
+        .filter(|input| input.fixes_applied > 0)
+        .map(|input| AppliedFixSummary {
+            path: input.label.clone(),
+            count: input.fixes_applied,
+        })
+        .collect::<Vec<_>>();
+
+    let mut stdout = io::stdout().lock();
+    if machine_output {
+        if let Err(error) = write_lint_report(args.output, &collected, &applied_fixes, &mut stdout)
         {
             if error.kind() == io::ErrorKind::BrokenPipe {
                 return 0;
@@ -492,12 +582,58 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             eprintln!("error: could not write standard output: {error}");
             return EXIT_ERROR;
         }
-        if had_blocking_findings {
-            EXIT_DIFFERENCES
-        } else {
-            0
+    }
+
+    if !machine_output {
+        for input in &analyzed {
+            if input.fixes_applied > 0 {
+                if let Err(error) = writeln!(
+                    stdout,
+                    "fixed: {} ({} edit{})",
+                    input.label,
+                    input.fixes_applied,
+                    if input.fixes_applied == 1 { "" } else { "s" }
+                ) {
+                    if error.kind() == io::ErrorKind::BrokenPipe {
+                        return 0;
+                    }
+                    eprintln!("error: could not write standard output: {error}");
+                    return EXIT_ERROR;
+                }
+            }
+            for diagnostic in &input.diagnostics {
+                if let Err(error) =
+                    write_text_diagnostic(&mut stdout, &input.label, diagnostic, args.show_fixes)
+                {
+                    if error.kind() == io::ErrorKind::BrokenPipe {
+                        return 0;
+                    }
+                    eprintln!("error: could not write standard output: {error}");
+                    return EXIT_ERROR;
+                }
+            }
         }
     }
+
+    if lint_options.has_blocking_findings(
+        &collected
+            .iter()
+            .map(|entry| entry.diagnostic.clone())
+            .collect::<Vec<_>>(),
+    ) {
+        EXIT_DIFFERENCES
+    } else {
+        0
+    }
+}
+
+struct AnalyzedLintInput {
+    label: String,
+    path: Option<PathBuf>,
+    original: String,
+    fixed: String,
+    diagnostics: Vec<LintDiagnostic>,
+    fixes_applied: usize,
 }
 
 struct ReportedDiagnostic {
@@ -505,15 +641,54 @@ struct ReportedDiagnostic {
     diagnostic: LintDiagnostic,
 }
 
+struct AppliedFixSummary {
+    path: String,
+    count: usize,
+}
+
+fn write_text_diagnostic(
+    stdout: &mut impl Write,
+    label: &str,
+    diagnostic: &LintDiagnostic,
+    show_fixes: bool,
+) -> io::Result<()> {
+    writeln!(
+        stdout,
+        "{}:{}:{}: {}[{}]: {}",
+        label,
+        diagnostic.line(),
+        diagnostic.column(),
+        diagnostic.severity(),
+        diagnostic.rule_id(),
+        diagnostic.message()
+    )?;
+    if show_fixes {
+        if let Some(help) = diagnostic.help() {
+            writeln!(stdout, "  help: {help}")?;
+        }
+        for fix in diagnostic.fixes() {
+            writeln!(
+                stdout,
+                "  fix: {} (bytes {}..{})",
+                fix.message(),
+                fix.range().start(),
+                fix.range().end()
+            )?;
+        }
+    }
+    Ok(())
+}
+
 fn write_lint_report(
     output: LintOutput,
     diagnostics: &[ReportedDiagnostic],
+    applied_fixes: &[AppliedFixSummary],
     stdout: &mut impl Write,
 ) -> io::Result<()> {
     let report = match output {
         LintOutput::Text => unreachable!("text reports are streamed directly"),
-        LintOutput::Json => json_report(diagnostics),
-        LintOutput::Sarif => sarif_report(diagnostics),
+        LintOutput::Json => json_report(diagnostics, applied_fixes),
+        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes),
     };
     let serialized = serde_json::to_vec_pretty(&report)
         .map_err(|error| io::Error::other(format!("could not serialize diagnostics: {error}")))?;
@@ -521,10 +696,14 @@ fn write_lint_report(
     stdout.write_all(b"\n")
 }
 
-fn json_report(diagnostics: &[ReportedDiagnostic]) -> Value {
+fn json_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixSummary]) -> Value {
     json!({
         "version": 1,
         "diagnostics": diagnostics.iter().map(json_diagnostic).collect::<Vec<_>>(),
+        "fixes_applied": applied_fixes.iter().map(|fix| json!({
+            "path": fix.path,
+            "count": fix.count,
+        })).collect::<Vec<_>>(),
     })
 }
 
@@ -537,10 +716,24 @@ fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
         "severity": diagnostic.severity().to_string(),
         "rule_id": diagnostic.rule_id(),
         "message": diagnostic.message(),
+        "end_line": diagnostic.end_line(),
+        "end_column": diagnostic.end_column(),
+        "range": {
+            "start_byte": diagnostic.range().start(),
+            "end_byte": diagnostic.range().end(),
+        },
+        "help": diagnostic.help(),
+        "fixable": diagnostic.is_fixable(),
+        "fixes": diagnostic.fixes().iter().map(|fix| json!({
+            "start_byte": fix.range().start(),
+            "end_byte": fix.range().end(),
+            "replacement": fix.replacement(),
+            "message": fix.message(),
+        })).collect::<Vec<_>>(),
     })
 }
 
-fn sarif_report(diagnostics: &[ReportedDiagnostic]) -> Value {
+fn sarif_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixSummary]) -> Value {
     let rules = lint_rules()
         .iter()
         .map(|rule| {
@@ -549,6 +742,7 @@ fn sarif_report(diagnostics: &[ReportedDiagnostic]) -> Value {
                 "name": rule.name(),
                 "shortDescription": {"text": rule.description()},
                 "defaultConfiguration": {"level": sarif_level(rule.severity())},
+                "properties": {"fixable": rule.fixable()},
             })
         })
         .collect::<Vec<_>>();
@@ -556,19 +750,45 @@ fn sarif_report(diagnostics: &[ReportedDiagnostic]) -> Value {
         .iter()
         .map(|entry| {
             let diagnostic = &entry.diagnostic;
+            let mut properties = serde_json::Map::from_iter([
+                ("startByte".to_owned(), json!(diagnostic.range().start())),
+                ("endByte".to_owned(), json!(diagnostic.range().end())),
+                ("fixable".to_owned(), json!(diagnostic.is_fixable())),
+            ]);
+            if let Some(help) = diagnostic.help() {
+                properties.insert("help".to_owned(), json!(help));
+            }
             json!({
                 "ruleId": diagnostic.rule_id(),
                 "level": sarif_level(diagnostic.severity()),
                 "message": {"text": diagnostic.message()},
+                "properties": properties,
                 "locations": [{
                     "physicalLocation": {
                         "artifactLocation": {"uri": entry.label},
                         "region": {
                             "startLine": diagnostic.line(),
                             "startColumn": diagnostic.column(),
+                            "endLine": diagnostic.end_line(),
+                            "endColumn": diagnostic.end_column(),
                         },
                     },
                 }],
+                "fixes": diagnostic.fixes().iter().map(|fix| json!({
+                    "description": {"text": fix.message()},
+                    "artifactChanges": [{
+                        "artifactLocation": {"uri": entry.label},
+                        "replacements": [{
+                            "deletedRegion": {
+                                "startLine": diagnostic.line(),
+                                "startColumn": diagnostic.column(),
+                                "endLine": diagnostic.end_line(),
+                                "endColumn": diagnostic.end_column(),
+                            },
+                            "insertedContent": {"text": fix.replacement()},
+                        }],
+                    }],
+                })).collect::<Vec<_>>(),
             })
         })
         .collect::<Vec<_>>();
@@ -586,6 +806,10 @@ fn sarif_report(diagnostics: &[ReportedDiagnostic]) -> Value {
                 },
             },
             "results": results,
+            "properties": {"fixesApplied": applied_fixes.iter().map(|fix| json!({
+                "path": fix.path,
+                "count": fix.count,
+            })).collect::<Vec<_>>()},
         }],
     })
 }

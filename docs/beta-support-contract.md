@@ -113,6 +113,16 @@ finding meets the configured failure threshold. The default threshold is
 `warning`; `info`, `warning`, `error`, and `never` are supported policies, and
 the CLI `--fail-on` value overrides `[lint].fail_on` for one invocation.
 
+Diagnostics include stable rule IDs, primary source ranges, and optional help
+and fix metadata. `--show-fixes` adds that metadata to text output. `BBT001`
+and `BBT002` are the only automatically fixable rules in this beta: they remove
+trailing spaces/tabs and append a final newline. `lint --fix` applies those
+edits, re-lints the resulting source, and still reports non-fixable findings.
+It refuses standard input and stages all changed files before committing them
+as one transactional batch. Any read, parse, analysis, staging, or concurrent
+change failure prevents the batch from being written; JSON and SARIF are only
+emitted after analysis and any requested commit complete successfully.
+
 ### `lex`
 
 Lexing reports token spans against the original source. Lexer errors remain

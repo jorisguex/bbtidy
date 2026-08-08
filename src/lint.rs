@@ -1,8 +1,8 @@
 use crate::workspace::global_class_assignment_kind;
 use crate::{
-    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, WorkspaceCandidate,
-    WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex,
-    comment_start, get_line_col, parse, split_line_ending,
+    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, TextRange,
+    WorkspaceCandidate, WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective,
+    WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
@@ -16,60 +16,70 @@ static LINT_RULES: &[LintRule] = &[
         "trailing-whitespace",
         LintSeverity::Warning,
         "Lines must not end with spaces or tabs.",
+        true,
     ),
     LintRule::new(
         "BBT002",
         "final-newline",
         LintSeverity::Warning,
         "Non-empty files must end with a newline.",
+        true,
     ),
     LintRule::new(
         "BBT003",
         "summary-length",
         LintSeverity::Warning,
         "A literal SUMMARY must not exceed 80 characters.",
+        false,
     ),
     LintRule::new(
         "BBT004",
         "autorev",
         LintSeverity::Warning,
         "SRCREV assignments must use a fixed revision instead of ${AUTOREV}.",
+        false,
     ),
     LintRule::new(
         "BBT005",
         "duplicate-inherit",
         LintSeverity::Warning,
         "A class must not be inherited more than once in one file.",
+        false,
     ),
     LintRule::new(
         "BBT006",
         "unresolved-require",
         LintSeverity::Warning,
         "A static require target must resolve within the indexed layers.",
+        false,
     ),
     LintRule::new(
         "BBT007",
         "unresolved-inherit",
         LintSeverity::Warning,
         "A static inherited class must resolve within the indexed layers.",
+        false,
     ),
     LintRule::new(
         "BBT008",
         "ambiguous-require",
         LintSeverity::Warning,
         "A static require target must resolve to one highest-priority file.",
+        false,
     ),
     LintRule::new(
         "BBT009",
         "ambiguous-inherit",
         LintSeverity::Warning,
         "A static inherited class must resolve to one highest-priority definition.",
+        false,
     ),
     LintRule::new(
         "BBT010",
         "dependency-cycle",
         LintSeverity::Warning,
         "A static metadata dependency must not close a resolution cycle.",
+        false,
     ),
 ];
 
@@ -160,6 +170,7 @@ pub struct LintRule {
     name: &'static str,
     severity: LintSeverity,
     description: &'static str,
+    fixable: bool,
 }
 
 impl LintRule {
@@ -168,12 +179,14 @@ impl LintRule {
         name: &'static str,
         severity: LintSeverity,
         description: &'static str,
+        fixable: bool,
     ) -> Self {
         Self {
             id,
             name,
             severity,
             description,
+            fixable,
         }
     }
 
@@ -191,6 +204,16 @@ impl LintRule {
 
     pub const fn description(&self) -> &'static str {
         self.description
+    }
+
+    /// Returns whether the rule has a safe, machine-applicable fix.
+    pub const fn fixable(&self) -> bool {
+        self.fixable
+    }
+
+    /// Returns whether the rule has a safe, machine-applicable fix.
+    pub const fn is_fixable(&self) -> bool {
+        self.fixable()
     }
 }
 
@@ -255,29 +278,110 @@ impl LintOptions {
     }
 }
 
+/// A source edit proposed by a lint diagnostic.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LintFix {
+    range: TextRange,
+    replacement: String,
+    message: String,
+}
+
+impl LintFix {
+    fn new(range: TextRange, replacement: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            range,
+            replacement: replacement.into(),
+            message: message.into(),
+        }
+    }
+
+    /// Returns the half-open byte range replaced by this fix.
+    pub const fn range(&self) -> TextRange {
+        self.range
+    }
+
+    /// Returns the replacement text.
+    pub fn replacement(&self) -> &str {
+        &self.replacement
+    }
+
+    /// Returns a human-readable description of the edit.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+/// A failure applying one or more lint edits.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum LintFixError {
+    InvalidRange { start: usize, end: usize },
+    OverlappingRanges { first: TextRange, second: TextRange },
+}
+
+impl fmt::Display for LintFixError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidRange { start, end } => {
+                write!(
+                    formatter,
+                    "lint fix has invalid source range {start}..{end}"
+                )
+            }
+            Self::OverlappingRanges { first, second } => write!(
+                formatter,
+                "lint fixes overlap at {}..{} and {}..{}",
+                first.start(),
+                first.end(),
+                second.start(),
+                second.end()
+            ),
+        }
+    }
+}
+
+impl std::error::Error for LintFixError {}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LintDiagnostic {
     rule_id: &'static str,
     severity: LintSeverity,
     line: usize,
     column: usize,
+    end_line: usize,
+    end_column: usize,
+    range: TextRange,
     message: String,
+    help: Option<String>,
+    fixes: Vec<LintFix>,
 }
 
 impl LintDiagnostic {
-    fn new(
+    fn at(
         rule: &'static LintRule,
-        line: usize,
-        column: usize,
+        source: &str,
+        range: TextRange,
         message: impl Into<String>,
     ) -> Self {
+        let (line, column) = get_line_col(source, range.start());
+        let (end_line, end_column) = get_line_col(source, range.end());
         Self {
             rule_id: rule.id,
             severity: rule.severity,
             line,
             column,
+            end_line,
+            end_column,
+            range,
             message: message.into(),
+            help: None,
+            fixes: Vec::new(),
         }
+    }
+
+    fn with_fix(mut self, fix: LintFix, help: impl Into<String>) -> Self {
+        self.help = Some(help.into());
+        self.fixes.push(fix);
+        self
     }
 
     pub const fn rule_id(&self) -> &'static str {
@@ -296,8 +400,38 @@ impl LintDiagnostic {
         self.column
     }
 
+    /// Returns the one-based ending line of the primary range.
+    pub const fn end_line(&self) -> usize {
+        self.end_line
+    }
+
+    /// Returns the one-based ending column of the primary range.
+    pub const fn end_column(&self) -> usize {
+        self.end_column
+    }
+
     pub fn message(&self) -> &str {
         &self.message
+    }
+
+    /// Returns the primary source range associated with this finding.
+    pub const fn range(&self) -> TextRange {
+        self.range
+    }
+
+    /// Returns the optional explanation or suggested next step.
+    pub fn help(&self) -> Option<&str> {
+        self.help.as_deref()
+    }
+
+    /// Returns safe edits that can be applied without human judgment.
+    pub fn fixes(&self) -> &[LintFix] {
+        &self.fixes
+    }
+
+    /// Returns whether this diagnostic has at least one safe fix.
+    pub fn is_fixable(&self) -> bool {
+        !self.fixes.is_empty()
     }
 }
 
@@ -337,6 +471,50 @@ pub fn lint_with_workspace(
 ) -> Result<Vec<LintDiagnostic>, FormatError> {
     let tree = parse(text)?;
     Ok(lint_syntax_with_workspace(&tree, path, workspace, options))
+}
+
+/// Applies all safe edits proposed by `diagnostics` to `text`.
+///
+/// Edits are validated before any mutation is made. This makes overlapping
+/// or stale edit plans fail atomically instead of producing partially edited
+/// source.
+pub fn apply_lint_fixes(
+    text: &str,
+    diagnostics: &[LintDiagnostic],
+) -> Result<String, LintFixError> {
+    let mut fixes = diagnostics
+        .iter()
+        .flat_map(|diagnostic| diagnostic.fixes.iter())
+        .collect::<Vec<_>>();
+    fixes.sort_by_key(|fix| (fix.range.start(), fix.range.end()));
+
+    for fix in &fixes {
+        let range = fix.range;
+        if range.start() > range.end()
+            || range.end() > text.len()
+            || !text.is_char_boundary(range.start())
+            || !text.is_char_boundary(range.end())
+        {
+            return Err(LintFixError::InvalidRange {
+                start: range.start(),
+                end: range.end(),
+            });
+        }
+    }
+    for pair in fixes.windows(2) {
+        if pair[0].range.end() > pair[1].range.start() {
+            return Err(LintFixError::OverlappingRanges {
+                first: pair[0].range,
+                second: pair[1].range,
+            });
+        }
+    }
+
+    let mut fixed = text.to_owned();
+    for fix in fixes.into_iter().rev() {
+        fixed.replace_range(fix.range.start()..fix.range.end(), &fix.replacement);
+    }
+    Ok(fixed)
 }
 
 /// Checks a previously parsed syntax tree without reparsing its source.
@@ -442,11 +620,10 @@ fn check_workspace_references(
                     if candidates.is_empty() {
                         let rule = &LINT_RULES[5];
                         let offset = directive.arguments_range().start() + relative_offset;
-                        let (line, column) = get_line_col(tree.source(), offset);
-                        diagnostics.push(LintDiagnostic::new(
+                        diagnostics.push(LintDiagnostic::at(
                             rule,
-                            line,
-                            column,
+                            tree.source(),
+                            TextRange::new(offset, offset + target.len()),
                             format!("required file '{target}' was not found in indexed layers"),
                         ));
                         continue;
@@ -454,11 +631,10 @@ fn check_workspace_references(
                     if let Some(message) = ambiguity_message(&candidates) {
                         let rule = &LINT_RULES[7];
                         let offset = directive.arguments_range().start() + relative_offset;
-                        let (line, column) = get_line_col(tree.source(), offset);
-                        diagnostics.push(LintDiagnostic::new(
+                        diagnostics.push(LintDiagnostic::at(
                             rule,
-                            line,
-                            column,
+                            tree.source(),
+                            TextRange::new(offset, offset + target.len()),
                             format!("required file '{target}' {message}"),
                         ));
                     }
@@ -563,11 +739,10 @@ fn check_class_reference(
     if resolutions.is_empty() {
         let rule = &LINT_RULES[6];
         let offset = arguments_start + relative_offset;
-        let (line, column) = get_line_col(tree.source(), offset);
-        diagnostics.push(LintDiagnostic::new(
+        diagnostics.push(LintDiagnostic::at(
             rule,
-            line,
-            column,
+            tree.source(),
+            TextRange::new(offset, offset + class.len()),
             format!("inherited class '{class}' was not found in indexed layers"),
         ));
         return;
@@ -580,11 +755,10 @@ fn check_class_reference(
     if let Some(message) = ambiguity_message(candidates) {
         let rule = &LINT_RULES[8];
         let offset = arguments_start + relative_offset;
-        let (line, column) = get_line_col(tree.source(), offset);
-        diagnostics.push(LintDiagnostic::new(
+        diagnostics.push(LintDiagnostic::at(
             rule,
-            line,
-            column,
+            tree.source(),
+            TextRange::new(offset, offset + class.len()),
             format!("inherited class '{class}' {message}"),
         ));
     }
@@ -621,16 +795,15 @@ fn check_dependency_cycle(
 
     let rule = &LINT_RULES[9];
     let offset = arguments_start + relative_offset;
-    let (line, column) = get_line_col(tree.source(), offset);
     let cycle = cycle
         .iter()
         .map(|path| path.display().to_string())
         .collect::<Vec<_>>()
         .join(" -> ");
-    diagnostics.push(LintDiagnostic::new(
+    diagnostics.push(LintDiagnostic::at(
         rule,
-        line,
-        column,
+        tree.source(),
+        word_range(tree.source(), offset),
         format!(
             "static {} dependency resolves to {} and forms a cycle: {cycle}",
             kind.keyword(),
@@ -679,6 +852,14 @@ fn candidate_description(candidate: WorkspaceCandidate<'_>) -> String {
     )
 }
 
+fn word_range(source: &str, start: usize) -> TextRange {
+    let end = source[start..]
+        .find(char::is_whitespace)
+        .map(|relative| start + relative)
+        .unwrap_or(source.len());
+    TextRange::new(start, end)
+}
+
 fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
     let rule = &LINT_RULES[0];
     let mut line_start = 0;
@@ -687,13 +868,13 @@ fn check_trailing_whitespace(text: &str, diagnostics: &mut Vec<LintDiagnostic>) 
         let (content, _) = split_line_ending(line);
         let trimmed = content.trim_end_matches([' ', '\t']);
         if trimmed.len() != content.len() {
-            let (line, column) = get_line_col(text, line_start + trimmed.len());
-            diagnostics.push(LintDiagnostic::new(
-                rule,
-                line,
-                column,
-                "line ends with whitespace",
-            ));
+            let range = TextRange::new(line_start + trimmed.len(), line_start + content.len());
+            diagnostics.push(
+                LintDiagnostic::at(rule, text, range, "line ends with whitespace").with_fix(
+                    LintFix::new(range, "", "remove trailing whitespace"),
+                    "Remove the trailing spaces or tabs from this line.",
+                ),
+            );
         }
         line_start += line.len();
     }
@@ -705,13 +886,13 @@ fn check_final_newline(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
     }
 
     let rule = &LINT_RULES[1];
-    let (line, column) = get_line_col(text, text.len());
-    diagnostics.push(LintDiagnostic::new(
-        rule,
-        line,
-        column,
-        "file does not end with a newline",
-    ));
+    let range = TextRange::new(text.len(), text.len());
+    diagnostics.push(
+        LintDiagnostic::at(rule, text, range, "file does not end with a newline").with_fix(
+            LintFix::new(range, "\n", "append a final newline"),
+            "Append a newline at the end of the file.",
+        ),
+    );
 }
 
 fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
@@ -747,11 +928,11 @@ fn check_summary(
     }
 
     let rule = &LINT_RULES[2];
-    let (line, column) = get_line_col(source, assignment.name_range().start());
-    diagnostics.push(LintDiagnostic::new(
+    let range = assignment.name_range();
+    diagnostics.push(LintDiagnostic::at(
         rule,
-        line,
-        column,
+        source,
+        range,
         format!("SUMMARY is {length} characters; limit it to {SUMMARY_LIMIT}"),
     ));
 }
@@ -768,11 +949,11 @@ fn check_autorev(
     };
 
     let rule = &LINT_RULES[3];
-    let (line, column) = get_line_col(source, assignment.value_range().start() + relative_offset);
-    diagnostics.push(LintDiagnostic::new(
+    let offset = assignment.value_range().start() + relative_offset;
+    diagnostics.push(LintDiagnostic::at(
         rule,
-        line,
-        column,
+        source,
+        TextRange::new(offset, offset + "${AUTOREV}".len()),
         format!(
             "{} uses ${{AUTOREV}}; pin a source revision for reproducible builds",
             assignment.name()
@@ -815,11 +996,10 @@ fn check_duplicate_inherits(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDia
             }
 
             let offset = directive.arguments_range().start() + relative_offset;
-            let (line, column) = get_line_col(tree.source(), offset);
-            diagnostics.push(LintDiagnostic::new(
+            diagnostics.push(LintDiagnostic::at(
                 rule,
-                line,
-                column,
+                tree.source(),
+                TextRange::new(offset, offset + class.len()),
                 format!("class '{class}' is inherited more than once"),
             ));
         }

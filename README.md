@@ -40,8 +40,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order and indexes complete supplied layers for semantic
   checks.
-- **Initial linting**: Reports stable rule IDs, severity, line, and column for a
-  focused set of reproducibility and metadata hygiene checks.
+- **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
+  and safe edit suggestions, with transactional `lint --fix` support for
+  whitespace and final-newline findings.
 
 ## Installation
 
@@ -115,6 +116,10 @@ For CI integrations, select a machine-readable report format:
 ```bash
 bbtidy lint --output json recipes-example/
 bbtidy lint --output sarif recipes-example/
+
+# Explain safe edits without changing files, or apply them transactionally.
+bbtidy lint --show-fixes recipes-example/
+bbtidy lint --fix recipes-example/
 ```
 
 To run BitBake's authoritative parser and inspect fully expanded recipe values:
@@ -151,8 +156,11 @@ source-aware BitBake diagnostics, and selected target environments.
 Semantic diagnostics contain severity, message, and optional source location
 fields. Text output remains the default. The Rust API retains each complete
 `bitbake -e` dump through `SemanticEnvironment::raw`; the JSON report omits that
-verbose field. Lint JSON diagnostics contain the separate `rule_id` field, and
-SARIF output follows SARIF 2.1.0 with the complete lint rule catalog.
+verbose field. Lint JSON retains `version: 1` and adds diagnostic end positions,
+byte ranges, help, `fixable`, and structured `fixes` entries. A `lint --fix`
+report also contains `fixes_applied`. SARIF output follows SARIF 2.1.0 with the
+complete lint rule catalog, fixability properties, source ranges, and SARIF
+fixes.
 
 Operational errors are written to standard error rather than producing a
 partial machine-readable document. A completed semantic analysis still emits
@@ -185,12 +193,15 @@ is always processed. Paths are sorted and deduplicated before processing.
 Standard input must be the only input, and `--write` cannot be used with it.
 
 `format` writes formatted source to standard output and requires one input
-unless `--diff` or `--write` is selected. `format --diff`, `lint`, and `lex` can
-process multiple inputs without changing them. Before `format --write` changes
-any files, every input is read, formatted, staged, and checked for concurrent
-changes. Changed files are then replaced as one transactional batch; if a
-commit step fails, previously replaced files are restored from their staged
-recovery copies. Symbolic links are never replaced.
+unless `--diff` or `--write` is selected. `format --diff`, ordinary `lint`, and
+`lex` can process multiple inputs without changing them. Before
+`format --write` or `lint --fix` changes any files, every input is read,
+analyzed, staged, and checked for concurrent changes. Changed files are then
+replaced as one transactional batch; if a commit step fails, previously
+replaced files are restored from their staged recovery copies. Symbolic links
+are never replaced. `lint --fix` refuses standard input and applies only edits
+proposed by safe fixable rules; structural analysis failures prevent all
+writes.
 
 ### Configuration
 
@@ -241,11 +252,11 @@ malformed or mixed-line-ending values remain unchanged apart from normal
 assignment spacing.
 
 The safety limits default to 10,000 files and 256 MiB of original source per
-`format` invocation. They apply after recursive discovery and exclusions, so a
-repository-wide write cannot silently expand beyond a bounded scope. Override
-them in `[safety]` or for one invocation with `--max-files` and `--max-bytes`.
-Zero is rejected. A file that changes after it was read is also rejected rather
-than overwritten.
+repository-writing `format` invocation; `lint --fix` also enforces them from
+`[safety]`. They apply after recursive discovery and exclusions, so a
+repository-wide write cannot silently expand beyond a bounded scope. Zero is
+rejected. A file that changes after it was read is also rejected rather than
+overwritten.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. `fail_on` controls the minimum effective
@@ -256,6 +267,12 @@ globs are relative to the configuration file’s directory and apply to
 explicit files and recursively discovered files. Standard input is never
 excluded. Unknown keys, rule IDs, severity values, failure policies,
 malformed TOML, and invalid globs are operational errors.
+
+`--show-fixes` adds indented help and edit details to text diagnostics. `--fix`
+applies all safe edits, re-runs lint on the resulting source, and uses the
+remaining findings for the exit status. It can still exit `1` for non-fixable
+findings such as `${AUTOREV}` or unresolved references. It exits `2` when
+analysis, staging, or the transactional commit fails.
 
 ### Exit codes
 
@@ -273,23 +290,25 @@ remain part of the token stream on standard output and cause exit code `2`.
 
 ## Initial lint rules
 
-| Rule | Name | Detects |
-| --- | --- | --- |
-| `BBT001` | `trailing-whitespace` | Spaces or tabs at the end of a line |
-| `BBT002` | `final-newline` | A non-empty file without a final newline |
-| `BBT003` | `summary-length` | A static, literal `SUMMARY` longer than 80 characters |
-| `BBT004` | `autorev` | `SRCREV` variants that use `${AUTOREV}` |
-| `BBT005` | `duplicate-inherit` | A static class inherited more than once in one file |
-| `BBT006` | `unresolved-require` | A static `require` target missing from the indexed layers |
-| `BBT007` | `unresolved-inherit` | A static inherited class missing from the indexed layers |
-| `BBT008` | `ambiguous-require` | A static `require` target matches multiple highest-priority files |
-| `BBT009` | `ambiguous-inherit` | A static inherited class has multiple highest-priority definitions |
-| `BBT010` | `dependency-cycle` | A resolved static `include`, `require`, or `inherit` closes a dependency cycle |
+| Rule | Name | Detects | Safe fix |
+| --- | --- | --- | --- |
+| `BBT001` | `trailing-whitespace` | Spaces or tabs at the end of a line | Remove trailing spaces/tabs |
+| `BBT002` | `final-newline` | A non-empty file without a final newline | Append a newline |
+| `BBT003` | `summary-length` | A static, literal `SUMMARY` longer than 80 characters | Manual |
+| `BBT004` | `autorev` | `SRCREV` variants that use `${AUTOREV}` | Manual |
+| `BBT005` | `duplicate-inherit` | A static class inherited more than once in one file | Manual |
+| `BBT006` | `unresolved-require` | A static `require` target missing from the indexed layers | Manual |
+| `BBT007` | `unresolved-inherit` | A static inherited class missing from the indexed layers | Manual |
+| `BBT008` | `ambiguous-require` | A static `require` target matches multiple highest-priority files | Manual |
+| `BBT009` | `ambiguous-inherit` | A static inherited class has multiple highest-priority definitions | Manual |
+| `BBT010` | `dependency-cycle` | A resolved static `include`, `require`, or `inherit` closes a dependency cycle | Manual |
 
 All initial rules are warnings. Diagnostics are sorted by source location and
-exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintRule`,
-and `LintSeverity` Rust APIs. Structurally incomplete input is reported as an
-operational error instead of producing potentially misleading findings.
+exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
+`LintRule`, and `LintSeverity` Rust APIs. `apply_lint_fixes` validates all
+proposed ranges and rejects overlapping edits atomically. Structurally
+incomplete input is reported as an operational error instead of producing
+potentially misleading findings.
 
 The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic

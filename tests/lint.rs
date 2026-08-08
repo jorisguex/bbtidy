@@ -1,6 +1,6 @@
 use bbtidy::{
-    LintFailurePolicy, LintOptions, LintSeverity, WorkspaceIndex, lint, lint_rules,
-    lint_with_options, lint_with_workspace,
+    LintFailurePolicy, LintFixError, LintOptions, LintSeverity, WorkspaceIndex, apply_lint_fixes,
+    lint, lint_rules, lint_with_options, lint_with_workspace,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,6 +22,8 @@ fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
     assert!(!rules[0].description().is_empty());
+    assert!(rules[0].fixable());
+    assert!(!rules[3].fixable());
 
     let diagnostics = lint("SRCREV = \"${AUTOREV}\"\n").unwrap();
     assert_eq!(diagnostics.len(), 1);
@@ -29,6 +31,38 @@ fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     assert_eq!(diagnostics[0].severity(), LintSeverity::Warning);
     assert_eq!(diagnostics[0].line(), 1);
     assert_eq!(diagnostics[0].column(), 11);
+}
+
+#[test]
+fn public_diagnostics_expose_ranges_help_and_safe_fixes() {
+    let source = "SUMMARY = \"demo\"  \nLICENSE = \"MIT\"";
+    let diagnostics = lint(source).unwrap();
+
+    assert_eq!(diagnostics[0].range().start(), 16);
+    assert_eq!(diagnostics[0].range().end(), 18);
+    assert_eq!(diagnostics[0].end_line(), 1);
+    assert_eq!(diagnostics[0].end_column(), 19);
+    assert!(diagnostics[0].is_fixable());
+    assert_eq!(diagnostics[0].fixes()[0].replacement(), "");
+    assert!(diagnostics[0].help().is_some());
+
+    assert!(diagnostics[1].is_fixable());
+    let fixed = apply_lint_fixes(source, &diagnostics).unwrap();
+    assert_eq!(fixed, "SUMMARY = \"demo\"\nLICENSE = \"MIT\"\n");
+    assert!(lint(&fixed).unwrap().is_empty());
+
+    let autorev = lint("SRCREV = \"${AUTOREV}\"\n").unwrap();
+    assert!(!autorev[0].is_fixable());
+}
+
+#[test]
+fn applying_a_duplicate_edit_plan_fails_without_partial_output() {
+    let source = "SUMMARY = \"demo\"  \n";
+    let diagnostic = lint(source).unwrap().remove(0);
+    let error = apply_lint_fixes(source, &[diagnostic.clone(), diagnostic]).unwrap_err();
+
+    assert!(matches!(error, LintFixError::OverlappingRanges { .. }));
+    assert_eq!(source, "SUMMARY = \"demo\"  \n");
 }
 
 #[test]
