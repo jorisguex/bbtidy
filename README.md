@@ -24,9 +24,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Modern metadata syntax**: Recognizes all eight assignment operators, colon
   overrides, key expansion, variable flags, multiline quoted values, and current
   BitBake directives.
-- **Safe formatting boundaries**: Normalizes top-level assignments and
-  directives while preserving continuation tails, comments, shell functions,
-  Python functions, and unsupported syntax.
+- **Safe formatting boundaries**: Normalizes top-level assignments, directives,
+  and function headers while preserving continuation tails, comments, blank
+  lines, embedded function bodies, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
 - **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`,
@@ -212,13 +212,17 @@ max_bytes = 268435456
 ```
 
 `metadata_list_layout` defaults to `preserve`. The opt-in `one-per-line` mode
-only reindents continued, single- or double-quoted static lists for `SRC_URI`,
-`DEPENDS`, and `RDEPENDS`, including colon overrides such as
-`RDEPENDS:${PN}`. It keeps the existing item order and only acts when every
-item is already one static whitespace-free token on a continuation line with
-consistent line endings. Dynamic expansions, escaped or quoted items,
-multi-item lines, generic variables, and malformed or mixed-line-ending values
-remain unchanged apart from normal assignment spacing.
+reindents continued, single- or double-quoted static whitespace lists for
+common metadata such as `SRC_URI`, `DEPENDS`, `RDEPENDS`, `RRECOMMENDS`,
+`FILES`, `PACKAGES`, `PACKAGECONFIG`, `INHERIT`, and feature lists, including
+colon and legacy underscore overrides. It also lays out static single-line or
+continued `inherit`, `require`, `include`, `export`, `unset`,
+`EXPORT_FUNCTIONS`, `addhandler`, and `deltask` arguments. It keeps the
+existing item order and only acts when every item can be identified as one
+static whitespace-free token with consistent line endings. Dynamic
+expansions, escaped or quoted items, comments, unrelated variables, and
+malformed or mixed-line-ending values remain unchanged apart from normal
+assignment spacing.
 
 The safety limits default to 10,000 files and 256 MiB of original source per
 `format` invocation. They apply after recursive discovery and exclusions, so a

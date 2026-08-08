@@ -6,8 +6,8 @@ use serde::Deserialize;
 /// Controls whether selected static metadata lists receive a structural layout.
 ///
 /// The default preserves every continuation tail. `OnePerLine` is intentionally
-/// limited to static, continued quoted values for known whitespace-separated
-/// metadata variables.
+/// limited to static, continued quoted values or directive arguments for
+/// known whitespace-separated lists.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum MetadataListLayout {
@@ -39,9 +39,10 @@ impl Default for FormatOptions {
 
 /// Formats a previously parsed syntax tree without reparsing its source.
 ///
-/// Assignment operators and directive keywords are normalized at the
-/// top-level boundary. Continuation tails, comments, unsupported syntax, and
-/// embedded shell or Python bodies remain byte-for-byte unchanged.
+/// Assignment operators, directive keywords, and safe function declaration
+/// headers are normalized at the top-level boundary. Continuation tails,
+/// comments, unsupported syntax, and embedded shell or Python bodies remain
+/// byte-for-byte unchanged.
 pub fn format_syntax(tree: &SyntaxTree<'_>) -> String {
     format_syntax_with_options(tree, &FormatOptions::default())
 }
@@ -56,7 +57,10 @@ pub fn format_syntax_with_options(tree: &SyntaxTree<'_>, options: &FormatOptions
             SyntaxKind::Assignment(assignment) => {
                 format_assignment(&mut output, node, assignment, options)
             }
-            SyntaxKind::Directive(directive) => format_directive(&mut output, node, directive),
+            SyntaxKind::Directive(directive) => {
+                format_directive(&mut output, node, directive, options)
+            }
+            SyntaxKind::Function(function) => format_function(&mut output, node, function),
             _ => output.push_str(node.text()),
         }
     }
@@ -115,11 +119,15 @@ fn parse_static_metadata_list<'a>(
     node: &SyntaxNode<'a>,
     assignment: &AssignmentSyntax<'a>,
 ) -> Option<StaticMetadataList<'a>> {
-    if !assignment.is_continued() || !is_known_metadata_list(assignment.name()) {
+    if !is_known_metadata_list(assignment.name()) {
         return None;
     }
 
-    let line_ending = consistent_line_ending(node.text())?;
+    let line_ending = if assignment.is_continued() {
+        consistent_line_ending(node.text())?
+    } else {
+        consistent_line_ending(node.text()).unwrap_or("\n")
+    };
     let value = assignment.value().trim_start_matches([' ', '\t']);
     let quote = value.chars().next()?;
     if quote != '\'' && quote != '"' {
@@ -130,6 +138,23 @@ fn parse_static_metadata_list<'a>(
     let (contents, closing_tail) = split_closing_quote(quoted_value, quote)?;
     if !is_comment_or_whitespace(closing_tail) {
         return None;
+    }
+
+    if !assignment.is_continued() {
+        let items = contents.split_ascii_whitespace().collect::<Vec<_>>();
+        if items.len() < 2
+            || items
+                .iter()
+                .any(|item| !is_static_metadata_list_item(item, quote))
+        {
+            return None;
+        }
+        return Some(StaticMetadataList {
+            quote,
+            items,
+            closing_tail,
+            line_ending,
+        });
     }
 
     let mut items = Vec::new();
@@ -186,10 +211,39 @@ fn parse_static_metadata_list<'a>(
 }
 
 fn is_known_metadata_list(name: &str) -> bool {
-    matches!(
-        name.split(':').next(),
-        Some("SRC_URI" | "DEPENDS" | "RDEPENDS")
-    )
+    const LIST_VARIABLES: &[&str] = &[
+        "BBFILE_COLLECTIONS",
+        "BBFILES",
+        "BBLAYERS",
+        "COMBINED_FEATURES",
+        "CONFFILES",
+        "DEPENDS",
+        "DISTRO_FEATURES",
+        "EXTRA_IMAGE_FEATURES",
+        "FILES",
+        "IMAGE_FEATURES",
+        "IMAGE_LINGUAS",
+        "INHERIT",
+        "LAYERDEPENDS",
+        "MACHINE_FEATURES",
+        "PACKAGECONFIG",
+        "PACKAGES",
+        "PROVIDES",
+        "RCONFLICTS",
+        "RDEPENDS",
+        "RRECOMMENDS",
+        "RREPLACES",
+        "RSUGGESTS",
+        "SRC_URI",
+        "USER_CLASSES",
+    ];
+
+    LIST_VARIABLES.iter().any(|base| {
+        name == *base
+            || name
+                .strip_prefix(base)
+                .is_some_and(|suffix| suffix.starts_with(':') || suffix.starts_with('_'))
+    })
 }
 
 fn consistent_line_ending(text: &str) -> Option<&str> {
@@ -269,7 +323,19 @@ fn format_metadata_list(
     output.push_str(final_line_ending);
 }
 
-fn format_directive(output: &mut String, node: &SyntaxNode<'_>, directive: &DirectiveSyntax<'_>) {
+fn format_directive(
+    output: &mut String,
+    node: &SyntaxNode<'_>,
+    directive: &DirectiveSyntax<'_>,
+    options: &FormatOptions,
+) {
+    if options.metadata_list_layout == MetadataListLayout::OnePerLine
+        && let Some(list) = parse_static_directive_list(node, directive)
+    {
+        format_directive_list(output, node, directive, list);
+        return;
+    }
+
     let relative_keyword = directive.keyword_range().start() - node.range().start();
     let prefix = &node.text()[..relative_keyword];
     let arguments = directive.arguments();
@@ -282,6 +348,169 @@ fn format_directive(output: &mut String, node: &SyntaxNode<'_>, directive: &Dire
         output.push_str(arguments);
     }
     output.push_str(line_ending);
+}
+
+struct StaticDirectiveList<'a> {
+    items: Vec<&'a str>,
+    line_ending: &'a str,
+    final_line_ending: &'a str,
+}
+
+fn parse_static_directive_list<'a>(
+    node: &SyntaxNode<'a>,
+    directive: &DirectiveSyntax<'a>,
+) -> Option<StaticDirectiveList<'a>> {
+    if !is_list_directive(directive.keyword()) {
+        return None;
+    }
+
+    let line_ending = if directive.is_continued() {
+        consistent_line_ending(node.text())?
+    } else {
+        consistent_line_ending(node.text()).unwrap_or("\n")
+    };
+    let final_line_ending = split_line_ending(node.text()).1;
+
+    if !directive.is_continued() {
+        let arguments = directive.arguments();
+        if crate::comment_start(arguments).is_some() {
+            return None;
+        }
+        let items = arguments.split_ascii_whitespace().collect::<Vec<_>>();
+        if items.len() < 2 || items.iter().any(|item| !is_static_directive_item(item)) {
+            return None;
+        }
+        return Some(StaticDirectiveList {
+            items,
+            line_ending,
+            final_line_ending,
+        });
+    }
+
+    let mut items = Vec::new();
+    let mut saw_continuation = false;
+
+    for (line_number, line) in directive.arguments().split_inclusive('\n').enumerate() {
+        let (content, current_line_ending) = split_line_ending(line);
+        if !current_line_ending.is_empty() && current_line_ending != line_ending {
+            return None;
+        }
+
+        let content = content.trim();
+        if content.is_empty() || content.contains('#') {
+            return None;
+        }
+        let (item, continued) = if let Some(before_continuation) = content.strip_suffix('\\') {
+            saw_continuation = true;
+            (before_continuation.trim(), true)
+        } else {
+            (content, false)
+        };
+
+        if item.is_empty() {
+            if line_number == 0 && continued {
+                continue;
+            }
+            return None;
+        }
+        if !is_static_directive_item(item) {
+            return None;
+        }
+        items.push(item);
+    }
+
+    if !saw_continuation || items.len() < 2 {
+        return None;
+    }
+
+    Some(StaticDirectiveList {
+        items,
+        line_ending,
+        final_line_ending,
+    })
+}
+
+fn is_list_directive(keyword: crate::DirectiveKeyword) -> bool {
+    matches!(
+        keyword,
+        crate::DirectiveKeyword::Export
+            | crate::DirectiveKeyword::ExportFunctions
+            | crate::DirectiveKeyword::Include
+            | crate::DirectiveKeyword::IncludeAll
+            | crate::DirectiveKeyword::Inherit
+            | crate::DirectiveKeyword::InheritDefer
+            | crate::DirectiveKeyword::Require
+            | crate::DirectiveKeyword::Unset
+            | crate::DirectiveKeyword::AddHandler
+            | crate::DirectiveKeyword::DelTask
+    )
+}
+
+fn is_static_directive_item(item: &str) -> bool {
+    !item.is_empty()
+        && !item.chars().any(|character| {
+            character.is_whitespace() || matches!(character, '$' | '{' | '}' | '\\' | '\'' | '"')
+        })
+}
+
+fn format_directive_list(
+    output: &mut String,
+    node: &SyntaxNode<'_>,
+    directive: &DirectiveSyntax<'_>,
+    list: StaticDirectiveList<'_>,
+) {
+    let relative_keyword = directive.keyword_range().start() - node.range().start();
+    let prefix = &node.text()[..relative_keyword];
+
+    output.push_str(prefix);
+    output.push_str(directive.keyword().lexeme());
+    output.push(' ');
+    output.push('\\');
+    output.push_str(list.line_ending);
+    for (index, item) in list.items.iter().enumerate() {
+        output.push_str("    ");
+        output.push_str(item);
+        if index + 1 < list.items.len() {
+            output.push(' ');
+            output.push('\\');
+            output.push_str(list.line_ending);
+        } else {
+            output.push_str(list.final_line_ending);
+        }
+    }
+}
+
+fn format_function(
+    output: &mut String,
+    node: &SyntaxNode<'_>,
+    function: &crate::FunctionSyntax<'_>,
+) {
+    let first_line_end = node
+        .text()
+        .find('\n')
+        .map_or(node.text().len(), |index| index + 1);
+    let first_line = &node.text()[..first_line_end];
+    let (content, line_ending) = split_line_ending(first_line);
+    let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
+    let code_end = crate::comment_start(content).unwrap_or(content.len());
+    let opening_brace = content[..code_end]
+        .rfind('{')
+        .expect("function syntax contains an opening brace");
+
+    output.push_str(&content[..leading]);
+    if function.is_fakeroot() {
+        output.push_str("fakeroot ");
+    }
+    if function.function_kind() == crate::FunctionKind::Python {
+        output.push_str("python ");
+    }
+    if let Some(name) = function.name() {
+        output.push_str(name);
+    }
+    output.push_str("() {");
+    output.push_str(&content[opening_brace + 1..]);
+    output.push_str(line_ending);
+    output.push_str(&node.text()[first_line_end..]);
 }
 
 fn append_normalized_blank_line(output: &mut String, line: &str, options: &FormatOptions) {
@@ -455,6 +684,116 @@ mod tests {
             format_syntax_with_options(&crate::parse(input).unwrap(), &options),
             expected
         );
+    }
+
+    #[test]
+    fn lays_out_common_legacy_and_override_list_variables() {
+        let input = concat!(
+            "FILES_${PN}=\" \\\n",
+            " /usr/bin/example \\\n",
+            " /usr/share/example \\\n",
+            "\"\n",
+            "RRECOMMENDS:${PN}=\" \\\n",
+            "  runtime-a \\\n",
+            " runtime-b \\\n",
+            "\"\n",
+        );
+        let expected = concat!(
+            "FILES_${PN} = \" \\\n",
+            "    /usr/bin/example \\\n",
+            "    /usr/share/example \\\n",
+            "    \"\n",
+            "RRECOMMENDS:${PN} = \" \\\n",
+            "    runtime-a \\\n",
+            "    runtime-b \\\n",
+            "    \"\n",
+        );
+        let options = FormatOptions {
+            metadata_list_layout: MetadataListLayout::OnePerLine,
+            ..FormatOptions::default()
+        };
+
+        assert_eq!(
+            format_syntax_with_options(&crate::parse(input).unwrap(), &options),
+            expected
+        );
+    }
+
+    #[test]
+    fn lays_out_static_directive_lists_when_enabled() {
+        let input = concat!(
+            "inherit   \\\n",
+            "  autotools \\\n",
+            " pkgconfig\n",
+            "EXPORT_FUNCTIONS   \\\n",
+            " do_compile \\\n",
+            " do_install\n",
+        );
+        let expected = concat!(
+            "inherit \\\n",
+            "    autotools \\\n",
+            "    pkgconfig\n",
+            "EXPORT_FUNCTIONS \\\n",
+            "    do_compile \\\n",
+            "    do_install\n",
+        );
+        let options = FormatOptions {
+            metadata_list_layout: MetadataListLayout::OnePerLine,
+            ..FormatOptions::default()
+        };
+
+        assert_eq!(
+            format_syntax_with_options(&crate::parse(input).unwrap(), &options),
+            expected
+        );
+    }
+
+    #[test]
+    fn wraps_static_single_line_lists_when_enabled() {
+        let input = concat!(
+            "DEPENDS=\"build-a build-b\"\n",
+            "inherit autotools pkgconfig\n",
+        );
+        let expected = concat!(
+            "DEPENDS = \" \\\n",
+            "    build-a \\\n",
+            "    build-b \\\n",
+            "    \"\n",
+            "inherit \\\n",
+            "    autotools \\\n",
+            "    pkgconfig\n",
+        );
+        let options = FormatOptions {
+            metadata_list_layout: MetadataListLayout::OnePerLine,
+            ..FormatOptions::default()
+        };
+
+        assert_eq!(
+            format_syntax_with_options(&crate::parse(input).unwrap(), &options),
+            expected
+        );
+    }
+
+    #[test]
+    fn formats_function_headers_without_touching_opaque_bodies() {
+        let input = concat!(
+            "fakeroot   python do_install:append ( )   {  # keep this comment\n",
+            "    value=unchanged\n",
+            "}\n",
+            "python   ()   {\n",
+            "    value = }\n",
+            "}\n",
+        );
+        let expected = concat!(
+            "fakeroot python do_install:append() {  # keep this comment\n",
+            "    value=unchanged\n",
+            "}\n",
+            "python () {\n",
+            "    value = }\n",
+            "}\n",
+        );
+
+        assert_eq!(crate::format(input).unwrap(), expected);
     }
 
     #[test]

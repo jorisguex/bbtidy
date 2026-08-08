@@ -144,6 +144,40 @@ fn config_enables_conservative_metadata_list_layout() {
 }
 
 #[test]
+fn config_wraps_static_single_line_lists_and_directives() {
+    let directory = TemporaryDirectory::new("config-single-line-layout");
+    let config = directory.write(
+        ".bbtidy.toml",
+        "[format]\nmetadata_list_layout = \"one-per-line\"\n",
+    );
+    let file = directory.write(
+        "example.bb",
+        "DEPENDS=\"build-a build-b\"\ninherit autotools pkgconfig\n",
+    );
+
+    let output = run([
+        "format",
+        "--config",
+        config.to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_success(&output);
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        concat!(
+            "DEPENDS = \" \\\n",
+            "    build-a \\\n",
+            "    build-b \\\n",
+            "    \"\n",
+            "inherit \\\n",
+            "    autotools \\\n",
+            "    pkgconfig\n",
+        )
+    );
+}
+
+#[test]
 fn config_filters_lint_rules_and_overrides_severity() {
     let directory = TemporaryDirectory::new("config-lint");
     let config = directory.write(

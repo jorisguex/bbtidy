@@ -76,8 +76,9 @@ available.
 ### `format`
 
 The formatter may normalize top-level assignment spacing, directive spacing,
-configured top-level blank-line runs, and the explicitly opt-in static metadata
-list layout. It does not interpret or rewrite embedded shell or Python bodies.
+safe shell/Python function declaration headers, configured top-level blank-line
+runs, and the explicitly opt-in static metadata-list and directive-list
+layouts. It does not interpret or rewrite embedded shell or Python bodies.
 
 By default, bbtidy preserves continuation tails, comments, argument contents,
 unknown top-level syntax, and embedded code byte-for-byte. Structurally

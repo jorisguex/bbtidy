@@ -1,6 +1,6 @@
 SRC_URI = "${@bb.utils.contains('DISTRO_FEATURES', 'x', 'file://x', '', d)}"
 
-python do_install() {
+python do_install() {  # keep header comment
     script = "}"  # embedded Python remains opaque
     result=script
     bb.plain(result)

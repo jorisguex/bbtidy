@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- A more capable safe formatter that canonicalizes shell and Python function
+  headers without touching their opaque bodies and extends opt-in static-list
+  layout to common package, dependency, feature, directive, and
+  legacy-override values.
 - An authoritative `semantic` command and Rust API that invoke BitBake in an
   existing build directory, expose fully expanded target environments, and
   convert BitBake parse diagnostics into structured text and JSON reports.
