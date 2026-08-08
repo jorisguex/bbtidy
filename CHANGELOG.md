@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Broader lint coverage for recipe metadata completeness, immediate
+  `FILESEXTRAPATHS` expansion, Git fetch protocols, duplicate assignments and
+  functions, and empty dependency directives, with conservative complete-layer
+  scoping for recipe metadata checks.
 - Structured lint diagnostics with source ranges, help, SARIF/JSON fix
   metadata, `--show-fixes`, and transactional `lint --fix` support for safe
   trailing-whitespace and final-newline edits.

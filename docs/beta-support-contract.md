@@ -118,6 +118,11 @@ and fix metadata. `--show-fixes` adds that metadata to text output. `BBT001`
 and `BBT002` are the only automatically fixable rules in this beta: they remove
 trailing spaces/tabs and append a final newline. `lint --fix` applies those
 edits, re-lints the resulting source, and still reports non-fixable findings.
+The broader source checks cover duplicate direct assignments and function
+declarations, empty dependency directives, missing Git fetch protocols, and
+late `FILESEXTRAPATHS` expansion. Complete indexed layers also receive recipe
+metadata checks for missing `SUMMARY`, `DESCRIPTION`, and `LICENSE`; isolated
+files and standard input do not receive path-dependent recipe findings.
 It refuses standard input and stages all changed files before committing them
 as one transactional batch. Any read, parse, analysis, staging, or concurrent
 change failure prevents the batch from being written; JSON and SARIF are only

@@ -288,7 +288,7 @@ remain part of the token stream on standard output and cause exit code `2`.
 `format --diff` returns `0` when it successfully reports differences; use
 `check` when differences should fail a CI job.
 
-## Initial lint rules
+## Lint rules
 
 | Rule | Name | Detects | Safe fix |
 | --- | --- | --- | --- |
@@ -302,8 +302,16 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT008` | `ambiguous-require` | A static `require` target matches multiple highest-priority files | Manual |
 | `BBT009` | `ambiguous-inherit` | A static inherited class has multiple highest-priority definitions | Manual |
 | `BBT010` | `dependency-cycle` | A resolved static `include`, `require`, or `inherit` closes a dependency cycle | Manual |
+| `BBT011` | `missing-summary` | A recipe in a complete indexed layer has no `SUMMARY` assignment | Manual |
+| `BBT012` | `missing-description` | A recipe in a complete indexed layer has no `DESCRIPTION` assignment | Manual |
+| `BBT013` | `missing-license` | A recipe in a complete indexed layer has no `LICENSE` assignment | Manual |
+| `BBT014` | `file-paths-immediate` | `FILESEXTRAPATHS` does not use immediate `:=` expansion | Manual |
+| `BBT015` | `git-uri-protocol` | A static `git://` `SRC_URI` entry omits its transport protocol | Manual |
+| `BBT016` | `duplicate-assignment` | A variable is assigned directly more than once in one file | Manual |
+| `BBT017` | `duplicate-function` | A task or function is declared more than once in one file | Manual |
+| `BBT018` | `empty-directive` | A static dependency directive has no target | Manual |
 
-All initial rules are warnings. Diagnostics are sorted by source location and
+All rules are warnings. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
 `LintRule`, and `LintSeverity` Rust APIs. `apply_lint_fixes` validates all
 proposed ranges and rejects overlapping edits atomically. Structurally
@@ -312,7 +320,9 @@ potentially misleading findings.
 
 The semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
-values or class names. When `lint` receives a complete layer directory, it
+values or class names. Recipe metadata rules `BBT011` through `BBT013` run only
+when a `.bb` file belongs to a complete indexed layer; isolated files and
+standard input remain file-local. When `lint` receives a complete layer directory, it
 indexes the supplied metadata into a static dependency graph. The graph follows
 the effective target of `include`, `require`, `inherit`, and `inherit_defer`,
 and every target of `include_all`; it reports cycles but skips dynamic and

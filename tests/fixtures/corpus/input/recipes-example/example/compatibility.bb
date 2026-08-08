@@ -1,5 +1,6 @@
 SUMMARY="Compatibility cases"
 DESCRIPTION  =  "Exercise conservative parser boundaries"
+LICENSE="CLOSED"
 
 inherit \
     autotools \

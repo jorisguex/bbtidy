@@ -639,7 +639,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 10);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 18);
     assert_eq!(
         run["tool"]["driver"]["rules"]
             .as_array()
@@ -690,7 +690,10 @@ fn workspace_cycles_are_reported_in_json_and_sarif() {
     let directory = TemporaryDirectory::new("lint-workspace-cycle");
     directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
     directory.write("recipes-example/example/helper.inc", "require example.bb\n");
-    let recipe = directory.write("recipes-example/example/example.bb", "require helper.inc\n");
+    let recipe = directory.write(
+        "recipes-example/example/example.bb",
+        "require helper.inc\nSUMMARY = \"example\"\nDESCRIPTION = \"example\"\nLICENSE = \"CLOSED\"\n",
+    );
 
     let json = run([
         "lint",
@@ -768,6 +771,9 @@ fn lint_directories_report_unresolved_static_layer_references() {
             "require missing.inc\n",
             "inherit ${DYNAMIC}\n",
             "require ${DYNAMIC}\n",
+            "SUMMARY = \"example\"\n",
+            "DESCRIPTION = \"example\"\n",
+            "LICENSE = \"CLOSED\"\n",
         ),
     );
 
@@ -783,6 +789,38 @@ fn lint_directories_report_unresolved_static_layer_references() {
     assert!(findings[1].contains(":3:9: warning[BBT006]:"));
     assert!(findings[1].contains("required file 'missing.inc'"));
     assert!(stdout.contains(&recipe.display().to_string()));
+}
+
+#[test]
+fn lint_reports_broader_recipe_metadata_rules_in_machine_output() {
+    let directory = TemporaryDirectory::new("lint-recipe-metadata");
+    directory.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    let recipe = directory.write("recipes-example/example.bb", "SUMMARY = \"example\"\n");
+
+    let output = run([
+        "lint",
+        "--output",
+        "json",
+        recipe.to_str().unwrap(),
+        directory.path().join("conf/layer.conf").to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic["rule_id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["BBT012", "BBT013"]
+    );
+    assert!(
+        diagnostics
+            .iter()
+            .all(|diagnostic| { diagnostic["path"] == recipe.display().to_string() })
+    );
 }
 
 #[test]

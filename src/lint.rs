@@ -1,11 +1,12 @@
 use crate::workspace::global_class_assignment_kind;
 use crate::{
-    AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree, TextRange,
-    WorkspaceCandidate, WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective,
-    WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
+    AssignmentOperator, AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree,
+    TextRange, WorkspaceCandidate, WorkspaceClassContext, WorkspaceDependencyKind,
+    WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
+use std::path::Path;
 use std::str::FromStr;
 
 const SUMMARY_LIMIT: usize = 80;
@@ -79,6 +80,62 @@ static LINT_RULES: &[LintRule] = &[
         "dependency-cycle",
         LintSeverity::Warning,
         "A static metadata dependency must not close a resolution cycle.",
+        false,
+    ),
+    LintRule::new(
+        "BBT011",
+        "missing-summary",
+        LintSeverity::Warning,
+        "Recipes must declare a SUMMARY.",
+        false,
+    ),
+    LintRule::new(
+        "BBT012",
+        "missing-description",
+        LintSeverity::Warning,
+        "Recipes must declare a DESCRIPTION.",
+        false,
+    ),
+    LintRule::new(
+        "BBT013",
+        "missing-license",
+        LintSeverity::Warning,
+        "Recipes must declare a LICENSE.",
+        false,
+    ),
+    LintRule::new(
+        "BBT014",
+        "file-paths-immediate",
+        LintSeverity::Warning,
+        "FILESEXTRAPATHS must use immediate expansion.",
+        false,
+    ),
+    LintRule::new(
+        "BBT015",
+        "git-uri-protocol",
+        LintSeverity::Warning,
+        "Git fetch URLs must declare their transport protocol.",
+        false,
+    ),
+    LintRule::new(
+        "BBT016",
+        "duplicate-assignment",
+        LintSeverity::Warning,
+        "A variable should not be assigned directly more than once in one file.",
+        false,
+    ),
+    LintRule::new(
+        "BBT017",
+        "duplicate-function",
+        LintSeverity::Warning,
+        "A task or function should not be declared more than once in one file.",
+        false,
+    ),
+    LintRule::new(
+        "BBT018",
+        "empty-directive",
+        LintSeverity::Warning,
+        "Metadata dependency directives must name a target.",
         false,
     ),
 ];
@@ -538,7 +595,10 @@ pub fn lint_syntax_with_workspace(
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
     let mut diagnostics = collect_lint_diagnostics(tree);
-    check_workspace_references(tree, path, workspace, &mut diagnostics);
+    if workspace.is_complete_for(path) {
+        check_recipe_metadata(tree, path, &mut diagnostics);
+        check_workspace_references(tree, path, workspace, &mut diagnostics);
+    }
     finalize_diagnostics(diagnostics, options)
 }
 
@@ -548,6 +608,8 @@ fn collect_lint_diagnostics(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
     check_trailing_whitespace(text, &mut diagnostics);
     check_final_newline(text, &mut diagnostics);
     check_assignments(tree, &mut diagnostics);
+    check_duplicate_functions(tree, &mut diagnostics);
+    check_empty_directives(tree, &mut diagnostics);
     check_duplicate_inherits(tree, &mut diagnostics);
     diagnostics
 }
@@ -573,10 +635,6 @@ fn check_workspace_references(
     workspace: &WorkspaceIndex,
     diagnostics: &mut Vec<LintDiagnostic>,
 ) {
-    if !workspace.is_complete_for(path) {
-        return;
-    }
-
     let class_contexts = workspace.class_contexts_for_path(path);
     let class_context = class_contexts[0];
     for node in tree.nodes() {
@@ -713,6 +771,54 @@ fn check_workspace_references(
             }
             _ => {}
         }
+    }
+}
+
+fn check_recipe_metadata(
+    tree: &SyntaxTree<'_>,
+    path: &Path,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    if path.extension().and_then(|extension| extension.to_str()) != Some("bb") {
+        return;
+    }
+
+    let assignments = tree
+        .nodes()
+        .iter()
+        .filter_map(|node| match node.kind() {
+            SyntaxKind::Assignment(assignment) => Some(assignment.name()),
+            _ => None,
+        })
+        .collect::<HashSet<_>>();
+    let source = tree.source();
+    for (rule, name, message) in [
+        (
+            &LINT_RULES[10],
+            "SUMMARY",
+            "recipe is missing a SUMMARY assignment",
+        ),
+        (
+            &LINT_RULES[11],
+            "DESCRIPTION",
+            "recipe is missing a DESCRIPTION assignment",
+        ),
+        (
+            &LINT_RULES[12],
+            "LICENSE",
+            "recipe is missing a LICENSE assignment",
+        ),
+    ] {
+        if assignments.contains(name) {
+            continue;
+        }
+        let end = source.len();
+        diagnostics.push(LintDiagnostic::at(
+            rule,
+            source,
+            TextRange::new(end, end),
+            message,
+        ));
     }
 }
 
@@ -896,6 +1002,7 @@ fn check_final_newline(text: &str, diagnostics: &mut Vec<LintDiagnostic>) {
 }
 
 fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let mut direct_assignments = HashSet::new();
     for node in tree.nodes() {
         let SyntaxKind::Assignment(assignment) = node.kind() else {
             continue;
@@ -907,6 +1014,132 @@ fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic
         if is_srcrev_name(assignment.name()) {
             check_autorev(tree.source(), assignment, diagnostics);
         }
+        check_file_paths(tree.source(), assignment, diagnostics);
+        check_git_uri_protocol(tree.source(), assignment, diagnostics);
+        if matches!(
+            assignment.operator(),
+            AssignmentOperator::Assign | AssignmentOperator::Immediate
+        ) && !direct_assignments.insert(assignment.name())
+        {
+            let rule = &LINT_RULES[15];
+            diagnostics.push(LintDiagnostic::at(
+                rule,
+                tree.source(),
+                assignment.name_range(),
+                format!(
+                    "variable '{}' is assigned directly more than once",
+                    assignment.name()
+                ),
+            ));
+        }
+    }
+}
+
+fn check_file_paths(
+    source: &str,
+    assignment: &AssignmentSyntax<'_>,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    if !assignment.name().starts_with("FILESEXTRAPATHS")
+        || assignment.operator() == AssignmentOperator::Immediate
+    {
+        return;
+    }
+
+    let rule = &LINT_RULES[13];
+    diagnostics.push(LintDiagnostic::at(
+        rule,
+        source,
+        assignment.operator_range(),
+        format!(
+            "{} must use ':=' so path expansion happens before parsing",
+            assignment.name()
+        ),
+    ));
+}
+
+fn check_git_uri_protocol(
+    source: &str,
+    assignment: &AssignmentSyntax<'_>,
+    diagnostics: &mut Vec<LintDiagnostic>,
+) {
+    if !(assignment.name() == "SRC_URI"
+        || assignment.name().starts_with("SRC_URI:")
+        || assignment.name().starts_with("SRC_URI_"))
+    {
+        return;
+    }
+    let Some((value, value_offset)) = simple_quoted_value(assignment.value()) else {
+        return;
+    };
+
+    let rule = &LINT_RULES[14];
+    for (relative_offset, uri) in static_words(value) {
+        if !uri.starts_with("git://") || uri.split(';').any(|part| part.starts_with("protocol=")) {
+            continue;
+        }
+        let offset = assignment.value_range().start() + value_offset + relative_offset;
+        diagnostics.push(LintDiagnostic::at(
+            rule,
+            source,
+            TextRange::new(offset, offset + uri.len()),
+            format!("Git URI '{uri}' does not declare a protocol"),
+        ));
+    }
+}
+
+fn check_duplicate_functions(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let mut functions = HashSet::new();
+    let rule = &LINT_RULES[16];
+    for node in tree.nodes() {
+        let SyntaxKind::Function(function) = node.kind() else {
+            continue;
+        };
+        let Some(name) = function.name() else {
+            continue;
+        };
+        if functions.insert(name) {
+            continue;
+        }
+        let Some(range) = function.name_range() else {
+            continue;
+        };
+        diagnostics.push(LintDiagnostic::at(
+            rule,
+            tree.source(),
+            range,
+            format!("function '{name}' is declared more than once"),
+        ));
+    }
+}
+
+fn check_empty_directives(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    let rule = &LINT_RULES[17];
+    for node in tree.nodes() {
+        let SyntaxKind::Directive(directive) = node.kind() else {
+            continue;
+        };
+        if !matches!(
+            directive.keyword(),
+            DirectiveKeyword::Include
+                | DirectiveKeyword::IncludeAll
+                | DirectiveKeyword::Require
+                | DirectiveKeyword::Inherit
+                | DirectiveKeyword::InheritDefer
+        ) {
+            continue;
+        }
+        let arguments = directive.arguments();
+        let code_end = comment_start(arguments).unwrap_or(arguments.len());
+        if !arguments[..code_end].trim().is_empty() {
+            continue;
+        }
+        diagnostics.push(LintDiagnostic::at(
+            rule,
+            tree.source(),
+            directive.keyword_range(),
+            format!("{} directive has no target", directive.keyword().lexeme()),
+        ));
     }
 }
 
@@ -1078,7 +1311,8 @@ mod tests {
             lint_rules().iter().map(LintRule::id).collect::<Vec<_>>(),
             [
                 "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007", "BBT008",
-                "BBT009", "BBT010",
+                "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
+                "BBT017", "BBT018",
             ]
         );
         assert!(
@@ -1139,10 +1373,18 @@ mod tests {
         );
         let diagnostics = lint(input).unwrap();
 
-        assert_eq!(diagnostics.len(), 2);
-        assert!(diagnostics.iter().all(|item| item.rule_id() == "BBT004"));
-        assert_eq!(diagnostics[0].line(), 1);
-        assert_eq!(diagnostics[1].line(), 2);
+        let autorev = diagnostics
+            .iter()
+            .filter(|item| item.rule_id() == "BBT004")
+            .collect::<Vec<_>>();
+        assert_eq!(autorev.len(), 2);
+        assert_eq!(autorev[0].line(), 1);
+        assert_eq!(autorev[1].line(), 2);
+        assert!(
+            diagnostics
+                .iter()
+                .any(|item| item.rule_id() == "BBT016" && item.line() == 5)
+        );
     }
 
     #[test]

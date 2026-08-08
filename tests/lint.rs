@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 10);
+    assert_eq!(rules.len(), 18);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -97,6 +97,68 @@ fn public_lint_options_filter_rules_and_override_severity() {
 }
 
 #[test]
+fn broader_lint_rules_cover_common_source_mistakes() {
+    let source = concat!(
+        "FILESEXTRAPATHS:prepend = \"${THISDIR}/files:\"\n",
+        "SRC_URI = \"git://example.invalid/example.git;branch=main\"\n",
+        "VALUE = \"one\"\n",
+        "VALUE = \"two\"\n",
+        "inherit\n",
+        "do_build() {\n}\n",
+        "do_build() {\n}\n",
+    );
+    let diagnostics = lint(source).unwrap();
+    let ids = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.rule_id())
+        .collect::<Vec<_>>();
+
+    assert_eq!(ids, ["BBT014", "BBT015", "BBT016", "BBT018", "BBT017"]);
+    assert_eq!((diagnostics[0].line(), diagnostics[0].column()), (1, 25));
+    assert!(diagnostics[0].message().contains("path expansion"));
+    assert!(
+        diagnostics[1]
+            .message()
+            .contains("does not declare a protocol")
+    );
+    assert!(
+        diagnostics[2]
+            .message()
+            .contains("assigned directly more than once")
+    );
+    assert!(
+        diagnostics[3]
+            .message()
+            .contains("inherit directive has no target")
+    );
+    assert!(diagnostics[4].message().contains("declared more than once"));
+}
+
+#[test]
+fn broader_lint_rules_require_metadata_for_complete_recipe_workspaces() {
+    let layer = TemporaryLayer::new("lint-recipe-metadata");
+    let configuration = layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    let source = "SUMMARY = \"example\"\n";
+    let recipe = layer.write("recipes-example/example.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert_eq!(
+        diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.rule_id())
+            .collect::<Vec<_>>(),
+        ["BBT012", "BBT013"]
+    );
+    assert!(diagnostics[0].message().contains("DESCRIPTION"));
+    assert!(diagnostics[1].message().contains("LICENSE"));
+
+    let isolated = lint(source).unwrap();
+    assert!(isolated.is_empty());
+}
+
+#[test]
 fn lint_failure_policy_uses_effective_diagnostic_severity() {
     let warning_diagnostics = lint("SRCREV = \"${AUTOREV}\"\n").unwrap();
     let mut options = LintOptions::default();
@@ -134,7 +196,7 @@ fn workspace_lint_reports_same_priority_ambiguities() {
     let second_include = second.write("common.inc", "COMMON = \"second\"\n");
     let recipe = consumer.write(
         "recipes-example/example.bb",
-        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\n",
+        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\nSUMMARY = \"example\"\nDESCRIPTION = \"example\"\nLICENSE = \"CLOSED\"\n",
     );
     let index = WorkspaceIndex::from_paths([
         first_conf,
@@ -149,7 +211,7 @@ fn workspace_lint_reports_same_priority_ambiguities() {
     .unwrap();
 
     let diagnostics = lint_with_workspace(
-        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\n",
+        "include missing.inc\ninclude_all common.inc\nrequire common.inc\ninherit base\nSUMMARY = \"example\"\nDESCRIPTION = \"example\"\nLICENSE = \"CLOSED\"\n",
         &recipe,
         &index,
         &LintOptions::default(),
@@ -189,6 +251,9 @@ fn workspace_lint_reports_static_cycles_and_skips_dynamic_references() {
         "require required.inc\n",
         "inherit base\n",
         "include ${DYNAMIC}\n",
+        "SUMMARY = \"example\"\n",
+        "DESCRIPTION = \"example\"\n",
+        "LICENSE = \"CLOSED\"\n",
     );
     let recipe = layer.write("recipes-example/example/example.bb", source);
     let index = WorkspaceIndex::from_paths([
@@ -254,7 +319,12 @@ fn workspace_lint_uses_global_and_recipe_class_namespaces() {
         "ORIGIN = \"recipe\"\n",
     );
     let metrics = layer.write("classes/metrics.bbclass", "ORIGIN = \"shared\"\n");
-    let recipe_source = "inherit recipe-helper global-only\n";
+    let recipe_source = concat!(
+        "inherit recipe-helper global-only\n",
+        "SUMMARY = \"example\"\n",
+        "DESCRIPTION = \"example\"\n",
+        "LICENSE = \"CLOSED\"\n",
+    );
     let recipe = layer.write("recipes-example/example.bb", recipe_source);
     let index = WorkspaceIndex::from_paths([
         configuration.clone(),

@@ -10,7 +10,7 @@ do_fetch[network] = "1"
 
 SRC_URI = " \
     file://example.patch \
-    git://example.invalid/example.git;branch=main \
+    git://example.invalid/example.git;protocol=https;branch=main \
 "
 
 # bbtidy-corpus:opaque-start recipe-shell

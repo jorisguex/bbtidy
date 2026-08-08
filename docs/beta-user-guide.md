@@ -108,7 +108,7 @@ bbtidy lint --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
-findings. `BBT003` through `BBT010` remain manual findings because changing
+findings. `BBT003` through `BBT018` remain manual findings because changing
 them requires project or BitBake semantics rather than a syntax-preserving
 edit.
 

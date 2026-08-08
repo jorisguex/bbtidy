@@ -2,7 +2,9 @@
   "schema": 1,
   "diagnostics": {
     "directives.inc": [],
-    "legacy-overrides.bb": [],
+    "legacy-overrides.bb": [
+      {"rule_id": "BBT015"}
+    ],
     "modern.bb": [],
     "opaque-and-dynamic.bb": [],
     "unsupported-top-level.conf": []
