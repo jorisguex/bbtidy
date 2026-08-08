@@ -13,9 +13,11 @@ and Yocto Project 6.0 LTS (Wrynose) with BitBake 2.18. Yocto and BitBake
 versions may still be alpha prereleases; an alpha release should be treated as
 an evaluation build, not as a beta support claim.
 
-bbtidy formats supported BitBake metadata boundaries conservatively. It does
-not execute BitBake, expand dynamic variables, resolve unavailable external
-layers, or rewrite embedded shell and Python code. A successful bbtidy run is
+bbtidy's offline formatting and linting paths handle supported BitBake
+metadata boundaries conservatively. They do not execute BitBake, expand
+dynamic variables, or resolve unavailable external layers. The separate
+`semantic` command delegates those checks to the installed BitBake engine.
+Neither path rewrites embedded shell or Python code. A successful bbtidy run is
 not proof that a complete BitBake build has identical task hashes, packages,
 runtime behavior, or performance.
 
@@ -45,6 +47,7 @@ bbtidy --version
 bbtidy check meta-my-layer/
 bbtidy format --diff meta-my-layer/
 bbtidy lint --output sarif meta-my-layer/
+bbtidy semantic --build-dir build --target core-image-minimal --output json
 ```
 
 Review the diff and lint findings. Then run the repository's normal BitBake
@@ -65,6 +68,12 @@ only after the smaller run is understood.
 is the only documented repository-writing operation. Standard input
 must be the only input for a command that reads `-`, and `--write` cannot be
 combined with standard input.
+
+`semantic` reads the selected BitBake build context and delegates evaluation to
+the installed BitBake engine. It is the supported way to validate dynamic
+expansion, overrides, anonymous Python, external layers, and machine/distro
+configuration. BitBake may update its parse cache or server metadata in the
+supplied build directory.
 
 ## CI integration
 
@@ -154,6 +163,8 @@ At minimum, after formatting a production layer:
 3. Run the normal build, package, and runtime tests used by the project.
 4. Compare generated diffs and investigate any unexpected file outside the
    intended metadata scope.
+5. Run `bbtidy semantic` against the same build directory when the change
+   affects dynamic values, overrides, or layer interactions.
 
 ## Reporting a compatibility issue
 

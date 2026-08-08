@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- An authoritative `semantic` command and Rust API that invoke BitBake in an
+  existing build directory, expose fully expanded target environments, and
+  convert BitBake parse diagnostics into structured text and JSON reports.
 - Severity-aware lint gating with configurable `fail_on` thresholds and a
   `--fail-on` command-line override; the default warning-level behavior is
   unchanged.

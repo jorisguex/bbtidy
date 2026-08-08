@@ -29,9 +29,9 @@ the [beta user guide](docs/beta-user-guide.md).
   Python functions, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
-- **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`, and
-  `lex` commands, standard-input support, unified diffs, and documented exit
-  codes.
+- **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`,
+  `lex`, and authoritative `semantic` commands, standard-input support,
+  unified diffs, and documented exit codes.
 - **Project configuration**: Loads an optional `.bbtidy.toml` with formatter
   settings, lint rule selection, severity overrides, and path exclusions.
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
@@ -114,12 +114,38 @@ bbtidy lint --output json recipes-example/
 bbtidy lint --output sarif recipes-example/
 ```
 
-JSON output is a versioned object with `version: 1` and a `diagnostics` array.
-Each diagnostic contains `path`, `line`, `column`, `severity`, `rule_id`, and
-`message`. SARIF output follows SARIF 2.1.0 and includes the complete rule
-catalog plus source locations. Text output remains the default. Machine output
-is emitted only after all inputs analyze successfully, so an operational error
-cannot leave a partial JSON or SARIF document on standard output.
+To run BitBake's authoritative parser and inspect fully expanded recipe values:
+
+```bash
+bbtidy semantic \
+  --build-dir build \
+  --target core-image-minimal \
+  --variable PN \
+  --variable OVERRIDES \
+  --output json
+```
+
+`semantic` requires an existing BitBake build directory containing
+`conf/local.conf` and `conf/bblayers.conf`. It invokes the selected `bitbake`
+executable in that directory, so variable expansion, overrides, anonymous
+Python, class inheritance, layer priorities, machine and distro configuration,
+and external providers are evaluated by the installed BitBake version rather
+than approximated by bbtidy. The command performs a parse-only check first;
+requested targets are then queried with `bitbake -e`. Use `--bitbake PATH` when
+the engine is not on `PATH`.
+
+Semantic JSON is a versioned object with `version: 1`, parse and target-query
+status, source-aware BitBake diagnostics, and selected target environments.
+Semantic diagnostics contain severity, message, and optional source location
+fields. Text output remains the default. The Rust API retains each complete
+`bitbake -e` dump through `SemanticEnvironment::raw`; the JSON report omits that
+verbose field. Lint JSON diagnostics contain the separate `rule_id` field, and
+SARIF output follows SARIF 2.1.0 with the complete lint rule catalog.
+
+Operational errors are written to standard error rather than producing a
+partial machine-readable document. A completed semantic analysis still emits
+its structured report when BitBake reports parse or target-query failures, so
+CI can inspect the diagnostics before acting on exit code `1`.
 
 Findings use an editor- and CI-friendly format:
 
@@ -216,6 +242,8 @@ malformed TOML, and invalid globs are operational errors.
 - `0`: the command completed successfully.
 - `1`: `check` found formatting differences or `lint` found diagnostics at or
   above its configured `fail_on` threshold.
+- `1`: `semantic` completed but BitBake reported parse or target-analysis
+  errors.
 - `2`: command usage, input/output, lexing, formatting, or lint analysis failed.
 
 Operational diagnostics are written to standard error. Lexer error tokens

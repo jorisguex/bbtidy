@@ -62,12 +62,14 @@ The beta contract does not promise compatibility for:
 - vendor-modified or otherwise unpinned BitBake forks;
 - dynamic file and class references that bbtidy cannot resolve statically;
 - external classes or files not included in the indexed input set;
-- the semantics of embedded shell or Python code;
 - legacy underscore overrides as semantic override operations; or
 - generated build output unless it is explicitly supplied as an input.
 
 Unsupported input is preserved where possible. Preservation does not mean that
-the input was fully understood or semantically validated.
+the input was fully understood or semantically validated. These static
+limitations apply to the formatter and offline lint/workspace model; the
+`semantic` command uses the installed BitBake engine when a build context is
+available.
 
 ## Command guarantees
 
@@ -116,6 +118,22 @@ Lexing reports token spans against the original source. Lexer errors remain
 visible in the token stream and cause exit code `2`. Lexing never modifies
 files.
 
+### `semantic`
+
+`semantic` is the authoritative semantic path. It requires an initialized
+BitBake build directory and invokes the selected BitBake executable in that
+directory. BitBake performs the complete configuration and recipe parse,
+including variable expansion, overrides, anonymous Python, class inheritance,
+layer priorities, machine and distro configuration, and external providers.
+Requested target environments come from `bitbake -e` and are not reconstructed
+by bbtidy.
+
+The command is read-only from bbtidy's perspective, but BitBake may update its
+normal parse cache and server metadata in the supplied build directory. A
+non-zero BitBake parse or target query is reported as a semantic finding and
+returns exit code `1`; failure to invoke BitBake or an invalid build directory
+is an operational error and returns exit code `2`.
+
 ## Source and scope boundaries
 
 Recursive discovery processes supported BitBake metadata extensions according
@@ -123,10 +141,10 @@ to the CLI discovery rules. Recipe payload directories named `files` are not
 treated as metadata trees. An explicit file input is always processed, even if
 it would not be discovered recursively.
 
-The workspace model is intentionally conservative. It understands the static
-layer metadata and search behavior documented by bbtidy, but it does not
-execute BitBake variable expansion or Python expressions. Users requiring full
-BitBake semantics must run BitBake itself.
+The offline workspace model remains intentionally conservative. It understands
+the static layer metadata and search behavior documented by bbtidy, but it does
+not execute BitBake variable expansion or Python expressions. Use `semantic`
+when full BitBake semantics are required.
 
 ## User acceptance checklist
 

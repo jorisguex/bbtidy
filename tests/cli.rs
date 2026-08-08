@@ -665,6 +665,56 @@ fn lint_directories_are_deterministic_and_malformed_input_is_an_error() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn semantic_command_runs_bitbake_and_emits_resolved_json() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("semantic-cli");
+    let build_dir = directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    let build_dir = build_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  echo 'PN="demo"'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let output = run([
+        "semantic",
+        "--build-dir",
+        build_dir.to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--variable",
+        "PN",
+        "--output",
+        "json",
+    ]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["version"], 1);
+    assert_eq!(report["parse_succeeded"], true);
+    assert_eq!(report["analysis_succeeded"], true);
+    assert_eq!(report["environments"][0]["target"], "demo");
+    assert_eq!(report["environments"][0]["variables"]["PN"], "demo");
+}
+
 fn run<const N: usize>(arguments: [&str; N]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_bbtidy"))
         .args(arguments)

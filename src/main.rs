@@ -1,7 +1,7 @@
 use bbtidy::{
-    Config, LintDiagnostic, LintFailurePolicy, LintSeverity, SafetyOptions, SyntaxKind, Token,
-    WorkspaceIndex, format_with_options, get_line_col, lint_rules, lint_with_options,
-    lint_with_workspace, load_config, parse,
+    Config, LintDiagnostic, LintFailurePolicy, LintSeverity, SafetyOptions, SemanticOptions,
+    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake, format_with_options, get_line_col,
+    lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -52,6 +52,9 @@ enum Command {
     /// Print the lexer token stream
     Lex(InputArgs),
 
+    /// Run authoritative semantic analysis through BitBake
+    Semantic(SemanticArgs),
+
     /// Report CST coverage metrics for the compatibility harness
     #[command(hide = true)]
     SyntaxStats(InputArgs),
@@ -91,6 +94,35 @@ struct LintArgs {
 
     #[command(flatten)]
     inputs: InputArgs,
+}
+
+#[derive(Args)]
+struct SemanticArgs {
+    /// Existing BitBake build directory containing conf/local.conf and conf/bblayers.conf.
+    #[arg(long, value_name = "PATH")]
+    build_dir: PathBuf,
+
+    /// BitBake executable to invoke; defaults to the executable on PATH.
+    #[arg(long, default_value = "bitbake", value_name = "PATH")]
+    bitbake: PathBuf,
+
+    /// Recipe or target to inspect. May be supplied more than once.
+    #[arg(long = "target", value_name = "TARGET")]
+    targets: Vec<String>,
+
+    /// Fully expanded variable to report for every selected target. May be supplied more than once.
+    #[arg(long = "variable", value_name = "NAME")]
+    variables: Vec<String>,
+
+    /// Select human-readable text or JSON output.
+    #[arg(long, value_enum, default_value_t = SemanticOutput::Text, value_name = "FORMAT")]
+    output: SemanticOutput,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum SemanticOutput {
+    Text,
+    Json,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -153,11 +185,99 @@ fn main() {
         Command::Check(args) => run_check(args, &config),
         Command::Lint(args) => run_lint(args, &config),
         Command::Lex(args) => run_lex(args, &config),
+        Command::Semantic(args) => run_semantic(args),
         Command::SyntaxStats(args) => run_syntax_stats(args, &config),
     };
 
     if exit_code != 0 {
         process::exit(exit_code);
+    }
+}
+
+fn run_semantic(args: SemanticArgs) -> i32 {
+    let options = SemanticOptions {
+        bitbake: args.bitbake,
+        build_dir: args.build_dir,
+        targets: args.targets,
+        variables: args.variables,
+    };
+    let report = match analyze_bitbake(&options) {
+        Ok(report) => report,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+
+    if args.output == SemanticOutput::Json {
+        let value = serde_json::json!({
+            "version": 1,
+            "bitbake_version": report.bitbake_version(),
+            "build_dir": report.build_dir(),
+            "parse_succeeded": report.parse_succeeded(),
+            "target_queries_succeeded": report.target_queries_succeeded(),
+            "analysis_succeeded": report.analysis_succeeded(),
+            "diagnostics": report.diagnostics(),
+            "environments": report.environments(),
+        });
+        match serde_json::to_writer_pretty(io::stdout().lock(), &value) {
+            Ok(()) => println!(),
+            Err(error) => {
+                eprintln!("error: could not write semantic report: {error}");
+                return EXIT_ERROR;
+            }
+        }
+    } else {
+        println!("BitBake: {}", report.bitbake_version());
+        println!("Build directory: {}", report.build_dir().display());
+        println!(
+            "Parse: {}",
+            if report.parse_succeeded() {
+                "passed"
+            } else {
+                "failed"
+            }
+        );
+        println!(
+            "Target queries: {}",
+            if report.target_queries_succeeded() {
+                "passed"
+            } else {
+                "failed"
+            }
+        );
+        for diagnostic in report.diagnostics() {
+            let location = match (diagnostic.path(), diagnostic.line(), diagnostic.column()) {
+                (Some(path), Some(line), Some(column)) => {
+                    format!("{}:{line}:{column}", path.display())
+                }
+                (Some(path), Some(line), None) => format!("{}:{line}", path.display()),
+                (Some(path), None, _) => path.display().to_string(),
+                _ => String::new(),
+            };
+            if location.is_empty() {
+                println!("{}: {}", diagnostic.severity(), diagnostic.message());
+            } else {
+                println!(
+                    "{}: {}: {}",
+                    location,
+                    diagnostic.severity(),
+                    diagnostic.message()
+                );
+            }
+        }
+        for environment in report.environments() {
+            println!("Target {}:", environment.target());
+            for (name, value) in environment.variables() {
+                println!("  {name}={value}");
+            }
+        }
+    }
+
+    if report.analysis_succeeded() && !report.has_errors() {
+        0
+    } else {
+        EXIT_DIFFERENCES
     }
 }
 

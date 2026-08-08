@@ -4,6 +4,7 @@ use std::fmt;
 mod config;
 mod formatter;
 mod lint;
+mod semantic;
 mod syntax;
 mod workspace;
 
@@ -13,6 +14,10 @@ pub use lint::{
     LintDiagnostic, LintFailurePolicy, LintOptions, LintRule, LintSeverity, lint, lint_rules,
     lint_syntax, lint_syntax_with_options, lint_syntax_with_workspace, lint_with_options,
     lint_with_workspace,
+};
+pub use semantic::{
+    SemanticDiagnostic, SemanticEnvironment, SemanticError, SemanticOptions, SemanticReport,
+    SemanticSeverity, analyze_bitbake,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,
