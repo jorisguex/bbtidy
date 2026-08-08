@@ -131,11 +131,18 @@ impl FakeBitBake {
     fn create(parse_failure: bool, target_failure: bool) -> Self {
         use std::os::unix::fs::PermissionsExt;
 
-        let root = std::env::temp_dir().join(format!(
-            "bbtidy-semantic-test-{}-{}",
-            std::process::id(),
-            unique_suffix()
-        ));
+        let root = loop {
+            let candidate = std::env::temp_dir().join(format!(
+                "bbtidy-semantic-test-{}-{}",
+                std::process::id(),
+                unique_suffix()
+            ));
+            match fs::create_dir(&candidate) {
+                Ok(()) => break candidate,
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => panic!("could not create semantic test fixture: {error}"),
+            }
+        };
         let build_dir = root.join("build");
         fs::create_dir_all(build_dir.join("conf")).unwrap();
         fs::write(
