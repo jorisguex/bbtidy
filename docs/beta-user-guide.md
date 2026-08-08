@@ -73,7 +73,11 @@ combined with standard input.
 the installed BitBake engine. It is the supported way to validate dynamic
 expansion, overrides, anonymous Python, external layers, and machine/distro
 configuration. BitBake may update its parse cache or server metadata in the
-supplied build directory.
+supplied build directory. The build directory can be discovered from
+`.bbtidy.toml`, `BBTIDY_BITBAKE_BUILD_DIR`, `BUILDDIR`, or an ancestor project
+directory containing `build`/`build-*`; use `--project-dir` to select the
+discovery root. If more than one build variant matches, pass `--build-dir`
+explicitly.
 
 ## CI integration
 
@@ -113,6 +117,10 @@ A minimal project configuration can make local and CI behavior explicit:
 [format]
 max_top_level_blank_lines = 1
 metadata_list_layout = "preserve"
+
+[semantic]
+build_dir = "build" # optional
+bitbake = "bitbake" # command name or relative executable path
 
 [lint]
 disable = []

@@ -26,6 +26,9 @@ class DocumentationTests(unittest.TestCase):
             "max_bytes",
             "fail_on",
             "--fail-on",
+            "BBTIDY_BITBAKE_BUILD_DIR",
+            "BUILDDIR",
+            "--project-dir",
             "installation method",
         ):
             self.assertIn(required_text, guide)

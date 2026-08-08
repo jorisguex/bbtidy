@@ -1,6 +1,7 @@
 use bbtidy::{SemanticError, SemanticOptions, SemanticSeverity, analyze_bitbake};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(unix)]
 #[test]
@@ -214,9 +215,7 @@ impl Drop for FakeBitBake {
     }
 }
 
-fn unique_suffix() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos()
+fn unique_suffix() -> u64 {
+    static NEXT_SUFFIX: AtomicU64 = AtomicU64::new(0);
+    NEXT_SUFFIX.fetch_add(1, Ordering::Relaxed)
 }

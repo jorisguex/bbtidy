@@ -123,7 +123,9 @@ files.
 
 `semantic` is the authoritative semantic path. It requires an initialized
 BitBake build directory and invokes the selected BitBake executable in that
-directory. BitBake performs the complete configuration and recipe parse,
+directory. `--build-dir` may name it explicitly; otherwise bbtidy uses project
+configuration, the standard build-directory environment variables, or
+ancestor/conventional-directory discovery. BitBake performs the complete configuration and recipe parse,
 including variable expansion, overrides, anonymous Python, class inheritance,
 layer priorities, machine and distro configuration, and external providers.
 Requested target environments come from `bitbake -e` and are not reconstructed
@@ -132,8 +134,9 @@ by bbtidy.
 The command is read-only from bbtidy's perspective, but BitBake may update its
 normal parse cache and server metadata in the supplied build directory. A
 non-zero BitBake parse or target query is reported as a semantic finding and
-returns exit code `1`; failure to invoke BitBake or an invalid build directory
-is an operational error and returns exit code `2`.
+returns exit code `1`; failure to invoke BitBake, an invalid build directory,
+or an ambiguous/missing discovery result is an operational error and returns
+exit code `2`.
 
 ## Source and scope boundaries
 

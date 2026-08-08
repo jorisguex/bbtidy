@@ -53,6 +53,12 @@ impl SemanticOptions {
         }
     }
 
+    /// Creates options for a validated discovered build context using the
+    /// `bitbake` executable on `PATH`.
+    pub fn for_context(context: &crate::BuildContext) -> Self {
+        Self::for_build_dir(context.build_dir())
+    }
+
     /// Adds one target whose resolved environment should be inspected.
     pub fn target(mut self, target: impl Into<String>) -> Self {
         self.targets.push(target.into());

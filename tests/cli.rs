@@ -749,6 +749,114 @@ exit 0
     assert_eq!(report["environments"][0]["variables"]["PN"], "demo");
 }
 
+#[cfg(unix)]
+#[test]
+fn semantic_command_discovers_build_context_from_project_directory() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("semantic-discovery-cli");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let output = run([
+        "semantic",
+        "--project-dir",
+        directory.path().to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--output",
+        "json",
+    ]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let project_dir = fs::canonicalize(directory.path()).unwrap();
+    assert_eq!(report["project_dir"], project_dir.to_str().unwrap());
+    assert_eq!(
+        report["build_dir"],
+        project_dir.join("build").to_str().unwrap()
+    );
+    assert_eq!(report["build_context_source"], "discovered");
+}
+
+#[cfg(unix)]
+#[test]
+fn semantic_command_uses_configured_build_context_and_bitbake() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("semantic-configured-context");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+    let config = directory.write(
+        ".bbtidy.toml",
+        "[semantic]\nbuild_dir = \"build\"\nbitbake = \"./fake-bitbake\"\n",
+    );
+
+    let output = run([
+        "--config",
+        config.to_str().unwrap(),
+        "semantic",
+        "--output",
+        "json",
+    ]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["build_context_source"], "configured");
+    let project_dir = fs::canonicalize(directory.path()).unwrap();
+    assert_eq!(
+        report["build_dir"],
+        project_dir.join("build").to_str().unwrap()
+    );
+    assert_eq!(report["parse_succeeded"], true);
+}
+
+#[test]
+fn semantic_command_reports_missing_discovered_context() {
+    let directory = TemporaryDirectory::new("semantic-missing-context");
+
+    let output = run([
+        "semantic",
+        "--project-dir",
+        directory.path().to_str().unwrap(),
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("could not discover a BitBake build directory")
+    );
+    assert!(output.stdout.is_empty());
+}
+
 fn run<const N: usize>(arguments: [&str; N]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_bbtidy"))
         .args(arguments)

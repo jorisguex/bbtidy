@@ -22,6 +22,15 @@ pub struct SafetyOptions {
     pub max_bytes: u64,
 }
 
+/// Optional project settings for commands that need a BitBake context.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SemanticConfig {
+    /// Build directory, resolved relative to the configuration file.
+    pub build_dir: Option<PathBuf>,
+    /// BitBake executable or command name.
+    pub bitbake: Option<PathBuf>,
+}
+
 impl Default for SafetyOptions {
     fn default() -> Self {
         Self {
@@ -36,6 +45,7 @@ impl Default for SafetyOptions {
 pub struct Config {
     pub format: FormatOptions,
     pub lint: LintOptions,
+    pub semantic: SemanticConfig,
     pub safety: SafetyOptions,
     base_dir: PathBuf,
     excludes: GlobSet,
@@ -46,6 +56,7 @@ impl Config {
         Self {
             format: FormatOptions::default(),
             lint: LintOptions::default(),
+            semantic: SemanticConfig::default(),
             safety: SafetyOptions::default(),
             base_dir,
             excludes: empty_glob_set(),
@@ -157,6 +168,16 @@ impl Config {
                     .unwrap_or(FormatOptions::default().metadata_list_layout),
             },
             lint: LintOptions::from_parts(disabled_rules, severity_overrides, fail_on),
+            semantic: SemanticConfig {
+                build_dir: file_config
+                    .semantic
+                    .build_dir
+                    .map(|path| resolve_config_path(base_dir, path)),
+                bitbake: file_config
+                    .semantic
+                    .bitbake
+                    .map(|path| resolve_config_command(base_dir, path)),
+            },
             safety,
             base_dir: base_dir.to_path_buf(),
             excludes,
@@ -234,9 +255,18 @@ struct FileConfig {
     #[serde(default)]
     lint: FileLintConfig,
     #[serde(default)]
+    semantic: FileSemanticConfig,
+    #[serde(default)]
     paths: FilePathsConfig,
     #[serde(default)]
     safety: FileSafetyConfig,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileSemanticConfig {
+    build_dir: Option<PathBuf>,
+    bitbake: Option<PathBuf>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -268,6 +298,22 @@ struct FilePathsConfig {
 struct FileSafetyConfig {
     max_files: Option<usize>,
     max_bytes: Option<u64>,
+}
+
+fn resolve_config_path(base_dir: &Path, path: PathBuf) -> PathBuf {
+    if path.is_absolute() {
+        path
+    } else {
+        base_dir.join(path)
+    }
+}
+
+fn resolve_config_command(base_dir: &Path, path: PathBuf) -> PathBuf {
+    if path.is_absolute() || path.components().count() > 1 {
+        resolve_config_path(base_dir, path)
+    } else {
+        path
+    }
 }
 
 fn validate_rule_id(known_rules: &BTreeSet<&str>, rule_id: &str) -> Result<(), ConfigError> {
@@ -302,6 +348,7 @@ mod tests {
 
         assert_eq!(config.format, FormatOptions::default());
         assert_eq!(config.lint, LintOptions::default());
+        assert_eq!(config.semantic, SemanticConfig::default());
         assert_eq!(config.safety, SafetyOptions::default());
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
     }
@@ -325,6 +372,10 @@ BBT010 = "info"
 [paths]
 exclude = ["vendor/**", "**/files/**"]
 
+[semantic]
+build_dir = "build"
+bitbake = "tools/bitbake"
+
 [safety]
 max_files = 500
 max_bytes = 1048576
@@ -337,6 +388,14 @@ max_bytes = 1048576
             MetadataListLayout::OnePerLine
         );
         assert_eq!(config.lint.fail_on(), LintFailurePolicy::Error);
+        assert_eq!(
+            config.semantic.build_dir,
+            Some(PathBuf::from("/project/build"))
+        );
+        assert_eq!(
+            config.semantic.bitbake,
+            Some(PathBuf::from("/project/tools/bitbake"))
+        );
         assert_eq!(config.safety.max_files, 500);
         assert_eq!(config.safety.max_bytes, 1_048_576);
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));

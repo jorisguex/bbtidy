@@ -1,6 +1,7 @@
 use bbtidy::{
-    Config, LintDiagnostic, LintFailurePolicy, LintSeverity, SafetyOptions, SemanticOptions,
-    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake, format_with_options, get_line_col,
+    BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
+    LintSeverity, SafetyOptions, SemanticOptions, SyntaxKind, Token, WorkspaceIndex,
+    analyze_bitbake, discover_build_context_with_options, format_with_options, get_line_col,
     lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -100,11 +101,15 @@ struct LintArgs {
 struct SemanticArgs {
     /// Existing BitBake build directory containing conf/local.conf and conf/bblayers.conf.
     #[arg(long, value_name = "PATH")]
-    build_dir: PathBuf,
+    build_dir: Option<PathBuf>,
 
-    /// BitBake executable to invoke; defaults to the executable on PATH.
-    #[arg(long, default_value = "bitbake", value_name = "PATH")]
-    bitbake: PathBuf,
+    /// Project directory from which to discover a build directory.
+    #[arg(long, value_name = "PATH")]
+    project_dir: Option<PathBuf>,
+
+    /// BitBake executable to invoke; defaults to project configuration or PATH.
+    #[arg(long, value_name = "PATH")]
+    bitbake: Option<PathBuf>,
 
     /// Recipe or target to inspect. May be supplied more than once.
     #[arg(long = "target", value_name = "TARGET")]
@@ -185,7 +190,7 @@ fn main() {
         Command::Check(args) => run_check(args, &config),
         Command::Lint(args) => run_lint(args, &config),
         Command::Lex(args) => run_lex(args, &config),
-        Command::Semantic(args) => run_semantic(args),
+        Command::Semantic(args) => run_semantic(args, &config),
         Command::SyntaxStats(args) => run_syntax_stats(args, &config),
     };
 
@@ -194,10 +199,39 @@ fn main() {
     }
 }
 
-fn run_semantic(args: SemanticArgs) -> i32 {
+fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
+    let start = match args.project_dir {
+        Some(path) => path,
+        None => match std::env::current_dir() {
+            Ok(path) => path,
+            Err(error) => {
+                eprintln!("error: could not determine project directory: {error}");
+                return EXIT_ERROR;
+            }
+        },
+    };
+    let context_result = match args.build_dir {
+        Some(path) => BuildContext::from_build_dir(path),
+        None => {
+            let mut discovery = BuildContextDiscoveryOptions::from_environment();
+            discovery.configured_build_dir = config.semantic.build_dir.clone();
+            discover_build_context_with_options(&start, &discovery)
+        }
+    };
+    let context = match context_result {
+        Ok(context) => context,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    };
+
     let options = SemanticOptions {
-        bitbake: args.bitbake,
-        build_dir: args.build_dir,
+        bitbake: args
+            .bitbake
+            .or_else(|| config.semantic.bitbake.clone())
+            .unwrap_or_else(|| PathBuf::from("bitbake")),
+        build_dir: context.build_dir().to_path_buf(),
         targets: args.targets,
         variables: args.variables,
     };
@@ -213,7 +247,9 @@ fn run_semantic(args: SemanticArgs) -> i32 {
         let value = serde_json::json!({
             "version": 1,
             "bitbake_version": report.bitbake_version(),
+            "project_dir": context.project_dir(),
             "build_dir": report.build_dir(),
+            "build_context_source": context.source(),
             "parse_succeeded": report.parse_succeeded(),
             "target_queries_succeeded": report.target_queries_succeeded(),
             "analysis_succeeded": report.analysis_succeeded(),
@@ -229,7 +265,9 @@ fn run_semantic(args: SemanticArgs) -> i32 {
         }
     } else {
         println!("BitBake: {}", report.bitbake_version());
+        println!("Project directory: {}", context.project_dir().display());
         println!("Build directory: {}", report.build_dir().display());
+        println!("Build context: {}", context.source());
         println!(
             "Parse: {}",
             if report.parse_succeeded() {

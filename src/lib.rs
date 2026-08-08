@@ -4,16 +4,23 @@ use std::fmt;
 mod config;
 mod formatter;
 mod lint;
+mod project;
 mod semantic;
 mod syntax;
 mod workspace;
 
-pub use config::{Config, ConfigError, SafetyOptions, discover_config, load_config};
+pub use config::{
+    Config, ConfigError, SafetyOptions, SemanticConfig, discover_config, load_config,
+};
 pub use formatter::{FormatOptions, MetadataListLayout, format_syntax, format_syntax_with_options};
 pub use lint::{
     LintDiagnostic, LintFailurePolicy, LintOptions, LintRule, LintSeverity, lint, lint_rules,
     lint_syntax, lint_syntax_with_options, lint_syntax_with_workspace, lint_with_options,
     lint_with_workspace,
+};
+pub use project::{
+    BuildContext, BuildContextDiscoveryOptions, BuildContextError, BuildContextSource,
+    discover_build_context, discover_build_context_with_options,
 };
 pub use semantic::{
     SemanticDiagnostic, SemanticEnvironment, SemanticError, SemanticOptions, SemanticReport,

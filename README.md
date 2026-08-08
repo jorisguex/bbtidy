@@ -34,6 +34,9 @@ the [beta user guide](docs/beta-user-guide.md).
   unified diffs, and documented exit codes.
 - **Project configuration**: Loads an optional `.bbtidy.toml` with formatter
   settings, lint rule selection, severity overrides, and path exclusions.
+- **Project/build-context discovery**: Finds configured BitBake build trees from
+  project configuration, environment variables, or conventional ancestor
+  directories, with provenance and ambiguity diagnostics.
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order and indexes complete supplied layers for semantic
   checks.
@@ -126,16 +129,25 @@ bbtidy semantic \
 ```
 
 `semantic` requires an existing BitBake build directory containing
-`conf/local.conf` and `conf/bblayers.conf`. It invokes the selected `bitbake`
-executable in that directory, so variable expansion, overrides, anonymous
-Python, class inheritance, layer priorities, machine and distro configuration,
-and external providers are evaluated by the installed BitBake version rather
-than approximated by bbtidy. The command performs a parse-only check first;
-requested targets are then queried with `bitbake -e`. Use `--bitbake PATH` when
-the engine is not on `PATH`.
+`conf/local.conf` and `conf/bblayers.conf`. `--build-dir` is optional: when it
+is omitted, bbtidy checks `[semantic].build_dir` in `.bbtidy.toml`, then
+`BBTIDY_BITBAKE_BUILD_DIR`, then `BUILDDIR`, and finally searches the supplied
+`--project-dir` (or the current directory) and its ancestors for a configured
+directory or a conventional `build`/`build-*` directory. Multiple matching
+build variants are rejected rather than guessed. Use `--project-dir PATH` to
+control the discovery root and `--bitbake PATH` when the engine is not on
+`PATH`.
 
-Semantic JSON is a versioned object with `version: 1`, parse and target-query
-status, source-aware BitBake diagnostics, and selected target environments.
+It invokes the selected `bitbake` executable in the discovered directory, so
+variable expansion, overrides, anonymous Python, class inheritance, layer
+priorities, machine and distro configuration, and external providers are
+evaluated by the installed BitBake version rather than approximated by
+bbtidy. The command performs a parse-only check first; requested targets are
+then queried with `bitbake -e`.
+
+Semantic JSON is a versioned object with `version: 1`, the resolved project and
+build directories, `build_context_source`, parse and target-query status,
+source-aware BitBake diagnostics, and selected target environments.
 Semantic diagnostics contain severity, message, and optional source location
 fields. Text output remains the default. The Rust API retains each complete
 `bitbake -e` dump through `SemanticEnvironment::raw`; the JSON report omits that
@@ -194,6 +206,10 @@ The supported configuration keys are:
 [format]
 max_top_level_blank_lines = 1
 metadata_list_layout = "preserve" # or "one-per-line"
+
+[semantic]
+build_dir = "build" # optional; auto-discovery is used when omitted
+bitbake = "bitbake" # command name or a path such as "./tools/bitbake"
 
 [lint]
 disable = ["BBT003"]

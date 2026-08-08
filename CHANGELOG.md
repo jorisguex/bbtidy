@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Project/build-context discovery for semantic analysis, with configuration,
+  `BBTIDY_BITBAKE_BUILD_DIR`/`BUILDDIR` environment support, conventional
+  ancestor search, ambiguity detection, and JSON/text provenance reporting.
 - A more capable safe formatter that canonicalizes shell and Python function
   headers without touching their opaque bodies and extends opt-in static-list
   layout to common package, dependency, feature, directive, and
