@@ -107,6 +107,11 @@ patterns, priorities, dependencies, and `LAYERSERIES_COMPAT` in
 Dynamic values are skipped by these checks and should be validated with
 `lint --semantic` or the project's normal BitBake workflow.
 
+Lint also analyzes embedded bodies with `BBT034` through `BBT036`: shell
+control-flow pairing, Python delimiters/compound-statement syntax, and Python
+indentation. These checks do not execute code or external tools, and formatting
+continues to leave shell and Python body bytes unchanged.
+
 ## CI integration
 
 Use `check` as the formatting gate and choose the lint output that matches the
@@ -134,7 +139,7 @@ bbtidy lint --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
-findings. `BBT003` through `BBT033` remain manual findings because changing
+findings. `BBT003` through `BBT036` remain manual findings because changing
 them requires project or BitBake semantics rather than a syntax-preserving
 edit.
 

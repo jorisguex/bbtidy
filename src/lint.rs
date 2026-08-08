@@ -5,6 +5,7 @@ use crate::{
     TextRange, WorkspaceCandidate, WorkspaceClassContext, WorkspaceDependencyKind,
     WorkspaceFileDirective, WorkspaceIndex, comment_start, get_line_col, parse, split_line_ending,
 };
+use crate::{BodyDiagnosticKind, FunctionKind, analyze_python_body, analyze_shell_body};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
 use std::path::Path;
@@ -26,6 +27,9 @@ const RULE_LAYER_PATTERN: usize = 29;
 const RULE_LAYER_PRIORITY: usize = 30;
 const RULE_LAYER_DEPENDS: usize = 31;
 const RULE_LAYER_SERIES_COMPAT: usize = 32;
+const RULE_SHELL_SYNTAX: usize = 33;
+const RULE_PYTHON_SYNTAX: usize = 34;
+const RULE_PYTHON_INDENTATION: usize = 35;
 
 static LINT_RULES: &[LintRule] = &[
     LintRule::new(
@@ -257,6 +261,27 @@ static LINT_RULES: &[LintRule] = &[
         "layer-series-compat",
         LintSeverity::Warning,
         "Every layer collection must declare LAYERSERIES_COMPAT.",
+        false,
+    ),
+    LintRule::new(
+        "BBT034",
+        "shell-syntax",
+        LintSeverity::Warning,
+        "Shell function bodies must have balanced control-flow constructs.",
+        false,
+    ),
+    LintRule::new(
+        "BBT035",
+        "python-syntax",
+        LintSeverity::Warning,
+        "Embedded Python bodies must have valid delimiters and compound statements.",
+        false,
+    ),
+    LintRule::new(
+        "BBT036",
+        "python-indentation",
+        LintSeverity::Warning,
+        "Embedded Python bodies must use consistent indentation.",
         false,
     ),
 ];
@@ -1037,9 +1062,51 @@ fn collect_lint_diagnostics(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
     check_final_newline(text, &mut diagnostics);
     check_assignments(tree, &mut diagnostics);
     check_duplicate_functions(tree, &mut diagnostics);
+    check_body_diagnostics(tree, &mut diagnostics);
     check_empty_directives(tree, &mut diagnostics);
     check_duplicate_inherits(tree, &mut diagnostics);
     diagnostics
+}
+
+fn check_body_diagnostics(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+    for node in tree.nodes() {
+        let (body_range, body_diagnostics) = match node.kind() {
+            SyntaxKind::Function(function) => {
+                let body =
+                    &tree.source()[function.body_range().start()..function.body_range().end()];
+                let diagnostics = match function.function_kind() {
+                    FunctionKind::Shell => analyze_shell_body(body),
+                    FunctionKind::Python => analyze_python_body(body),
+                };
+                (function.body_range(), diagnostics)
+            }
+            SyntaxKind::PythonDefinition(definition) => {
+                let body =
+                    &tree.source()[definition.body_range().start()..definition.body_range().end()];
+                (definition.body_range(), analyze_python_body(body))
+            }
+            _ => continue,
+        };
+
+        for body_diagnostic in body_diagnostics {
+            let rule = match body_diagnostic.kind() {
+                BodyDiagnosticKind::ShellSyntax => &LINT_RULES[RULE_SHELL_SYNTAX],
+                BodyDiagnosticKind::PythonSyntax => &LINT_RULES[RULE_PYTHON_SYNTAX],
+                BodyDiagnosticKind::PythonIndentation => &LINT_RULES[RULE_PYTHON_INDENTATION],
+            };
+            let relative = body_diagnostic.range();
+            let range = TextRange::new(
+                body_range.start() + relative.start(),
+                body_range.start() + relative.end(),
+            );
+            diagnostics.push(LintDiagnostic::at(
+                rule,
+                tree.source(),
+                range,
+                body_diagnostic.message(),
+            ));
+        }
+    }
 }
 
 fn finalize_diagnostics(
@@ -2266,7 +2333,7 @@ mod tests {
                 "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
                 "BBT017", "BBT018", "BBT019", "BBT020", "BBT021", "BBT022", "BBT023", "BBT024",
                 "BBT025", "BBT026", "BBT027", "BBT028", "BBT029", "BBT030", "BBT031", "BBT032",
-                "BBT033",
+                "BBT033", "BBT034", "BBT035", "BBT036",
             ]
         );
         assert!(

@@ -49,6 +49,8 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Broader recipe and layer QA**: Checks recipe identity/version alignment,
   license and source checksums, `PACKAGECONFIG`, package-scoped variables and
   lists, `SRC_URI` parameters, and layer collection metadata.
+- **Embedded body analysis**: Conservatively checks shell control-flow and
+  embedded/top-level Python syntax and indentation while preserving body bytes.
 
 ## Installation
 
@@ -349,8 +351,11 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT031` | `layer-priority` | A layer collection lacks an integer `BBFILE_PRIORITY_*` | Manual |
 | `BBT032` | `layer-depends` | `LAYERDEPENDS_*` names an unknown collection | Manual |
 | `BBT033` | `layer-series-compat` | A layer collection lacks `LAYERSERIES_COMPAT_*` | Manual |
+| `BBT034` | `shell-syntax` | A shell function body has unmatched control-flow constructs | Manual |
+| `BBT035` | `python-syntax` | An embedded Python body has malformed syntax or delimiters | Manual |
+| `BBT036` | `python-indentation` | An embedded Python body has inconsistent indentation | Manual |
 
-Rules `BBT001` through `BBT018` and `BBT020` through `BBT033` are warnings;
+Rules `BBT001` through `BBT018` and `BBT020` through `BBT036` are warnings;
 `BBT019` adopts BitBake's
 severity for each semantic diagnostic. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
@@ -360,7 +365,7 @@ incomplete input is reported as an operational error instead of producing
 potentially misleading findings.
 
 Static semantic rules are intentionally conservative: they inspect top-level
-metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
+metadata and embedded body syntax, and avoid evaluating dynamic
 values or class names. Recipe metadata rules `BBT011` through `BBT013` run only
 when a `.bb` file belongs to a complete indexed layer; isolated files and
 standard input do not receive those path-dependent findings. Recipe QA rules
@@ -395,6 +400,12 @@ patterns, priorities, collection dependencies, and series compatibility in
 complete `conf/layer.conf` files. Dynamic collection declarations and values
 remain outside the static boundary and are left for BitBake-backed analysis.
 
+Body rules `BBT034` through `BBT036` analyze shell function control-flow and
+Python delimiters, compound-statement colons, multiline strings, and
+indentation. They are deliberately conservative: command expansion, external
+tools, shell semantics, Python imports, and runtime behavior are not evaluated.
+The formatter still treats all body text as immutable opaque payload.
+
 When `lint --semantic` is selected, BitBake becomes the authoritative semantic
 boundary. Its parse diagnostics are emitted as `BBT019`; target environment
 queries additionally validate resolved recipe metadata and fetch URLs. This
@@ -411,9 +422,9 @@ every node always reproduces the input byte-for-byte.
 Recognized nodes provide structured data and absolute source ranges for
 assignments, directives, shell and Python functions, and top-level Python
 definitions. Blank lines, comments, and unsupported top-level constructs remain
-explicit nodes. Function and Python-definition bodies are deliberately opaque:
-bbtidy finds their safe boundaries but does not interpret or rewrite the
-embedded language.
+explicit nodes. Function and Python-definition nodes expose body ranges for
+analysis. Body text remains immutable and byte-for-byte lossless even when
+`lint` performs its conservative embedded-language checks.
 
 ```rust
 use bbtidy::{SyntaxKind, format_syntax, lint_syntax, parse};

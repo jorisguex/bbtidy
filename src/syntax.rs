@@ -208,12 +208,13 @@ pub enum FunctionKind {
     Python,
 }
 
-/// The declaration and opaque body of a shell or Python function.
+/// The declaration and source range of a shell or Python function body.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FunctionSyntax<'a> {
     kind: FunctionKind,
     name: Option<&'a str>,
     name_range: Option<TextRange>,
+    body_range: TextRange,
     fakeroot: bool,
 }
 
@@ -230,16 +231,23 @@ impl<'a> FunctionSyntax<'a> {
         self.name_range
     }
 
+    /// Returns the source range of the embedded function body, excluding the
+    /// declaration's opening brace and closing brace.
+    pub const fn body_range(&self) -> TextRange {
+        self.body_range
+    }
+
     pub const fn is_fakeroot(&self) -> bool {
         self.fakeroot
     }
 }
 
-/// The declaration and opaque indented body of a top-level Python `def`.
+/// The declaration and source range of an indented top-level Python `def` body.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PythonDefinitionSyntax<'a> {
     name: &'a str,
     name_range: TextRange,
+    body_range: TextRange,
 }
 
 impl<'a> PythonDefinitionSyntax<'a> {
@@ -249,6 +257,11 @@ impl<'a> PythonDefinitionSyntax<'a> {
 
     pub const fn name_range(&self) -> TextRange {
         self.name_range
+    }
+
+    /// Returns the source range occupied by the indented Python body.
+    pub const fn body_range(&self) -> TextRange {
+        self.body_range
     }
 }
 
@@ -267,19 +280,30 @@ pub fn parse(source: &str) -> Result<SyntaxTree<'_>, SyntaxError> {
 
         let (end, kind) = if let Some((opening_brace, scanner_kind)) = function_opening_brace(line)
         {
-            let end = find_brace_block_end(source, offset + opening_brace, scanner_kind)
-                .ok_or_else(|| {
-                    FormatError::new(line_number, "function body has no closing brace")
-                })?;
+            let (end, closing_brace) =
+                find_brace_block_end(source, offset + opening_brace, scanner_kind).ok_or_else(
+                    || FormatError::new(line_number, "function body has no closing brace"),
+                )?;
             (
                 end,
-                SyntaxKind::Function(parse_function(source, offset, line, scanner_kind)),
+                SyntaxKind::Function(parse_function(
+                    source,
+                    offset,
+                    line,
+                    scanner_kind,
+                    TextRange::new(offset + opening_brace + 1, closing_brace),
+                )),
             )
         } else if is_python_def_start(line) {
             let end = find_python_def_end(source, line_end);
             (
                 end,
-                SyntaxKind::PythonDefinition(parse_python_definition(source, offset, line)),
+                SyntaxKind::PythonDefinition(parse_python_definition(
+                    source,
+                    offset,
+                    line,
+                    TextRange::new(line_end, end),
+                )),
             )
         } else {
             let continued = has_line_continuation(line);
@@ -452,6 +476,7 @@ fn parse_function<'a>(
     start: usize,
     line: &'a str,
     scanner_kind: ScannerFunctionKind,
+    body_range: TextRange,
 ) -> FunctionSyntax<'a> {
     let (content, _) = split_line_ending(line);
     let code_end = comment_start(content).unwrap_or(content.len());
@@ -493,6 +518,7 @@ fn parse_function<'a>(
         },
         name: name_range.map(|range| &source[range.start()..range.end()]),
         name_range,
+        body_range,
         fakeroot,
     }
 }
@@ -501,6 +527,7 @@ fn parse_python_definition<'a>(
     source: &'a str,
     start: usize,
     line: &'a str,
+    body_range: TextRange,
 ) -> PythonDefinitionSyntax<'a> {
     let (content, _) = split_line_ending(line);
     let name_start = "def ".len();
@@ -518,6 +545,7 @@ fn parse_python_definition<'a>(
     PythonDefinitionSyntax {
         name: &source[range.start()..range.end()],
         name_range: range,
+        body_range,
     }
 }
 

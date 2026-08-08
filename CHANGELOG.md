@@ -21,6 +21,9 @@ All notable changes to this project will be documented in this file.
   functions, empty dependency directives, recipe/package/source QA, and layer
   collection metadata, with conservative complete-layer scoping for
   path-dependent checks.
+- Conservative shell and Python body analysis for shell control-flow pairing,
+  Python syntax/delimiters, and Python indentation, with source ranges and
+  byte-preserving body boundaries.
 - Structured lint diagnostics with source ranges, help, SARIF/JSON fix
   metadata, `--show-fixes`, and transactional `lint --fix` support for safe
   trailing-whitespace and final-newline edits.

@@ -123,6 +123,13 @@ patterns, priorities, dependencies, and series compatibility. Dynamic values
 are skipped at the static boundary; these checks are not a substitute for a
 BitBake parse.
 
+Lint rules `BBT034` through `BBT036` inspect embedded shell and Python bodies.
+They report unmatched shell control-flow blocks, malformed Python delimiters or
+compound statements, and inconsistent Python indentation. The analysis is
+lexical and conservative: it does not execute shell/Python, resolve commands or
+imports, or inspect runtime behavior. Formatting continues to preserve every
+body byte.
+
 Text diagnostics, versioned JSON, and SARIF output must describe the same
 findings in deterministic source order. The lint process exits `1` only when a
 finding meets the configured failure threshold. The default threshold is

@@ -1,6 +1,7 @@
 use logos::Logos;
 use std::fmt;
 
+mod body;
 mod config;
 mod formatter;
 mod lint;
@@ -9,6 +10,7 @@ mod semantic;
 mod syntax;
 mod workspace;
 
+pub use body::{BodyDiagnostic, BodyDiagnosticKind, analyze_python_body, analyze_shell_body};
 pub use config::{
     Config, ConfigError, SafetyOptions, SemanticConfig, discover_config, load_config,
 };
@@ -386,7 +388,7 @@ fn find_brace_block_end(
     text: &str,
     opening_brace: usize,
     function_kind: ScannerFunctionKind,
-) -> Option<usize> {
+) -> Option<(usize, usize)> {
     let bytes = text.as_bytes();
     let mut depth = 0usize;
     let mut quote: Option<FunctionQuote> = None;
@@ -507,7 +509,7 @@ fn find_brace_block_end(
             b'}' => {
                 depth = depth.checked_sub(1)?;
                 if depth == 0 {
-                    return Some(next_line_end(text, index));
+                    return Some((next_line_end(text, index), index));
                 }
             }
             _ => {}

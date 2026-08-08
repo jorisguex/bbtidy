@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 33);
+    assert_eq!(rules.len(), 36);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);
@@ -132,6 +132,50 @@ fn broader_lint_rules_cover_common_source_mistakes() {
             .contains("inherit directive has no target")
     );
     assert!(diagnostics[4].message().contains("declared more than once"));
+}
+
+#[test]
+fn body_lint_analyzes_shell_control_flow_and_python_syntax() {
+    let source = concat!(
+        "do_install() {\n",
+        "    if true; then\n",
+        "        echo installed\n",
+        "}\n",
+        "python do_check() {\n",
+        "    if value\n",
+        "        return (value\n",
+        "}\n",
+    );
+    let diagnostics = lint(source).unwrap();
+    let ids = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.rule_id())
+        .collect::<Vec<_>>();
+
+    assert!(ids.contains(&"BBT034"), "missing shell finding in {ids:?}");
+    assert!(
+        ids.contains(&"BBT035"),
+        "missing Python syntax finding in {ids:?}"
+    );
+    assert!(
+        ids.contains(&"BBT036"),
+        "missing Python indentation finding in {ids:?}"
+    );
+    assert!(diagnostics.iter().all(|diagnostic| diagnostic.line() > 1));
+}
+
+#[test]
+fn body_lint_accepts_balanced_shell_and_python_bodies() {
+    let source = concat!(
+        "do_install() { if true; then echo installed; fi; }\n",
+        "python do_check() {\n",
+        "    if True:\n",
+        "        return {}\n",
+        "}\n",
+        "def helper(d):\n",
+        "    return d.getVar(\"VALUE\")\n",
+    );
+    assert!(lint(source).unwrap().is_empty());
 }
 
 #[test]

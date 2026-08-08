@@ -639,7 +639,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 33);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 36);
     assert_eq!(
         run["tool"]["driver"]["rules"]
             .as_array()
