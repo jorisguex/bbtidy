@@ -283,6 +283,16 @@ class ReleaseArtifactTests(unittest.TestCase):
                 verify_distributions(directory)
 
 
+class ToolchainTests(unittest.TestCase):
+    def test_ci_toolchain_pins_clippy_and_rustfmt(self):
+        toolchain = (Path(__file__).resolve().parents[1] / "rust-toolchain.toml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('channel = "1.91.1"', toolchain)
+        self.assertIn('components = ["clippy", "rustfmt"]', toolchain)
+
+
 class ReleaseWorkflowTests(unittest.TestCase):
     def test_crates_publication_is_tag_gated_with_manual_validation(self):
         workflow = (
