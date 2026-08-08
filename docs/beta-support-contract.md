@@ -107,6 +107,13 @@ embedded shell or Python behavior are not evaluated. A clean lint result means
 that no enabled rule found a diagnostic in the analyzed scope; it does not mean
 that the entire BitBake build is free of issues.
 
+`lint --semantic` is the opt-in authoritative path for closing this boundary.
+It requires an initialized BitBake build context, runs BitBake's parse, and can
+query one or more explicit targets with `bitbake -e`. BitBake warnings and
+errors are reported as `BBT019`; resolved target values are checked by the
+metadata and source URI rules where applicable. Static linting remains the
+default and continues to avoid invoking BitBake.
+
 Text diagnostics, versioned JSON, and SARIF output must describe the same
 findings in deterministic source order. The lint process exits `1` only when a
 finding meets the configured failure threshold. The default threshold is

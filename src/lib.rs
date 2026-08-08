@@ -14,9 +14,10 @@ pub use config::{
 };
 pub use formatter::{FormatOptions, MetadataListLayout, format_syntax, format_syntax_with_options};
 pub use lint::{
-    LintDiagnostic, LintFailurePolicy, LintFix, LintFixError, LintOptions, LintRule, LintSeverity,
-    apply_lint_fixes, lint, lint_rules, lint_syntax, lint_syntax_with_options,
-    lint_syntax_with_workspace, lint_with_options, lint_with_workspace,
+    ExternalLintDiagnostic, LintDiagnostic, LintFailurePolicy, LintFix, LintFixError, LintOptions,
+    LintRule, LintSeverity, apply_lint_fixes, lint, lint_rules, lint_syntax,
+    lint_syntax_with_options, lint_syntax_with_workspace, lint_with_bitbake, lint_with_options,
+    lint_with_workspace, semantic_lint_diagnostics,
 };
 pub use project::{
     BuildContext, BuildContextDiscoveryOptions, BuildContextError, BuildContextSource,

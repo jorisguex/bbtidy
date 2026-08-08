@@ -43,6 +43,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
   and safe edit suggestions, with transactional `lint --fix` support for
   whitespace and final-newline findings.
+- **BitBake-backed semantic linting**: Optionally runs the configured BitBake
+  parser and target environment queries, reports source-aware BitBake findings,
+  and applies selected metadata rules to fully resolved values.
 
 ## Installation
 
@@ -110,6 +113,24 @@ To lint a file, recipe directory, or layer:
 ```bash
 bbtidy lint recipes-example/
 ```
+
+To combine static linting with authoritative BitBake semantics:
+
+```bash
+bbtidy lint --semantic \
+  --build-dir build \
+  --target core-image-minimal \
+  recipes-example/
+```
+
+`lint --semantic` requires an initialized BitBake build directory and uses the
+same project, environment-variable, configuration, and executable discovery
+as `semantic`. It runs `bitbake --parse-only` once, then `bitbake -e` for each
+selected `--target`. BitBake warnings and errors are reported as `BBT019` lint
+diagnostics. `SUMMARY`, `DESCRIPTION`, `LICENSE`, `SRCREV`/`SRCPV`, and
+resolved `SRC_URI` values from target environments are also checked by the
+corresponding metadata rules, so dynamic expansions are included when a target
+is queried. The mode is file-based and cannot be combined with standard input.
 
 For CI integrations, select a machine-readable report format:
 
@@ -310,15 +331,17 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT016` | `duplicate-assignment` | A variable is assigned directly more than once in one file | Manual |
 | `BBT017` | `duplicate-function` | A task or function is declared more than once in one file | Manual |
 | `BBT018` | `empty-directive` | A static dependency directive has no target | Manual |
+| `BBT019` | `bitbake-diagnostic` | A BitBake parse or target-query diagnostic | Manual |
 
-All rules are warnings. Diagnostics are sorted by source location and
+Rules `BBT001` through `BBT018` are warnings; `BBT019` adopts BitBake's
+severity for each semantic diagnostic. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
 `LintRule`, and `LintSeverity` Rust APIs. `apply_lint_fixes` validates all
 proposed ranges and rejects overlapping edits atomically. Structurally
 incomplete input is reported as an operational error instead of producing
 potentially misleading findings.
 
-The semantic rules are intentionally conservative: they inspect top-level
+Static semantic rules are intentionally conservative: they inspect top-level
 metadata, skip embedded shell and Python bodies, and avoid evaluating dynamic
 values or class names. Recipe metadata rules `BBT011` through `BBT013` run only
 when a `.bb` file belongs to a complete indexed layer; isolated files and
@@ -345,6 +368,12 @@ priority, and search scope. The public `WorkspaceCandidate`,
 `WorkspaceClassContext`, and `WorkspaceDependency` APIs expose the corresponding
 resolution and graph information. Single-file and standard-input linting remain
 file-local, and dynamic references are skipped.
+
+When `lint --semantic` is selected, BitBake becomes the authoritative semantic
+boundary. Its parse diagnostics are emitted as `BBT019`; target environment
+queries additionally validate resolved recipe metadata and fetch URLs. This
+does not replace the normal `semantic` command, which remains the query-focused
+API for inspecting arbitrary expanded variables and complete BitBake reports.
 
 ## Lossless syntax tree
 

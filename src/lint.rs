@@ -1,3 +1,4 @@
+use crate::semantic::{SemanticReport, SemanticSeverity};
 use crate::workspace::global_class_assignment_kind;
 use crate::{
     AssignmentOperator, AssignmentSyntax, DirectiveKeyword, FormatError, SyntaxKind, SyntaxTree,
@@ -136,6 +137,13 @@ static LINT_RULES: &[LintRule] = &[
         "empty-directive",
         LintSeverity::Warning,
         "Metadata dependency directives must name a target.",
+        false,
+    ),
+    LintRule::new(
+        "BBT019",
+        "bitbake-diagnostic",
+        LintSeverity::Error,
+        "BitBake reported a semantic diagnostic.",
         false,
     ),
 ];
@@ -441,6 +449,29 @@ impl LintDiagnostic {
         self
     }
 
+    pub(crate) fn external(
+        rule: &'static LintRule,
+        severity: LintSeverity,
+        line: Option<usize>,
+        column: Option<usize>,
+        message: impl Into<String>,
+    ) -> Self {
+        let line = line.unwrap_or(1).max(1);
+        let column = column.unwrap_or(1).max(1);
+        Self {
+            rule_id: rule.id,
+            severity,
+            line,
+            column,
+            end_line: line,
+            end_column: column.saturating_add(1),
+            range: TextRange::new(0, 0),
+            message: message.into(),
+            help: None,
+            fixes: Vec::new(),
+        }
+    }
+
     pub const fn rule_id(&self) -> &'static str {
         self.rule_id
     }
@@ -494,6 +525,191 @@ impl LintDiagnostic {
 
 pub fn lint_rules() -> &'static [LintRule] {
     LINT_RULES
+}
+
+/// A lint diagnostic produced outside a source file, such as a BitBake
+/// diagnostic or a finding against a fully expanded target environment.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalLintDiagnostic {
+    pub label: String,
+    pub diagnostic: LintDiagnostic,
+}
+
+/// Converts BitBake diagnostics and resolved target metadata into the same
+/// rule-aware diagnostics used by ordinary linting.
+pub fn semantic_lint_diagnostics(
+    report: &SemanticReport,
+    options: &LintOptions,
+) -> Vec<ExternalLintDiagnostic> {
+    let rule = &LINT_RULES[18];
+    let mut findings = Vec::new();
+
+    for diagnostic in report.diagnostics() {
+        let severity = match diagnostic.severity() {
+            SemanticSeverity::Debug | SemanticSeverity::Note => LintSeverity::Info,
+            SemanticSeverity::Warning => LintSeverity::Warning,
+            SemanticSeverity::Error => LintSeverity::Error,
+        };
+        let label = diagnostic
+            .path()
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "bitbake".to_owned());
+        findings.push(ExternalLintDiagnostic {
+            label,
+            diagnostic: LintDiagnostic::external(
+                rule,
+                severity,
+                diagnostic.line(),
+                diagnostic.column(),
+                format!("BitBake: {}", diagnostic.message()),
+            ),
+        });
+    }
+
+    if !report.parse_succeeded() && !report.has_errors() {
+        findings.push(ExternalLintDiagnostic {
+            label: "bitbake".to_owned(),
+            diagnostic: LintDiagnostic::external(
+                rule,
+                LintSeverity::Error,
+                None,
+                None,
+                "BitBake parse failed without a source diagnostic",
+            ),
+        });
+    }
+    if report.parse_succeeded() && !report.target_queries_succeeded() && !report.has_errors() {
+        findings.push(ExternalLintDiagnostic {
+            label: "bitbake".to_owned(),
+            diagnostic: LintDiagnostic::external(
+                rule,
+                LintSeverity::Error,
+                None,
+                None,
+                "BitBake target query failed without a source diagnostic",
+            ),
+        });
+    }
+
+    for environment in report.environments() {
+        let label = format!("bitbake -e {}", environment.target());
+        for (rule, variable, message) in [
+            (
+                &LINT_RULES[10],
+                "SUMMARY",
+                "BitBake resolved SUMMARY to an empty value",
+            ),
+            (
+                &LINT_RULES[11],
+                "DESCRIPTION",
+                "BitBake resolved DESCRIPTION to an empty value",
+            ),
+            (
+                &LINT_RULES[12],
+                "LICENSE",
+                "BitBake resolved LICENSE to an empty value",
+            ),
+        ] {
+            if environment
+                .get(variable)
+                .is_some_and(|value| !value.trim().is_empty())
+            {
+                continue;
+            }
+            findings.push(ExternalLintDiagnostic {
+                label: label.clone(),
+                diagnostic: LintDiagnostic::external(
+                    rule,
+                    rule.severity(),
+                    None,
+                    None,
+                    format!(
+                        "target '{}' has no resolved {variable}: {message}",
+                        environment.target()
+                    ),
+                ),
+            });
+        }
+
+        if environment
+            .get("SRCREV")
+            .is_some_and(|value| value.contains("${AUTOREV}") || value.contains("AUTOINC"))
+            || environment
+                .get("SRCPV")
+                .is_some_and(|value| value.contains("AUTOINC"))
+        {
+            findings.push(ExternalLintDiagnostic {
+                label: label.clone(),
+                diagnostic: LintDiagnostic::external(
+                    &LINT_RULES[3],
+                    LINT_RULES[3].severity(),
+                    None,
+                    None,
+                    format!(
+                        "target '{}' resolves SRCREV through AUTOREV; pin a source revision for reproducible builds",
+                        environment.target()
+                    ),
+                ),
+            });
+        }
+
+        if let Some(value) = environment.get("SRC_URI") {
+            for uri in value.split_whitespace() {
+                if !uri.starts_with("git://")
+                    || uri.split(';').any(|part| part.starts_with("protocol="))
+                {
+                    continue;
+                }
+                findings.push(ExternalLintDiagnostic {
+                    label: label.clone(),
+                    diagnostic: LintDiagnostic::external(
+                        &LINT_RULES[14],
+                        LINT_RULES[14].severity(),
+                        None,
+                        None,
+                        format!(
+                            "target '{}' resolves Git URI '{uri}' without a transport protocol",
+                            environment.target()
+                        ),
+                    ),
+                });
+            }
+        }
+    }
+
+    findings.retain(|finding| options.is_enabled(finding.diagnostic.rule_id()));
+    for finding in &mut findings {
+        finding.diagnostic.severity = options.severity_for(&finding.diagnostic);
+    }
+    findings.sort_by(|left, right| {
+        (
+            left.label.as_str(),
+            left.diagnostic.line,
+            left.diagnostic.column,
+            left.diagnostic.rule_id,
+        )
+            .cmp(&(
+                right.label.as_str(),
+                right.diagnostic.line,
+                right.diagnostic.column,
+                right.diagnostic.rule_id,
+            ))
+    });
+    findings
+}
+
+/// Runs BitBake and converts its semantic results into lint diagnostics.
+///
+/// This is the library equivalent of the CLI's `lint --semantic` integration.
+/// Source-local rules still use [`lint_with_workspace`]; this function covers
+/// BitBake diagnostics and checks that require resolved target environments.
+pub fn lint_with_bitbake(
+    semantic_options: &crate::semantic::SemanticOptions,
+    lint_options: &LintOptions,
+) -> Result<(SemanticReport, Vec<ExternalLintDiagnostic>), crate::semantic::SemanticError> {
+    let report = crate::semantic::analyze_bitbake(semantic_options)?;
+    let findings = semantic_lint_diagnostics(&report, lint_options);
+    Ok((report, findings))
 }
 
 /// Checks BitBake metadata with bbtidy's default lint rules.
@@ -1312,14 +1528,15 @@ mod tests {
             [
                 "BBT001", "BBT002", "BBT003", "BBT004", "BBT005", "BBT006", "BBT007", "BBT008",
                 "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
-                "BBT017", "BBT018",
+                "BBT017", "BBT018", "BBT019",
             ]
         );
         assert!(
-            lint_rules()
+            lint_rules()[..18]
                 .iter()
                 .all(|rule| rule.severity() == LintSeverity::Warning)
         );
+        assert_eq!(lint_rules()[18].severity(), LintSeverity::Error);
     }
 
     #[test]

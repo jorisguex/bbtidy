@@ -81,6 +81,22 @@ directory containing `build`/`build-*`; use `--project-dir` to select the
 discovery root. If more than one build variant matches, pass `--build-dir`
 explicitly.
 
+For CI linting that should include the same authoritative checks, use
+`lint --semantic` with one or more explicit targets:
+
+```bash
+bbtidy lint --semantic \
+  --build-dir build \
+  --target core-image-minimal \
+  --output sarif meta-my-layer/ > bbtidy-semantic.sarif
+```
+
+This runs the BitBake parse and target environment queries in addition to the
+static lint rules. BitBake diagnostics are reported as `BBT019`, and resolved
+metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, source
+revision, and `SRC_URI` values. It requires file inputs and an initialized
+build directory; standard input is not supported in semantic mode.
+
 ## CI integration
 
 Use `check` as the formatting gate and choose the lint output that matches the
@@ -108,7 +124,7 @@ bbtidy lint --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
-findings. `BBT003` through `BBT018` remain manual findings because changing
+findings. `BBT003` through `BBT019` remain manual findings because changing
 them requires project or BitBake semantics rather than a syntax-preserving
 edit.
 

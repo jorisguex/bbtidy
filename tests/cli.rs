@@ -639,7 +639,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 18);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 19);
     assert_eq!(
         run["tool"]["driver"]["rules"]
             .as_array()
@@ -909,6 +909,169 @@ exit 0
     assert_eq!(report["analysis_succeeded"], true);
     assert_eq!(report["environments"][0]["target"], "demo");
     assert_eq!(report["environments"][0]["variables"]["PN"], "demo");
+}
+
+#[cfg(unix)]
+#[test]
+fn semantic_lint_integrates_bitbake_diagnostics_and_resolved_metadata() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("lint-bitbake-semantic");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let recipe = directory.write("recipes-demo/demo.bb", "SUMMARY = \"demo\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  echo 'WARNING: Parse warning at /layer/recipes-demo/demo.bb:7: dynamic provider'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf 'SUMMARY="demo"\nDESCRIPTION=""\nLICENSE="CLOSED"\nSRCREV="AUTOINC+deadbeef"\nSRC_URI="git://example.invalid/demo.git;branch=main"\n'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let build_dir = directory.path().join("build");
+    let output = run([
+        "lint",
+        "--semantic",
+        "--build-dir",
+        build_dir.to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--output",
+        "json",
+        recipe.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["semantic"]["parse_succeeded"], true);
+    assert_eq!(report["semantic"]["build_context_source"], "explicit");
+    assert_eq!(report["semantic"]["targets"][0], "demo");
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    let bitbake_diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic["rule_id"] == "BBT019")
+        .unwrap();
+    assert_eq!(bitbake_diagnostic["path"], "/layer/recipes-demo/demo.bb");
+    assert_eq!(bitbake_diagnostic["line"], 7);
+    assert!(
+        bitbake_diagnostic["message"]
+            .as_str()
+            .unwrap()
+            .contains("dynamic provider")
+    );
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT012"
+            && diagnostic["message"]
+                .as_str()
+                .unwrap()
+                .contains("DESCRIPTION")
+    }));
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT004"
+            && diagnostic["message"].as_str().unwrap().contains("AUTOREV")
+    }));
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT015"
+            && diagnostic["message"]
+                .as_str()
+                .unwrap()
+                .contains("transport protocol")
+    }));
+}
+
+#[cfg(unix)]
+#[test]
+fn semantic_lint_requires_the_semantic_flag_for_bitbake_options() {
+    let directory = TemporaryDirectory::new("lint-bitbake-flag");
+    let file = directory.write("example.bb", "SUMMARY = \"demo\"\n");
+
+    let output = run([
+        "lint",
+        "--build-dir",
+        directory.path().to_str().unwrap(),
+        file.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("require --semantic"));
+    assert!(output.stdout.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn semantic_lint_turns_silent_bitbake_failures_into_blocking_findings() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("lint-bitbake-target-failure");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let recipe = directory.write("recipes-demo/demo.bb", "SUMMARY = \"demo\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  exit 1
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let output = run([
+        "lint",
+        "--semantic",
+        "--build-dir",
+        directory.path().join("build").to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--output",
+        "json",
+        recipe.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(
+        report["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|diagnostic| {
+                diagnostic["rule_id"] == "BBT019"
+                    && diagnostic["message"]
+                        .as_str()
+                        .unwrap()
+                        .contains("target query failed")
+            })
+    );
 }
 
 #[cfg(unix)]

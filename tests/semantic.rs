@@ -1,4 +1,7 @@
-use bbtidy::{SemanticError, SemanticOptions, SemanticSeverity, analyze_bitbake};
+use bbtidy::{
+    LintOptions, SemanticError, SemanticOptions, SemanticSeverity, analyze_bitbake,
+    lint_with_bitbake,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -57,6 +60,49 @@ fn empty_variable_selection_keeps_raw_environment_without_materializing_values()
 
     assert!(environment.variables().is_empty());
     assert!(environment.raw().contains("PN=\"demo\""));
+}
+
+#[cfg(unix)]
+#[test]
+fn semantic_lint_api_converts_bitbake_results_into_rule_diagnostics() {
+    let fixture = FakeBitBake::new(false);
+    let options = SemanticOptions {
+        bitbake: fixture.bitbake.clone(),
+        build_dir: fixture.build_dir.clone(),
+        targets: vec!["demo".to_owned()],
+        variables: vec![
+            "SUMMARY".to_owned(),
+            "DESCRIPTION".to_owned(),
+            "LICENSE".to_owned(),
+            "SRCREV".to_owned(),
+            "SRCPV".to_owned(),
+            "SRC_URI".to_owned(),
+        ],
+    };
+
+    let (report, findings) = lint_with_bitbake(&options, &LintOptions::default()).unwrap();
+
+    assert!(report.analysis_succeeded());
+    assert!(
+        findings
+            .iter()
+            .any(|finding| finding.diagnostic.rule_id() == "BBT019")
+    );
+    assert!(
+        findings
+            .iter()
+            .any(|finding| finding.diagnostic.rule_id() == "BBT011")
+    );
+    assert!(
+        findings
+            .iter()
+            .any(|finding| finding.diagnostic.rule_id() == "BBT012")
+    );
+    assert!(
+        findings
+            .iter()
+            .any(|finding| finding.diagnostic.rule_id() == "BBT013")
+    );
 }
 
 #[cfg(unix)]

@@ -23,6 +23,7 @@ class DocumentationTests(unittest.TestCase):
             "bbtidy format --write",
             "bbtidy lint --show-fixes",
             "bbtidy lint --fix",
+            "bbtidy lint --semantic",
             "bitbake --parse-only",
             "max_files",
             "max_bytes",

@@ -1,8 +1,9 @@
 use bbtidy::{
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
-    LintSeverity, SafetyOptions, SemanticOptions, SyntaxKind, Token, WorkspaceIndex,
-    analyze_bitbake, apply_lint_fixes, discover_build_context_with_options, format_with_options,
-    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
+    LintSeverity, SafetyOptions, SemanticOptions, SemanticReport, SyntaxKind, Token,
+    WorkspaceIndex, analyze_bitbake, apply_lint_fixes, discover_build_context_with_options,
+    format_with_options, get_line_col, lint_rules, lint_with_options, lint_with_workspace,
+    load_config, parse, semantic_lint_diagnostics,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -102,7 +103,33 @@ struct LintArgs {
     show_fixes: bool,
 
     #[command(flatten)]
+    semantic: SemanticLintArgs,
+
+    #[command(flatten)]
     inputs: InputArgs,
+}
+
+#[derive(Args)]
+struct SemanticLintArgs {
+    /// Run BitBake-backed semantic analysis in addition to static linting.
+    #[arg(long)]
+    semantic: bool,
+
+    /// Existing BitBake build directory containing conf/local.conf and conf/bblayers.conf.
+    #[arg(long, value_name = "PATH")]
+    build_dir: Option<PathBuf>,
+
+    /// Project directory from which to discover a build directory.
+    #[arg(long, value_name = "PATH")]
+    project_dir: Option<PathBuf>,
+
+    /// BitBake executable to invoke; defaults to project configuration or PATH.
+    #[arg(long, value_name = "PATH")]
+    bitbake: Option<PathBuf>,
+
+    /// Recipe or target to inspect. May be supplied more than once.
+    #[arg(long = "target", value_name = "TARGET")]
+    targets: Vec<String>,
 }
 
 #[derive(Args)]
@@ -327,6 +354,48 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
     }
 }
 
+fn analyze_semantic_lint(
+    args: &SemanticLintArgs,
+    config: &Config,
+) -> Result<SemanticLintAnalysis, String> {
+    let start = match &args.project_dir {
+        Some(path) => path.clone(),
+        None => std::env::current_dir()
+            .map_err(|error| format!("could not determine project directory: {error}"))?,
+    };
+    let context_result = match &args.build_dir {
+        Some(path) => BuildContext::from_build_dir(path),
+        None => {
+            let mut discovery = BuildContextDiscoveryOptions::from_environment();
+            discovery.configured_build_dir = config.semantic.build_dir.clone();
+            discover_build_context_with_options(&start, &discovery)
+        }
+    };
+    let context = context_result.map_err(|error| error.to_string())?;
+    let options = SemanticOptions {
+        bitbake: args
+            .bitbake
+            .clone()
+            .or_else(|| config.semantic.bitbake.clone())
+            .unwrap_or_else(|| PathBuf::from("bitbake")),
+        build_dir: context.build_dir().to_path_buf(),
+        targets: args.targets.clone(),
+        variables: [
+            "SUMMARY",
+            "DESCRIPTION",
+            "LICENSE",
+            "SRCREV",
+            "SRCPV",
+            "SRC_URI",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect(),
+    };
+    let report = analyze_bitbake(&options).map_err(|error| error.to_string())?;
+    Ok(SemanticLintAnalysis { context, report })
+}
+
 fn run_format(args: FormatArgs, config: &Config) -> i32 {
     let inputs = match resolve_inputs(&args.inputs.paths, config) {
         Ok(inputs) => inputs,
@@ -420,6 +489,19 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
+    if !args.semantic.semantic
+        && (args.semantic.build_dir.is_some()
+            || args.semantic.project_dir.is_some()
+            || args.semantic.bitbake.is_some()
+            || !args.semantic.targets.is_empty())
+    {
+        eprintln!("error: --build-dir, --project-dir, --bitbake, and --target require --semantic");
+        return EXIT_ERROR;
+    }
+    if args.semantic.semantic && inputs.iter().any(|input| matches!(input, Input::Stdin)) {
+        eprintln!("error: --semantic cannot be used with standard input");
+        return EXIT_ERROR;
+    }
     if args.fix && inputs.iter().any(|input| matches!(input, Input::Stdin)) {
         eprintln!("error: --fix cannot be used with standard input");
         return EXIT_ERROR;
@@ -441,6 +523,21 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             return EXIT_ERROR;
         }
     };
+    let semantic_report = if args.semantic.semantic {
+        match analyze_semantic_lint(&args.semantic, config) {
+            Ok(report) => Some(report),
+            Err(error) => {
+                eprintln!("error: {error}");
+                return EXIT_ERROR;
+            }
+        }
+    } else {
+        None
+    };
+    let semantic_findings = semantic_report
+        .as_ref()
+        .map(|analysis| semantic_lint_diagnostics(&analysis.report, &lint_options))
+        .unwrap_or_default();
     let mut had_error = false;
     let machine_output = args.output != LintOutput::Text;
     let mut analyzed = Vec::with_capacity(inputs.len());
@@ -550,7 +647,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         }
     }
 
-    let collected = analyzed
+    let mut collected = analyzed
         .iter()
         .flat_map(|input| {
             input
@@ -563,6 +660,29 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
                 })
         })
         .collect::<Vec<_>>();
+    collected.extend(
+        semantic_findings
+            .iter()
+            .cloned()
+            .map(|finding| ReportedDiagnostic {
+                label: finding.label.clone(),
+                diagnostic: finding.diagnostic.clone(),
+            }),
+    );
+    collected.sort_by(|left, right| {
+        (
+            left.label.as_str(),
+            left.diagnostic.line(),
+            left.diagnostic.column(),
+            left.diagnostic.rule_id(),
+        )
+            .cmp(&(
+                right.label.as_str(),
+                right.diagnostic.line(),
+                right.diagnostic.column(),
+                right.diagnostic.rule_id(),
+            ))
+    });
     let applied_fixes = analyzed
         .iter()
         .filter(|input| input.fixes_applied > 0)
@@ -574,8 +694,13 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
 
     let mut stdout = io::stdout().lock();
     if machine_output {
-        if let Err(error) = write_lint_report(args.output, &collected, &applied_fixes, &mut stdout)
-        {
+        if let Err(error) = write_lint_report(
+            args.output,
+            &collected,
+            &applied_fixes,
+            semantic_report.as_ref(),
+            &mut stdout,
+        ) {
             if error.kind() == io::ErrorKind::BrokenPipe {
                 return 0;
             }
@@ -601,16 +726,19 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
                     return EXIT_ERROR;
                 }
             }
-            for diagnostic in &input.diagnostics {
-                if let Err(error) =
-                    write_text_diagnostic(&mut stdout, &input.label, diagnostic, args.show_fixes)
-                {
-                    if error.kind() == io::ErrorKind::BrokenPipe {
-                        return 0;
-                    }
-                    eprintln!("error: could not write standard output: {error}");
-                    return EXIT_ERROR;
+        }
+        for entry in &collected {
+            if let Err(error) = write_text_diagnostic(
+                &mut stdout,
+                &entry.label,
+                &entry.diagnostic,
+                args.show_fixes,
+            ) {
+                if error.kind() == io::ErrorKind::BrokenPipe {
+                    return 0;
                 }
+                eprintln!("error: could not write standard output: {error}");
+                return EXIT_ERROR;
             }
         }
     }
@@ -634,6 +762,11 @@ struct AnalyzedLintInput {
     fixed: String,
     diagnostics: Vec<LintDiagnostic>,
     fixes_applied: usize,
+}
+
+struct SemanticLintAnalysis {
+    context: BuildContext,
+    report: SemanticReport,
 }
 
 struct ReportedDiagnostic {
@@ -683,12 +816,13 @@ fn write_lint_report(
     output: LintOutput,
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
+    semantic_report: Option<&SemanticLintAnalysis>,
     stdout: &mut impl Write,
 ) -> io::Result<()> {
     let report = match output {
         LintOutput::Text => unreachable!("text reports are streamed directly"),
-        LintOutput::Json => json_report(diagnostics, applied_fixes),
-        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes),
+        LintOutput::Json => json_report(diagnostics, applied_fixes, semantic_report),
+        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes, semantic_report),
     };
     let serialized = serde_json::to_vec_pretty(&report)
         .map_err(|error| io::Error::other(format!("could not serialize diagnostics: {error}")))?;
@@ -696,14 +830,36 @@ fn write_lint_report(
     stdout.write_all(b"\n")
 }
 
-fn json_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixSummary]) -> Value {
-    json!({
+fn json_report(
+    diagnostics: &[ReportedDiagnostic],
+    applied_fixes: &[AppliedFixSummary],
+    semantic_report: Option<&SemanticLintAnalysis>,
+) -> Value {
+    let mut report = json!({
         "version": 1,
         "diagnostics": diagnostics.iter().map(json_diagnostic).collect::<Vec<_>>(),
         "fixes_applied": applied_fixes.iter().map(|fix| json!({
             "path": fix.path,
             "count": fix.count,
         })).collect::<Vec<_>>(),
+    });
+    if let Some(semantic_report) = semantic_report {
+        report["semantic"] = semantic_summary(semantic_report);
+    }
+    report
+}
+
+fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
+    let report = &analysis.report;
+    json!({
+        "bitbake_version": report.bitbake_version(),
+        "project_dir": analysis.context.project_dir(),
+        "build_dir": report.build_dir(),
+        "build_context_source": analysis.context.source(),
+        "parse_succeeded": report.parse_succeeded(),
+        "target_queries_succeeded": report.target_queries_succeeded(),
+        "analysis_succeeded": report.analysis_succeeded(),
+        "targets": report.environments().iter().map(|environment| environment.target()).collect::<Vec<_>>(),
     })
 }
 
@@ -733,7 +889,11 @@ fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
     })
 }
 
-fn sarif_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixSummary]) -> Value {
+fn sarif_report(
+    diagnostics: &[ReportedDiagnostic],
+    applied_fixes: &[AppliedFixSummary],
+    semantic_report: Option<&SemanticLintAnalysis>,
+) -> Value {
     let rules = lint_rules()
         .iter()
         .map(|rule| {
@@ -793,7 +953,7 @@ fn sarif_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixS
         })
         .collect::<Vec<_>>();
 
-    json!({
+    let mut report = json!({
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",
         "runs": [{
@@ -811,7 +971,11 @@ fn sarif_report(diagnostics: &[ReportedDiagnostic], applied_fixes: &[AppliedFixS
                 "count": fix.count,
             })).collect::<Vec<_>>()},
         }],
-    })
+    });
+    if let Some(semantic_report) = semantic_report {
+        report["runs"][0]["properties"]["semantic"] = semantic_summary(semantic_report);
+    }
+    report
 }
 
 fn sarif_level(severity: LintSeverity) -> &'static str {

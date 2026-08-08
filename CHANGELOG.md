@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Opt-in BitBake-backed semantic linting through `lint --semantic`, including
+  source-aware `BBT019` diagnostics, resolved target metadata checks, and JSON
+  semantic provenance.
 - Broader lint coverage for recipe metadata completeness, immediate
   `FILESEXTRAPATHS` expansion, Git fetch protocols, duplicate assignments and
   functions, and empty dependency directives, with conservative complete-layer
