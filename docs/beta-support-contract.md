@@ -100,8 +100,15 @@ bounded by configurable file-count and source-byte limits.
 
 Linting reports findings only within the selected analysis scope. File-local
 linting does not claim to resolve a complete layer. Layer-aware linting only
-uses files supplied in the indexed input set and only resolves static
-references.
+uses files supplied in the indexed input set, while `--workspace` derives that
+set from the configured build and only resolves static references.
+
+`lint --workspace BUILD_DIR` is the complete offline workspace mode. It reads
+static `BBLAYERS` assignments from `BUILD_DIR/conf/bblayers.conf`, indexes each
+listed layer and the build's `conf` metadata, and runs static rules across that
+whole scope. It expands `TOPDIR` and environment-backed path variables,
+rejects missing layers or dynamic `BBLAYERS` values, and never silently falls
+back to a partial workspace.
 
 Dynamic values, dynamic class names, unavailable external providers, and
 embedded shell or Python behavior are not evaluated. A clean lint result means

@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Whole-build offline workspace linting through `lint --workspace`, including
+  static `BBLAYERS` discovery, build configuration indexing, cross-layer
+  dependency resolution, and complete-scope safety/exclusion handling.
 - Opt-in BitBake-backed semantic linting through `lint --semantic`, including
   source-aware `BBT019` diagnostics, resolved target metadata checks, and JSON
   semantic provenance.

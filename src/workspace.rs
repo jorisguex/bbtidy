@@ -1,4 +1,4 @@
-use crate::{DirectiveKeyword, SyntaxKind, SyntaxTree, comment_start, parse};
+use crate::{AssignmentOperator, DirectiveKeyword, SyntaxKind, SyntaxTree, comment_start, parse};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::io;
@@ -143,20 +143,24 @@ impl<'a> WorkspaceCandidate<'a> {
     }
 }
 
-/// A conservative index of the complete BitBake layers represented by a set
-/// of input paths.
+/// A conservative index of BitBake metadata and its static workspace context.
 ///
-/// The index deliberately only considers files supplied by the caller. This
-/// makes single-file linting safe: semantic findings are emitted only when a
-/// complete layer, including its conf/layer.conf, is present in the input
-/// set. Layer metadata is used to build a deterministic BBPATH search order;
-/// layer priority remains the fallback when the supplied metadata does not
-/// describe a more specific path order.
+/// [`WorkspaceIndex::from_paths`] deliberately considers only files supplied
+/// by the caller, making single-file linting safe: semantic findings are
+/// emitted only when a complete layer, including its `conf/layer.conf`, is
+/// present in the input set. [`WorkspaceIndex::from_build_dir`] instead
+/// discovers the complete static scope declared by a build's `BBLAYERS`.
+/// Layer metadata is used to build a deterministic BBPATH search order; layer
+/// priority remains the fallback when the supplied metadata does not describe
+/// a more specific path order.
 #[derive(Clone, Debug, Default)]
 pub struct WorkspaceIndex {
     layers: Vec<LayerIndex>,
     search_paths: Vec<SearchPath>,
     dependencies: BTreeMap<DependencyNode, Vec<DependencyEdge>>,
+    files: BTreeSet<PathBuf>,
+    build_files: BTreeSet<PathBuf>,
+    build_root: Option<PathBuf>,
 }
 
 impl WorkspaceIndex {
@@ -180,6 +184,40 @@ impl WorkspaceIndex {
             .filter_map(|path| supplied_layer_root_for(path))
             .collect::<BTreeSet<_>>();
 
+        Self::from_canonical_files(files, BTreeSet::new(), roots)
+    }
+
+    /// Builds an index for every metadata file in a configured BitBake build.
+    ///
+    /// The build's `conf/bblayers.conf` is evaluated only for static
+    /// `BBLAYERS` assignments. Each resolved layer is recursively indexed,
+    /// while the build's own `conf` tree is included as global metadata. A
+    /// dynamic or missing layer path is rejected instead of silently creating
+    /// an incomplete workspace.
+    pub fn from_build_dir(path: impl AsRef<Path>) -> io::Result<Self> {
+        let build_dir = fs::canonicalize(path.as_ref())?;
+        validate_build_dir(&build_dir)?;
+        let layer_roots = parse_build_layers(&build_dir)?;
+        let mut files = BTreeSet::new();
+        for root in &layer_roots {
+            files.extend(discover_metadata_files(root, MetadataTree::Layer)?);
+        }
+        let build_files = discover_metadata_files(&build_dir, MetadataTree::Build)?;
+        if build_files.is_empty() {
+            return Err(invalid_data(
+                "build configuration contains no metadata files",
+            ));
+        }
+        files.extend(build_files.iter().cloned());
+        let roots = layer_roots.into_iter().collect::<BTreeSet<_>>();
+        Self::from_canonical_files(files, build_files, roots)
+    }
+
+    fn from_canonical_files(
+        files: BTreeSet<PathBuf>,
+        build_files: BTreeSet<PathBuf>,
+        roots: BTreeSet<PathBuf>,
+    ) -> io::Result<Self> {
         let mut layers = roots
             .into_iter()
             .map(|root| LayerIndex::new(root, &files))
@@ -195,10 +233,28 @@ impl WorkspaceIndex {
             layers,
             search_paths: Vec::new(),
             dependencies: BTreeMap::new(),
+            files,
+            build_root: build_files
+                .iter()
+                .find_map(|path| path.parent()?.parent().map(Path::to_path_buf)),
+            build_files,
         };
         index.search_paths = build_search_paths(&index.layers);
         index.dependencies = index.build_dependencies();
         Ok(index)
+    }
+
+    /// Returns every metadata file included in this workspace in stable path
+    /// order.
+    pub fn files(&self) -> impl Iterator<Item = &Path> {
+        self.files.iter().map(PathBuf::as_path)
+    }
+
+    /// Returns whether a path has enough whole-workspace context for
+    /// workspace-aware lint rules.
+    pub fn is_workspace_file(&self, path: &Path) -> bool {
+        let path = canonicalize_for_lookup(path);
+        self.build_files.contains(&path) || self.is_complete_for(&path)
     }
 
     /// Returns whether path belongs to a complete indexed layer.
@@ -321,11 +377,9 @@ impl WorkspaceIndex {
         let target_path = Path::new(target);
         if target_path.is_absolute() {
             return self
-                .find_path(target_path)
-                .map(|(index, path)| {
-                    vec![self.layers[index].make_candidate(path, WorkspaceSearchScope::CurrentFile)]
-                })
-                .unwrap_or_default();
+                .candidate_for_path(target_path, WorkspaceSearchScope::CurrentFile)
+                .into_iter()
+                .collect();
         }
 
         let from = canonicalize_for_lookup(from);
@@ -333,12 +387,10 @@ impl WorkspaceIndex {
 
         if !matches!(directive, WorkspaceFileDirective::IncludeAll)
             && let Some(parent) = from.parent()
-            && let Some((index, path)) = self.find_path(&parent.join(target_path))
+            && let Some(candidate) = self
+                .candidate_for_path(&parent.join(target_path), WorkspaceSearchScope::CurrentFile)
         {
-            append_candidate(
-                &mut candidates,
-                self.layers[index].make_candidate(path, WorkspaceSearchScope::CurrentFile),
-            );
+            append_candidate(&mut candidates, candidate);
             return candidates;
         }
 
@@ -472,35 +524,53 @@ impl WorkspaceIndex {
 
     fn build_dependencies(&self) -> BTreeMap<DependencyNode, Vec<DependencyEdge>> {
         let mut dependencies = BTreeMap::new();
-        for layer in &self.layers {
-            if !layer.is_complete() {
+        for path in &self.files {
+            if !self.is_workspace_file(path) {
                 continue;
             }
-            for path in &layer.files {
-                let Ok(source) = fs::read_to_string(path) else {
-                    continue;
-                };
-                let Ok(tree) = parse(&source) else {
-                    continue;
-                };
-                for context in dependency_contexts_for_path(path) {
-                    let edges = collect_dependency_edges(self, path, &tree, *context);
-                    if !edges.is_empty() {
-                        dependencies.insert(
-                            DependencyNode {
-                                path: path.clone(),
-                                context: *context,
-                            },
-                            edges,
-                        );
-                    }
+            let Ok(source) = fs::read_to_string(path) else {
+                continue;
+            };
+            let Ok(tree) = parse(&source) else {
+                continue;
+            };
+            for context in dependency_contexts_for_path(path) {
+                let edges = collect_dependency_edges(self, path, &tree, *context);
+                if !edges.is_empty() {
+                    dependencies.insert(
+                        DependencyNode {
+                            path: path.clone(),
+                            context: *context,
+                        },
+                        edges,
+                    );
                 }
             }
         }
         dependencies
     }
 
-    fn find_path<'a>(&'a self, candidate: &Path) -> Option<(usize, &'a Path)> {
+    fn candidate_for_path<'a>(
+        &'a self,
+        candidate: &Path,
+        scope: WorkspaceSearchScope,
+    ) -> Option<WorkspaceCandidate<'a>> {
+        if let Some((index, path)) = self.find_layer_path(candidate) {
+            return Some(self.layers[index].make_candidate(path, scope));
+        }
+        let canonical = canonicalize_for_lookup(candidate);
+        self.build_files.get(&canonical).and_then(|path| {
+            self.build_root.as_deref().map(|root| WorkspaceCandidate {
+                path,
+                layer: root,
+                priority: DEFAULT_LAYER_PRIORITY,
+                collection: None,
+                scope,
+            })
+        })
+    }
+
+    fn find_layer_path<'a>(&'a self, candidate: &Path) -> Option<(usize, &'a Path)> {
         if let Some(found) = self
             .layers
             .iter()
@@ -802,6 +872,241 @@ fn dependency_contexts_for_path(path: &Path) -> &'static [WorkspaceClassContext]
     } else {
         SHARED
     }
+}
+
+#[derive(Clone, Copy)]
+enum MetadataTree {
+    Layer,
+    Build,
+}
+
+fn validate_build_dir(build_dir: &Path) -> io::Result<()> {
+    let metadata = fs::metadata(build_dir)?;
+    if !metadata.is_dir() {
+        return Err(invalid_data(format!(
+            "BitBake build path {} is not a directory",
+            build_dir.display()
+        )));
+    }
+    for file in ["conf/local.conf", "conf/bblayers.conf"] {
+        if !build_dir.join(file).is_file() {
+            return Err(invalid_data(format!(
+                "BitBake build directory is missing {file}"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn parse_build_layers(build_dir: &Path) -> io::Result<Vec<PathBuf>> {
+    let path = build_dir.join("conf/bblayers.conf");
+    let source = fs::read_to_string(&path)?;
+    let tree = parse(&source)
+        .map_err(|error| invalid_data(format!("could not parse {}: {error}", path.display())))?;
+    let mut layers = Vec::new();
+
+    for node in tree.nodes() {
+        let SyntaxKind::Assignment(assignment) = node.kind() else {
+            continue;
+        };
+        if assignment.name().split(':').next() != Some("BBLAYERS") {
+            continue;
+        }
+        let values = static_build_layer_paths(assignment.value(), build_dir)?;
+        let override_components = assignment.name().split(':').skip(1).collect::<Vec<_>>();
+        let is_append_override = override_components.contains(&"append");
+        let is_prepend_override = override_components.contains(&"prepend");
+        let is_remove = override_components.contains(&"remove");
+        if is_remove {
+            layers.retain(|layer| !values.contains(layer));
+            continue;
+        }
+        let operator = if is_append_override {
+            AssignmentOperator::AppendWithSpace
+        } else if is_prepend_override {
+            AssignmentOperator::PrependWithSpace
+        } else {
+            assignment.operator()
+        };
+        match operator {
+            AssignmentOperator::Assign | AssignmentOperator::Immediate => {
+                layers = values;
+            }
+            AssignmentOperator::Default | AssignmentOperator::WeakDefault => {
+                if layers.is_empty() {
+                    layers = values;
+                }
+            }
+            AssignmentOperator::AppendWithSpace | AssignmentOperator::AppendWithoutSpace => {
+                layers.extend(values);
+            }
+            AssignmentOperator::PrependWithSpace | AssignmentOperator::PrependWithoutSpace => {
+                let mut combined = values;
+                combined.extend(std::mem::take(&mut layers));
+                layers = combined;
+            }
+        }
+    }
+
+    if layers.is_empty() {
+        return Err(invalid_data(format!(
+            "{} does not contain a static non-empty BBLAYERS value",
+            path.display()
+        )));
+    }
+
+    let mut resolved = Vec::new();
+    for layer in layers {
+        let layer = fs::canonicalize(&layer).map_err(|error| {
+            invalid_data(format!(
+                "BBLAYERS entry {} could not be resolved: {error}",
+                layer.display()
+            ))
+        })?;
+        if !layer.join("conf/layer.conf").is_file() {
+            return Err(invalid_data(format!(
+                "BBLAYERS entry {} is not a layer with conf/layer.conf",
+                layer.display()
+            )));
+        }
+        if !resolved.contains(&layer) {
+            resolved.push(layer);
+        }
+    }
+    Ok(resolved)
+}
+
+fn static_build_layer_paths(value: &str, build_dir: &Path) -> io::Result<Vec<PathBuf>> {
+    let value = scalar_value(value).ok_or_else(|| invalid_data("BBLAYERS has no scalar value"))?;
+    let mut paths = Vec::new();
+    for word in value.split_ascii_whitespace() {
+        if word == "\\" {
+            continue;
+        }
+        let word = expand_build_variables(word, build_dir)?;
+        if word.is_empty() {
+            continue;
+        }
+        let path = PathBuf::from(word);
+        paths.push(if path.is_absolute() {
+            path
+        } else {
+            build_dir.join(path)
+        });
+    }
+    Ok(paths)
+}
+
+fn expand_build_variables(value: &str, build_dir: &Path) -> io::Result<String> {
+    let mut expanded = value.to_owned();
+    loop {
+        let Some(start) = expanded.find("${") else {
+            break;
+        };
+        let end = expanded[start + 2..]
+            .find('}')
+            .map(|relative| start + 2 + relative)
+            .ok_or_else(|| {
+                invalid_data(format!("unterminated variable in BBLAYERS entry '{value}'"))
+            })?;
+        let name = &expanded[start + 2..end];
+        if name.starts_with('@') {
+            return Err(invalid_data(format!(
+                "BBLAYERS entry '{value}' uses dynamic expansion"
+            )));
+        }
+        let replacement = match name {
+            "TOPDIR" | "BUILDDIR" | "PWD" => build_dir.to_string_lossy().into_owned(),
+            _ => std::env::var(name).map_err(|_| {
+                invalid_data(format!(
+                    "BBLAYERS entry '{value}' uses unresolved variable ${{{name}}}"
+                ))
+            })?,
+        };
+        expanded.replace_range(start..=end, &replacement);
+    }
+    if expanded.contains('$') {
+        return Err(invalid_data(format!(
+            "BBLAYERS entry '{value}' uses dynamic expansion"
+        )));
+    }
+    if let Some(home) = std::env::var_os("HOME")
+        && (expanded == "~" || expanded.starts_with("~/"))
+    {
+        expanded = home.to_string_lossy().to_string() + &expanded[1..];
+    }
+    Ok(expanded)
+}
+
+fn discover_metadata_files(root: &Path, tree: MetadataTree) -> io::Result<BTreeSet<PathBuf>> {
+    let start = match tree {
+        MetadataTree::Layer => root.to_path_buf(),
+        MetadataTree::Build => root.join("conf"),
+    };
+    if !start.is_dir() {
+        return Err(invalid_data(format!(
+            "metadata root {} is not a directory",
+            start.display()
+        )));
+    }
+    let mut files = BTreeSet::new();
+    walk_metadata_files(&start, root, tree, &mut files)?;
+    Ok(files)
+}
+
+fn walk_metadata_files(
+    directory: &Path,
+    root: &Path,
+    tree: MetadataTree,
+    files: &mut BTreeSet<PathBuf>,
+) -> io::Result<()> {
+    let mut entries = fs::read_dir(directory)?.collect::<Result<Vec<_>, _>>()?;
+    entries.sort_by_key(|entry| entry.file_name());
+    for entry in entries {
+        let path = entry.path();
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            if path.file_name().is_some_and(|name| name == "files") {
+                continue;
+            }
+            walk_metadata_files(&path, root, tree, files)?;
+        } else if file_type.is_file() && is_workspace_metadata_file(&path, root, tree) {
+            files.insert(path);
+        }
+    }
+    Ok(())
+}
+
+fn is_workspace_metadata_file(path: &Path, root: &Path, tree: MetadataTree) -> bool {
+    const EXTENSIONS: &[&str] = &["bb", "bbappend", "bbclass", "conf", "inc"];
+    if !path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| EXTENSIONS.contains(&extension))
+    {
+        return false;
+    }
+    let relative = path.strip_prefix(root).unwrap_or(path);
+    if relative
+        .components()
+        .any(|component| component.as_os_str() == "files")
+    {
+        return false;
+    }
+    match tree {
+        MetadataTree::Build => true,
+        MetadataTree::Layer => {
+            path.extension().and_then(|extension| extension.to_str()) != Some("conf")
+                || path.ancestors().any(|ancestor| {
+                    ancestor.file_name().is_some_and(|name| name == "conf")
+                        && ancestor.join("layer.conf").is_file()
+                })
+        }
+    }
+}
+
+fn invalid_data(message: impl Into<String>) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, message.into())
 }
 
 fn parse_layer_metadata(root: &Path, files: &BTreeSet<PathBuf>) -> LayerMetadata {

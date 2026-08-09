@@ -24,6 +24,7 @@ class DocumentationTests(unittest.TestCase):
             "bbtidy lint --show-fixes",
             "bbtidy lint --fix",
             "bbtidy lint --semantic",
+            "bbtidy lint --workspace",
             "bitbake --parse-only",
             "max_files",
             "max_bytes",

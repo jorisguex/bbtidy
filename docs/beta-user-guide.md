@@ -50,6 +50,17 @@ bbtidy lint --output sarif meta-my-layer/
 bbtidy semantic --build-dir build --target core-image-minimal --output json
 ```
 
+For a complete configured build, lint every listed layer and build
+configuration file together:
+
+```bash
+bbtidy lint --workspace build
+```
+
+This reads static `BBLAYERS` entries from `build/conf/bblayers.conf`. Missing
+or dynamically computed layer paths are reported as an operational error so a
+successful run never represents only part of the configured build.
+
 Review the diff and lint findings. Then run the repository's normal BitBake
 parse, build, and test validation. If the results are acceptable, apply the
 formatting in a clean branch or worktree:

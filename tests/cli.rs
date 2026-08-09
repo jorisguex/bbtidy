@@ -810,6 +810,86 @@ fn lint_directories_report_unresolved_static_layer_references() {
 }
 
 #[test]
+fn lint_workspace_discovers_all_layers_and_build_configuration() {
+    let directory = TemporaryDirectory::new("lint-whole-build");
+    let first_layer = directory.write(
+        "meta-first/conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"first\"\n",
+            "BBFILE_PATTERN_first = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_first = \"5\"\n",
+            "LAYERSERIES_COMPAT_first = \"test\"\n",
+        ),
+    );
+    let first_layer = first_layer
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    let second_layer = directory.write(
+        "meta-second/conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"second\"\n",
+            "BBFILE_PATTERN_second = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_second = \"10\"\n",
+            "LAYERSERIES_COMPAT_second = \"test\"\n",
+        ),
+    );
+    let second_layer = second_layer
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    directory.write("meta-second/classes/shared.bbclass", "SHARED = \"1\"\n");
+    let recipe = directory.write(
+        "meta-first/recipes-example/example.bb",
+        "inherit shared\nSUMMARY = \"example\"\n",
+    );
+    let build = directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"  \n");
+    let build = build.parent().unwrap().parent().unwrap().to_path_buf();
+    directory.write(
+        "build/conf/bblayers.conf",
+        &format!(
+            "BBLAYERS = \"{} \\\n{}\"\n",
+            first_layer.display(),
+            second_layer.display()
+        ),
+    );
+
+    let output = run([
+        "lint",
+        "--workspace",
+        build.to_str().unwrap(),
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let diagnostics = report["diagnostics"].as_array().unwrap();
+    let expected_local = fs::canonicalize(directory.path().join("build/conf/local.conf")).unwrap();
+    let expected_recipe = fs::canonicalize(&recipe).unwrap();
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT001"
+            && diagnostic["path"] == expected_local.display().to_string()
+    }));
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT012"
+            && diagnostic["path"] == expected_recipe.display().to_string()
+    }));
+    assert!(
+        diagnostics
+            .iter()
+            .all(|diagnostic| diagnostic["rule_id"] != "BBT007")
+    );
+}
+
+#[test]
 fn lint_reports_broader_recipe_metadata_rules_in_machine_output() {
     let directory = TemporaryDirectory::new("lint-recipe-metadata");
     directory.write(

@@ -40,6 +40,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order and indexes complete supplied layers for semantic
   checks.
+- **Whole-build workspace linting**: `lint --workspace` reads a configured
+  build's `BBLAYERS`, indexes every selected layer plus build configuration, and
+  resolves static references across the complete build scope.
 - **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
   and safe edit suggestions, with transactional `lint --fix` support for
   whitespace and final-newline findings.
@@ -118,6 +121,19 @@ To lint a file, recipe directory, or layer:
 ```bash
 bbtidy lint recipes-example/
 ```
+
+To lint every configured layer and build configuration file in a BitBake
+workspace:
+
+```bash
+bbtidy lint --workspace build
+```
+
+Workspace mode reads static `BBLAYERS` assignments from
+`build/conf/bblayers.conf`, expands `TOPDIR` and environment-backed paths, and
+fails if a layer path is missing or dynamically computed. It includes the
+build's `conf` tree and all metadata under each listed layer, while still
+honoring configured path exclusions and safety limits.
 
 To combine static linting with authoritative BitBake semantics:
 
@@ -372,8 +388,11 @@ when a `.bb` file belongs to a complete indexed layer; isolated files and
 standard input do not receive those path-dependent findings. Recipe QA rules
 `BBT020` through `BBT028` run on `.bb` files and validate static filename
 identity, license/source checksums, `PACKAGECONFIG` definitions, package
-declarations/scopes, and `SRC_URI` parameters. When `lint` receives a complete layer directory, it
-indexes the supplied metadata into a static dependency graph. The graph follows
+declarations/scopes, and `SRC_URI` parameters. When `lint` receives a complete
+layer directory, it indexes the supplied metadata into a static dependency
+graph. `lint --workspace BUILD_DIR` instead loads every configured layer from
+`conf/bblayers.conf` and includes the build's `conf` metadata in the same graph.
+The graph follows
 the effective target of `include`, `require`, `inherit`, and `inherit_defer`,
 and every target of `include_all`; it reports cycles but skips dynamic and
 unresolved optional references. The workspace model reads `BBFILE_COLLECTIONS`,
@@ -394,7 +413,9 @@ and cycle diagnostics identify the selected target's layer, collection,
 priority, and search scope. The public `WorkspaceCandidate`,
 `WorkspaceClassContext`, and `WorkspaceDependency` APIs expose the corresponding
 resolution and graph information. Single-file and standard-input linting remain
-file-local, and dynamic references are skipped.
+file-local, and dynamic references are skipped. Whole-build mode rejects
+unresolved dynamic `BBLAYERS` entries rather than analyzing only a partial
+workspace.
 
 Layer QA rules `BBT029` through `BBT033` validate static collection names,
 patterns, priorities, collection dependencies, and series compatibility in

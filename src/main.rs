@@ -102,6 +102,10 @@ struct LintArgs {
     #[arg(long)]
     show_fixes: bool,
 
+    /// Lint the complete BitBake workspace described by build/conf/bblayers.conf.
+    #[arg(long, value_name = "BUILD_DIR")]
+    workspace: Option<PathBuf>,
+
     #[command(flatten)]
     semantic: SemanticLintArgs,
 
@@ -194,7 +198,7 @@ impl From<LintFailureArg> for LintFailurePolicy {
 #[derive(Args)]
 struct InputArgs {
     /// Files or directories to process; use '-' to read standard input
-    #[arg(required = true, value_name = "PATH")]
+    #[arg(value_name = "PATH")]
     paths: Vec<PathBuf>,
 }
 
@@ -483,12 +487,48 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
     if let Some(fail_on) = args.fail_on {
         lint_options.set_fail_on(fail_on.into());
     }
-    let inputs = match resolve_inputs(&args.inputs.paths, config) {
-        Ok(inputs) => inputs,
-        Err(error) => {
-            eprintln!("error: {error}");
+    if args.workspace.is_some() && !args.inputs.paths.is_empty() {
+        eprintln!("error: --workspace cannot be combined with file or directory inputs");
+        return EXIT_ERROR;
+    }
+    let (inputs, workspace) = if let Some(build_dir) = args.workspace.as_deref() {
+        let workspace = match WorkspaceIndex::from_build_dir(build_dir) {
+            Ok(workspace) => workspace,
+            Err(error) => {
+                eprintln!("error: could not index build workspace: {error}");
+                return EXIT_ERROR;
+            }
+        };
+        let inputs = workspace
+            .files()
+            .filter(|path| !config.is_excluded(path))
+            .map(|path| Input::File(path.to_path_buf()))
+            .collect::<Vec<_>>();
+        if inputs.is_empty() {
+            eprintln!("error: no BitBake files found in the build workspace");
             return EXIT_ERROR;
         }
+        (inputs, workspace)
+    } else {
+        let inputs = match resolve_inputs(&args.inputs.paths, config) {
+            Ok(inputs) => inputs,
+            Err(error) => {
+                eprintln!("error: {error}");
+                return EXIT_ERROR;
+            }
+        };
+        let workspace_paths = inputs.iter().filter_map(|input| match input {
+            Input::Stdin => None,
+            Input::File(path) => Some(path),
+        });
+        let workspace = match WorkspaceIndex::from_paths(workspace_paths) {
+            Ok(workspace) => workspace,
+            Err(error) => {
+                eprintln!("error: could not index workspace: {error}");
+                return EXIT_ERROR;
+            }
+        };
+        (inputs, workspace)
     };
     if !args.semantic.semantic
         && (args.semantic.build_dir.is_some()
@@ -513,17 +553,6 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         eprintln!("error: {error}");
         return EXIT_ERROR;
     }
-    let workspace_paths = inputs.iter().filter_map(|input| match input {
-        Input::Stdin => None,
-        Input::File(path) => Some(path),
-    });
-    let workspace = match WorkspaceIndex::from_paths(workspace_paths) {
-        Ok(workspace) => workspace,
-        Err(error) => {
-            eprintln!("error: could not index workspace: {error}");
-            return EXIT_ERROR;
-        }
-    };
     let semantic_report = if args.semantic.semantic {
         match analyze_semantic_lint(&args.semantic, config) {
             Ok(report) => Some(report),

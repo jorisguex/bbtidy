@@ -34,6 +34,90 @@ fn indexes_complete_layers_and_resolves_classes_and_files() {
 }
 
 #[test]
+fn indexes_every_layer_and_build_configuration_from_bblayers() {
+    let project = TemporaryLayer::new("workspace-build");
+    let first = project.root.join("meta-first");
+    let second = project.root.join("meta-second");
+    let build = project.root.join("build");
+
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(
+        build.join("conf/local.conf"),
+        "require build.inc\nMACHINE = \"qemux86-64\"\n",
+    )
+    .unwrap();
+    let build_include = build.join("conf/build.inc");
+    fs::write(&build_include, "BUILD_CONTEXT = \"1\"\n").unwrap();
+    fs::write(
+        build.join("conf/bblayers.conf"),
+        "BBLAYERS ?= \"${TOPDIR}/../meta-first\"\nBBLAYERS:append = \"${TOPDIR}/../meta-second\"\n",
+    )
+    .unwrap();
+
+    let first_conf = write_path(
+        &first,
+        "conf/layer.conf",
+        "BBFILE_COLLECTIONS += \"first\"\nBBFILE_PRIORITY_first = \"5\"\nBBPATH .= \":${LAYERDIR}\"\n",
+    );
+    write_path(&first, "recipes-example/example.bb", "inherit shared\n");
+    let second_conf = write_path(
+        &second,
+        "conf/layer.conf",
+        "BBFILE_COLLECTIONS += \"second\"\nBBFILE_PRIORITY_second = \"10\"\nBBPATH .= \":${LAYERDIR}\"\n",
+    );
+    let shared = write_path(&second, "classes/shared.bbclass", "SHARED = \"1\"\n");
+
+    let index = WorkspaceIndex::from_build_dir(&build).unwrap();
+    let files = index.files().collect::<BTreeSet<_>>();
+    assert!(
+        files.contains(
+            &fs::canonicalize(build.join("conf/local.conf"))
+                .unwrap()
+                .as_path()
+        )
+    );
+    assert!(
+        files.contains(
+            &fs::canonicalize(build.join("conf/bblayers.conf"))
+                .unwrap()
+                .as_path()
+        )
+    );
+    assert!(files.contains(&fs::canonicalize(&build_include).unwrap().as_path()));
+    assert!(files.contains(&fs::canonicalize(&first_conf).unwrap().as_path()));
+    assert!(files.contains(&fs::canonicalize(&second_conf).unwrap().as_path()));
+    assert!(files.contains(&fs::canonicalize(&shared).unwrap().as_path()));
+
+    let recipe = fs::canonicalize(first.join("recipes-example/example.bb")).unwrap();
+    assert!(index.is_workspace_file(&build.join("conf/local.conf")));
+    assert!(index.is_workspace_file(&recipe));
+    assert_eq!(
+        index.resolve_class("shared"),
+        Some(fs::canonicalize(shared).unwrap().as_path())
+    );
+    assert_eq!(
+        index.dependencies_from(&build.join("conf/local.conf"))[0].to(),
+        fs::canonicalize(build_include).unwrap().as_path()
+    );
+}
+
+#[test]
+fn rejects_dynamic_or_missing_bblayers_entries() {
+    let project = TemporaryLayer::new("workspace-build-invalid");
+    let build = project.root.join("build");
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(build.join("conf/local.conf"), "MACHINE = \"qemux86-64\"\n").unwrap();
+    fs::write(
+        build.join("conf/bblayers.conf"),
+        "BBLAYERS = \"${@get_layers(d)}\"\n",
+    )
+    .unwrap();
+
+    let error = WorkspaceIndex::from_build_dir(&build).unwrap_err();
+    assert!(error.to_string().contains("dynamic expansion"));
+}
+
+#[test]
 fn builds_static_dependency_edges_and_reports_cycle_witnesses() {
     let layer = TemporaryLayer::new("workspace-dependency-graph");
     let layer_conf = layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
@@ -423,6 +507,13 @@ impl TemporaryLayer {
         fs::write(&path, contents).unwrap();
         path
     }
+}
+
+fn write_path(root: &Path, relative: &str, contents: &str) -> PathBuf {
+    let path = root.join(relative);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, contents).unwrap();
+    path
 }
 
 impl Drop for TemporaryLayer {

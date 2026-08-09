@@ -975,9 +975,11 @@ pub fn lint_with_options(
 
 /// Checks source with caller-provided rule settings and an indexed workspace.
 ///
-/// Workspace-aware rules are enabled only when `path` belongs to a complete
-/// indexed layer. Dynamic references and incomplete single-file contexts are
-/// intentionally ignored to avoid pretending to evaluate BitBake metadata.
+/// Workspace-aware rules are enabled when `path` belongs to a complete indexed
+/// layer or to build configuration discovered by
+/// [`WorkspaceIndex::from_build_dir`]. Dynamic references and incomplete
+/// single-file contexts are intentionally ignored to avoid pretending to
+/// evaluate BitBake metadata.
 pub fn lint_with_workspace(
     text: &str,
     path: &std::path::Path,
@@ -1054,9 +1056,11 @@ pub fn lint_syntax_with_workspace(
 ) -> Vec<LintDiagnostic> {
     let mut diagnostics = collect_lint_diagnostics(tree);
     check_recipe_qa(tree, path, &mut diagnostics);
+    if workspace.is_workspace_file(path) {
+        check_workspace_references(tree, path, workspace, &mut diagnostics);
+    }
     if workspace.is_complete_for(path) {
         check_recipe_metadata(tree, path, &mut diagnostics);
-        check_workspace_references(tree, path, workspace, &mut diagnostics);
         if is_layer_configuration(path) {
             check_layer_qa(tree, workspace, &mut diagnostics);
         }
