@@ -1,17 +1,28 @@
+import argparse
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.check_upstream_corpus import (
     CompatibilityError,
+    baseline_update_allowed,
+    build_lint_baseline,
+    compare_lint_baseline,
     compare_semantic_probes,
     discover_metadata_files,
     format_idempotence_command,
     load_manifest,
+    normalize_lint_report,
     lint_command,
     normalize_semantic_values,
     opaque_regions,
     parse_semantic_values,
+    summarize_lint_findings,
+    validate_lint_baseline,
+    write_lint_evidence,
     verify_syntax_metrics,
     verify_tree_preservation,
     workflow_command_value,
@@ -289,7 +300,259 @@ class WorkflowCommandTests(unittest.TestCase):
             format_idempotence_command(bbtidy, inputs),
             [bbtidy, "format", "--check", *inputs],
         )
-        self.assertEqual(lint_command(bbtidy, inputs), [bbtidy, "check", *inputs])
+        self.assertEqual(
+            lint_command(bbtidy, inputs),
+            [bbtidy, "check", "--output", "json", "--fail-on", "never", *inputs],
+        )
+
+
+def lint_report(root, diagnostics):
+    return json.dumps({"version": 1, "diagnostics": diagnostics})
+
+
+def lint_diagnostic(path, rule_id="BBT001", message="trailing whitespace", line=1):
+    return {
+        "path": str(path),
+        "line": line,
+        "column": 4,
+        "severity": "warning",
+        "rule_id": rule_id,
+        "message": message,
+        "end_line": line,
+        "end_column": 6,
+        "range": {"start_byte": 3, "end_byte": 5},
+        "help": None,
+        "fixable": True,
+        "fixes": [
+            {
+                "start_byte": 3,
+                "end_byte": 5,
+                "replacement": "",
+                "message": "remove trailing whitespace",
+            }
+        ],
+    }
+
+
+class LintQualityTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.formatted = self.root / "formatted"
+        self.metadata = self.formatted / "poky" / "meta" / "example.bb"
+        self.metadata.parent.mkdir(parents=True)
+        self.metadata.write_text("SUMMARY = \"demo\"  \n", encoding="utf-8")
+        self.roots = [("poky", self.formatted / "poky")]
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def parse(self, diagnostics):
+        return normalize_lint_report(
+            lint_report(self.root, diagnostics), "example", self.roots
+        )
+
+    def test_valid_reports_are_normalized_and_temporary_roots_are_removed(self):
+        findings = self.parse(
+            [
+                lint_diagnostic(self.metadata, line=2),
+                lint_diagnostic(self.metadata, rule_id="BBT004", line=1),
+            ]
+        )
+        self.assertEqual([finding["rule_id"] for finding in findings], ["BBT004", "BBT001"])
+        self.assertEqual(findings[0]["repository"], "poky")
+        self.assertEqual(findings[0]["path"], "meta/example.bb")
+        self.assertNotIn(str(self.root), json.dumps(findings))
+
+    def test_malformed_version_unknown_rule_and_missing_fields_are_rejected(self):
+        with self.assertRaisesRegex(CompatibilityError, "malformed"):
+            normalize_lint_report("not json", "example", self.roots)
+        with self.assertRaisesRegex(CompatibilityError, "version"):
+            normalize_lint_report(json.dumps({"version": 99, "diagnostics": []}), "example", self.roots)
+        unknown = lint_diagnostic(self.metadata, rule_id="BBT999")
+        with self.assertRaisesRegex(CompatibilityError, "unknown rule"):
+            self.parse([unknown])
+        outside = lint_diagnostic(self.root / "outside.bb")
+        with self.assertRaisesRegex(CompatibilityError, "cannot be normalized"):
+            self.parse([outside])
+        missing = lint_diagnostic(self.metadata)
+        del missing["message"]
+        with self.assertRaisesRegex(CompatibilityError, "required field"):
+            self.parse([missing])
+
+    def test_path_normalization_and_hashing_are_deterministic(self):
+        first = self.parse(
+            [lint_diagnostic(self.metadata, line=2), lint_diagnostic(self.metadata)]
+        )
+        second = self.parse(
+            [lint_diagnostic(self.metadata), lint_diagnostic(self.metadata, line=2)]
+        )
+        self.assertEqual(first, second)
+        first_summary = summarize_lint_findings("example", first)
+        second_summary = summarize_lint_findings("example", second)
+        self.assertEqual(first_summary["findings_sha256"], second_summary["findings_sha256"])
+        self.assertEqual(first_summary["rules"]["BBT001"]["findings_sha256"], second_summary["rules"]["BBT001"]["findings_sha256"])
+        with tempfile.TemporaryDirectory() as other_temporary:
+            other_root = Path(other_temporary)
+            other_formatted = other_root / "formatted" / "poky"
+            other_metadata = other_formatted / "meta" / "example.bb"
+            other_metadata.parent.mkdir(parents=True)
+            other_metadata.write_text("SUMMARY = \"demo\"  \n", encoding="utf-8")
+            other = normalize_lint_report(
+                lint_report(other_root, [lint_diagnostic(other_metadata)]),
+                "example",
+                [("poky", other_formatted)],
+            )
+            expected = self.parse([lint_diagnostic(self.metadata)])
+            self.assertEqual(expected, other)
+
+    def test_baseline_comparison_detects_counts_fingerprints_and_rule_transitions(self):
+        original = self.parse([lint_diagnostic(self.metadata)])
+        original_summary = summarize_lint_findings("example", original)
+        baseline = build_lint_baseline(original_summary)
+        baseline["rules"]["BBT001"]["review"] = {
+            "status": "reviewed",
+            "sample_size": 1,
+            "true_positive": 1,
+            "false_positive": 0,
+            "unclear": 0,
+            "notes": "Reviewed the whitespace finding.",
+        }
+        unchanged = compare_lint_baseline(
+            original_summary, baseline, "supported", "example", self.root / "baseline.json"
+        )
+        self.assertEqual(unchanged["status"], "passed")
+
+        changed = self.parse([lint_diagnostic(self.metadata, message="changed finding")])
+        changed_summary = summarize_lint_findings("example", changed, baseline)
+        changed_comparison = compare_lint_baseline(
+            changed_summary, baseline, "supported", "example", self.root / "baseline.json"
+        )
+        self.assertIn("BBT001", changed_comparison["digest_changes"])
+        self.assertTrue(changed_comparison["review_status_failures"])
+
+        counted = self.parse([lint_diagnostic(self.metadata), lint_diagnostic(self.metadata, line=2)])
+        counted_summary = summarize_lint_findings("example", counted, baseline)
+        counted_comparison = compare_lint_baseline(
+            counted_summary, baseline, "supported", "example", self.root / "baseline.json"
+        )
+        self.assertEqual(counted_comparison["count_changes"]["BBT001"]["current"], 2)
+
+        old_with_two = build_lint_baseline(
+            summarize_lint_findings(
+                "example",
+                self.parse(
+                    [
+                        lint_diagnostic(self.metadata),
+                        lint_diagnostic(self.metadata, rule_id="BBT002"),
+                    ]
+                ),
+            )
+        )
+        clean_summary = summarize_lint_findings("example", original)
+        transitions = compare_lint_baseline(
+            clean_summary, old_with_two, "supported", "example", self.root / "baseline.json"
+        )
+        self.assertIn("BBT002", transitions["newly_clean_rules"])
+
+    def test_unreviewed_findings_fail_review_and_updates_reset_changed_rules(self):
+        findings = self.parse([lint_diagnostic(self.metadata)])
+        summary = summarize_lint_findings("example", findings)
+        baseline = build_lint_baseline(summary)
+        comparison = compare_lint_baseline(
+            summary, baseline, "supported", "example", self.root / "baseline.json"
+        )
+        self.assertTrue(comparison["review_status_failures"])
+
+        baseline["rules"]["BBT001"]["review"] = {
+            "status": "reviewed",
+            "sample_size": 1,
+            "true_positive": 1,
+            "false_positive": 0,
+            "unclear": 0,
+            "notes": "Reviewed.",
+        }
+        updated = build_lint_baseline(
+            summarize_lint_findings(
+                "example", self.parse([lint_diagnostic(self.metadata, message="new")])
+            ),
+            baseline,
+        )
+        self.assertEqual(updated["rules"]["BBT001"]["review"]["status"], "unreviewed")
+
+    def test_missing_baseline_is_nonblocking_only_for_moving_development(self):
+        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
+        supported = compare_lint_baseline(
+            summary, None, "supported", "example", self.root / "baseline.json"
+        )
+        community = compare_lint_baseline(
+            summary, None, "development", "community-master", self.root / "baseline.json"
+        )
+        development = compare_lint_baseline(
+            summary, None, "development", "yocto-master", self.root / "baseline.json"
+        )
+        self.assertTrue(supported["blocking_failures"])
+        self.assertTrue(community["blocking_failures"])
+        self.assertFalse(development["blocking_failures"])
+
+    def test_generated_baseline_has_explicit_review_records_for_all_rules(self):
+        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
+        baseline = build_lint_baseline(summary)
+        validate_lint_baseline(baseline, "example")
+        self.assertEqual(len(baseline["rules"]), 37)
+        self.assertEqual(baseline["rules"]["BBT001"]["review"]["status"], "unreviewed")
+        self.assertEqual(baseline["rules"]["BBT002"]["review"]["status"], "not-applicable")
+
+    def test_false_positive_samples_require_a_remediation_decision(self):
+        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
+        baseline = build_lint_baseline(summary)
+        baseline["rules"]["BBT001"]["review"] = {
+            "status": "reviewed",
+            "sample_size": 1,
+            "true_positive": 0,
+            "false_positive": 1,
+            "unclear": 0,
+            "notes": "Known false positive.",
+        }
+        with self.assertRaisesRegex(CompatibilityError, "remediation decision"):
+            validate_lint_baseline(baseline, "example")
+
+    def test_ci_baseline_updates_require_an_intentionally_named_override(self):
+        arguments = argparse.Namespace(
+            update_lint_baseline=True,
+            allow_ci_lint_baseline_update=False,
+        )
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=False):
+            with self.assertRaisesRegex(CompatibilityError, "disabled"):
+                baseline_update_allowed(arguments)
+        arguments.allow_ci_lint_baseline_update = True
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=False):
+            baseline_update_allowed(arguments)
+
+    def test_evidence_bundle_contains_machine_readable_lint_files(self):
+        findings = self.parse([lint_diagnostic(self.metadata)])
+        summary = summarize_lint_findings("example", findings)
+        comparison = compare_lint_baseline(
+            summary, None, "development", "example", self.root / "baseline.json"
+        )
+        evidence = self.root / "evidence"
+        write_lint_evidence(evidence, findings, summary, comparison)
+        self.assertEqual(
+            {
+                path.name for path in (evidence / "lint").iterdir()
+            },
+            {"findings.json", "summary.json", "baseline-comparison.json"},
+        )
+        stored = json.loads((evidence / "lint" / "findings.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(stored["findings"]), 1)
+
+    def test_old_text_line_counting_output_is_rejected(self):
+        with self.assertRaisesRegex(CompatibilityError, "malformed"):
+            normalize_lint_report(
+                "/tmp/example.bb:1:1: warning[BBT001]: finding\n",
+                "example",
+                self.roots,
+            )
 
 
 if __name__ == "__main__":

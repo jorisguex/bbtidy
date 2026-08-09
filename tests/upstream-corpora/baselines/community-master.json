@@ -22,7 +22,6 @@
   },
   "observations": {
     "files_changed_on_first_format": 64,
-    "lint_diagnostics": 508,
     "opaque_regions_preserved": 628,
     "excluded_payload_files_unchanged": 16,
     "bitbake_parse": "skipped_development_corpus"

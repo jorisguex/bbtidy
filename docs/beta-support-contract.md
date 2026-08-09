@@ -19,13 +19,18 @@ its supported formatting operations are:
   real BitBake parse check;
 - deterministic, with stable file ordering, diagnostics, and machine-readable
   output; and
+- lint-quality evidenced, because every supported corpus finding is collected
+  from versioned JSON, compared by rule and fingerprint, and explicitly
+  reviewed at the active-rule level; and
 - fail-safe, refusing incomplete input, bounding repository-wide work, and
   avoiding partial batch writes.
 
 These guarantees apply to bbtidy's formatting and static analysis behavior.
 They do not prove that a complete BitBake build produces identical task hashes,
 packages, runtime behavior, or performance. Users must continue to run their
-normal BitBake build and test validation.
+normal BitBake build and test validation. Lint-quality baselines prove
+reproducible findings and documented sample review; they do not prove that every
+finding is a true positive or that a clean result is semantic or runtime proof.
 
 The contract applies to a release only when that release is identified as a
 beta release in its release notes. Alpha prereleases are evaluation builds and
@@ -44,8 +49,10 @@ The beta release gate initially covers:
 
 Supported means that the corresponding commit-pinned compatibility manifest
 passes the complete release gate described in [Evidence required for a
-release](#evidence-required-for-a-release). A supported release remains in the
-beta contract until it is explicitly deprecated in a release note.
+release](#evidence-required-for-a-release), including a rule-level lint-quality
+baseline in which every active rule has an explicit review status. A supported
+release remains in the beta contract until it is explicitly deprecated in a
+release note.
 
 ### Development
 
@@ -260,12 +267,15 @@ formatted versions of each supported manifest:
    diff.
 10. Where configured, selected `bitbake -e` semantic probe values are equal
     before and after formatting after temporary corpus paths are normalized.
-11. Diagnostics and machine-readable reports are deterministic.
-12. No operational error causes a partial batch rewrite.
-13. Repository-wide format and lint runs respect the configured file-count and
+11. Structured lint output is deterministic, matches the checked-in total and
+    per-rule fingerprints, and every active rule has an explicit review status.
+12. Lint samples are classified as true positive, false positive, or unclear;
+    false positives have an explicit remediation decision.
+13. No operational error causes a partial batch rewrite.
+14. Repository-wide format and lint runs respect the configured file-count and
     source-byte limits, and write runs refuse symbolic links and concurrent
     source changes.
-14. Release artifacts match the checked-in release manifest; archives contain
+15. Release artifacts match the checked-in release manifest; archives contain
     only safe regular-file members, required package metadata, and the expected
     versioned executable; and both publication workflows pass their packaging
     and workflow-validation gates before publication is enabled.
@@ -274,7 +284,17 @@ The release record must identify the bbtidy version, source commit, corpus
 commits, BitBake version, runner environment, command lines, result summaries,
 and links to the original and formatted parse logs. The machine-readable
 evidence bundle must contain `manifest.json`, `summary.json`, `commands.json`,
-`metrics/source.json`, `metrics/formatted.json`, and the command logs.
+`metrics/source.json`, `metrics/formatted.json`, `lint/findings.json`,
+`lint/summary.json`, `lint/baseline-comparison.json`, and the command logs.
+
+Lint findings are sampled across repositories and metadata file types, grouped
+by diagnostic shape and source construct, and classified as true positive,
+false positive, or unclear. A baseline update is an explicit local operation;
+it never marks findings reviewed automatically. Digest changes require a new
+review even when the total finding count is unchanged. Supported and pinned
+community corpora compare deterministically against checked-in baselines;
+moving development corpora upload the same report but keep regressions
+non-blocking.
 
 Parseability is a required compatibility signal, not a complete semantic
 equivalence proof. Release notes must not describe the parse gate as proving

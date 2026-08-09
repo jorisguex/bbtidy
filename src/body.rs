@@ -196,8 +196,8 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
     let mut quote = None;
     let mut escaped = false;
     let mut comment = false;
-    let mut pending_here_docs = Vec::new();
-    let mut active_here_docs = Vec::new();
+    let mut pending_here_docs = Vec::<(Vec<u8>, bool)>::new();
+    let mut active_here_docs = Vec::<(Vec<u8>, bool)>::new();
     let mut line_start = 0;
 
     while index < bytes.len() {
@@ -210,8 +210,17 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
             if line.ends_with(b"\r") {
                 line = &line[..line.len() - 1];
             }
-            let matches = active_here_docs.iter().any(|delimiter: &Vec<u8>| {
-                line.strip_prefix(b"\t").unwrap_or(line) == delimiter.as_slice()
+            let matches = active_here_docs.iter().any(|(delimiter, strip_tabs)| {
+                let candidate = if *strip_tabs {
+                    let mut start = 0;
+                    while line.get(start) == Some(&b'\t') {
+                        start += 1;
+                    }
+                    &line[start..]
+                } else {
+                    line
+                };
+                candidate == delimiter.as_slice()
             });
             if matches {
                 active_here_docs.remove(0);
@@ -255,6 +264,11 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
             } else {
                 index = next_char_boundary(source, index);
             }
+            continue;
+        }
+
+        if let Some(end) = bitbake_expression_end(bytes, index) {
+            index = end;
             continue;
         }
 
@@ -347,6 +361,48 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
     tokens
 }
 
+fn bitbake_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
+    if !bytes.get(start..)?.starts_with(b"${") {
+        return None;
+    }
+    let mut depth = 1usize;
+    let mut quote = None;
+    let mut escaped = false;
+    let mut index = start + 2;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if escaped {
+            escaped = false;
+            index += 1;
+            continue;
+        }
+        if byte == b'\\' {
+            escaped = true;
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            quote = Some(byte);
+        } else if byte == b'{' {
+            depth += 1;
+        } else if byte == b'}' {
+            depth -= 1;
+            if depth == 0 {
+                return Some(index + 1);
+            }
+        }
+        index += 1;
+    }
+    None
+}
+
 fn next_char_boundary(source: &str, index: usize) -> usize {
     source[index..]
         .chars()
@@ -373,8 +429,9 @@ fn emit_shell_word<'a>(
     true
 }
 
-fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<Vec<u8>> {
-    if bytes.get(index) == Some(&b'-') {
+fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<(Vec<u8>, bool)> {
+    let strip_tabs = bytes.get(index) == Some(&b'-');
+    if strip_tabs {
         index += 1;
     }
     while matches!(bytes.get(index), Some(b' ' | b'\t')) {
@@ -388,7 +445,7 @@ fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<Vec<u8>> {
             index += 1;
             bytes.get(index)?;
         }
-        return Some(bytes[start..index].to_vec());
+        return Some((bytes[start..index].to_vec(), strip_tabs));
     }
     let start = index;
     while let Some(byte) = bytes.get(index) {
@@ -397,7 +454,7 @@ fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<Vec<u8>> {
         }
         index += 1;
     }
-    (start < index).then(|| bytes[start..index].to_vec())
+    (start < index).then(|| (bytes[start..index].to_vec(), strip_tabs))
 }
 
 /// Performs conservative syntax and indentation analysis on a Python body.
@@ -443,12 +500,7 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
                 index = next_char_boundary(source, index);
                 continue;
             }
-            if byte == b'\\'
-                && !matches!(
-                    active,
-                    PythonQuote::TripleSingle | PythonQuote::TripleDouble
-                )
-            {
+            if byte == b'\\' {
                 escaped = true;
                 index += 1;
                 continue;
@@ -553,6 +605,7 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
     let mut levels = Vec::new();
     let mut base = None;
     let mut previous_opens_block = false;
+    let mut line_continuation = false;
     let mut offset = 0;
     let mut triple_quote = None;
     let delimiter_depths = python_delimiter_depths(source);
@@ -571,6 +624,22 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
             offset += line.len();
             continue;
         }
+        if line_continuation {
+            previous_opens_block = code.ends_with(':')
+                && !code.ends_with("::")
+                && delimiter_depths
+                    .get(line_index + 1)
+                    .copied()
+                    .unwrap_or_default()
+                    == 0;
+            line_continuation = code.ends_with('\\');
+            offset += line.len();
+            continue;
+        }
+        if code.is_empty() {
+            offset += line.len();
+            continue;
+        }
         if prefix.contains(' ') && prefix.contains('\t') {
             diagnostics.push(BodyDiagnostic::new(
                 BodyDiagnosticKind::PythonIndentation,
@@ -578,16 +647,20 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
                 "Python indentation mixes tabs and spaces",
             ));
         }
-        if code.is_empty() {
-            offset += line.len();
-            continue;
-        }
         if delimiter_depths
             .get(line_index)
             .copied()
             .unwrap_or_default()
             > 0
         {
+            previous_opens_block = code.ends_with(':')
+                && !code.ends_with("::")
+                && delimiter_depths
+                    .get(line_index + 1)
+                    .copied()
+                    .unwrap_or_default()
+                    == 0;
+            line_continuation = code.ends_with('\\');
             offset += line.len();
             continue;
         }
@@ -624,6 +697,7 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
                 .copied()
                 .unwrap_or_default()
                 == 0;
+        line_continuation = code.ends_with('\\');
         offset += line.len();
     }
     diagnostics
@@ -685,6 +759,7 @@ fn python_indent_width(prefix: &str) -> usize {
 fn analyze_python_compound_statements(source: &str) -> Vec<BodyDiagnostic> {
     let mut diagnostics = Vec::new();
     let mut offset = 0;
+    let mut triple_quote = None;
     let delimiter_depths = python_delimiter_depths(source);
     for (line_index, line) in source.split_inclusive('\n').enumerate() {
         let content = line
@@ -692,6 +767,11 @@ fn analyze_python_compound_statements(source: &str) -> Vec<BodyDiagnostic> {
             .unwrap_or(line)
             .strip_suffix('\r')
             .unwrap_or_else(|| line.strip_suffix('\n').unwrap_or(line));
+        let was_in_triple_quote = python_line_triple_state(content, &mut triple_quote);
+        if was_in_triple_quote || triple_quote.is_some() {
+            offset += line.len();
+            continue;
+        }
         let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
         let code_without_comment = strip_python_comment(&content[leading..]);
         let code_leading = code_without_comment.len() - code_without_comment.trim_start().len();
@@ -835,6 +915,11 @@ fn is_python_compound_start(code: &str) -> bool {
         } else {
             code == *prefix || code.starts_with(&format!("{prefix} "))
         }
+    }) && !["match ", "case "].iter().any(|prefix| {
+        code.strip_prefix(prefix).is_some_and(|rest| {
+            rest.trim_start()
+                .starts_with(['=', '+', '-', '*', '/', '%', '&', '|', '^'])
+        })
     })
 }
 
@@ -887,8 +972,20 @@ mod tests {
     }
 
     #[test]
+    fn shell_analysis_handles_tab_stripped_here_documents() {
+        let source = "if true; then\n\tcat <<- EOF\n\tif this is text; then\n\t\techo text\n\tfi\n\tEOF\nfi\n";
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
+    fn shell_analysis_ignores_bitbake_python_expansions() {
+        let source = "${@' '.join(['%s=%s' % (key, value) for key in keys for value in values])}\nfor name in one; do\n\techo $name\ndone\n";
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
     fn python_analysis_reports_delimiters_compound_colons_and_indentation() {
-        let valid = "    if value:\n        return {\"value\": value}\n    values = (\n        one\n        two\n    )\n    try_value = 1\n    elsewhere = 2\n";
+        let valid = "    if value:\n        return {\"value\": value}\n\t    \n    values = (\n        one\n        two\n    )\n    continued = one + \\\n        two\n    try_value = 1\n    elsewhere = 2\n";
         assert!(analyze_python_body(valid).is_empty());
 
         let invalid = "    if value\n\treturn (value\n";
@@ -903,6 +1000,15 @@ mod tests {
                 .iter()
                 .any(|diagnostic| { diagnostic.kind() == BodyDiagnosticKind::PythonIndentation })
         );
+    }
+
+    #[test]
+    fn python_analysis_ignores_shell_inside_triple_quoted_strings() {
+        let source = "script = f'''\nif [ -f \"$file\" ]; then\n    for item in one two; do\n        echo $item\n    done\nfi\n'''\nmessage = \"embedded \\\"quote\\\"\"\nvalue = 1\n";
+        assert!(analyze_python_body(source).is_empty());
+
+        let keyword_named_variables = "match = value\ncase = other\ncase += more\n";
+        assert!(analyze_python_body(keyword_named_variables).is_empty());
     }
 
     #[test]

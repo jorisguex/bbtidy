@@ -551,7 +551,9 @@ losslessly and idempotently, structural CST coverage stays within its checked-in
 thresholds, and both the original and formatted layers pass a real
 `bitbake --parse-only core-image-minimal` run. Supported manifests also define
 semantic probes: selected `bitbake -e` variables must match before and after
-formatting after corpus-local paths are normalized.
+formatting after corpus-local paths are normalized. Supported manifests also
+have a reviewed, rule-level lint-quality baseline: findings come from versioned
+JSON and are fingerprinted after corpus-path normalization.
 
 | Support tier | Yocto release | BitBake | CI policy |
 | --- | --- | --- | --- |
@@ -570,8 +572,21 @@ the Arm platform/toolchain, TI BSP, and virtualization layer families. It runs
 the formatter, lint, preservation, and CST checks on every listed metadata file
 but skips the BitBake parse until the complete dependency stacks for those
 layers are pinned. Its source and formatted CST metrics are recorded in
-`tests/upstream-corpora/baselines/community-master.json` and must remain stable
-unless an explicit compatibility review approves the change.
+`tests/upstream-corpora/baselines/community-master.json`. Its lint-quality
+baseline is separate, at
+`tests/upstream-corpora/lint-baselines/community-master.json`.
+
+Lint-quality baselines prove that a pinned corpus produces the same structured
+findings grouped by rule and severity, and that sampled findings have an
+explicit review status. They do not prove that every finding is a true
+positive, that BitBake builds successfully, or that runtime behavior and build
+outputs are unchanged. Review entries record sampled true positives, false
+positives, unclear cases, and any explicit false-positive remediation decision.
+Review samples are stratified across repositories and metadata file types after
+grouping findings by diagnostic shape and source construct; surrounding source,
+includes/classes, and resolved BitBake semantics are inspected when needed.
+Changed fingerprints are unreviewed until a human reviews them. A corrected
+false-positive pattern must also receive a focused local regression fixture.
 
 Run a stable corpus check locally after building a release binary:
 
@@ -587,12 +602,32 @@ Use `--skip-bitbake` for formatter, lint, preservation, and CST checks on hosts
 that cannot run BitBake. This does not satisfy the supported-release CI gate;
 the evidence bundle records BitBake parsing and semantic probes as skipped.
 
+Baseline updates are explicit and never happen during a normal check:
+
+```bash
+python3 scripts/check_upstream_corpus.py \
+  --manifest tests/upstream-corpora/yocto-5.0-scarthgap.json \
+  --source-root /path/to/pinned-checkouts \
+  --skip-bitbake \
+  --update-lint-baseline
+```
+
+The command prints a prominent warning and writes changed or new rules as
+`unreviewed`; edit the generated baseline only after sampling findings. GitHub
+Actions refuses this mode unless the intentionally named
+`--allow-ci-lint-baseline-update` flag or
+`BBTIDY_ALLOW_CI_LINT_BASELINE_UPDATE=1` is supplied.
+
 The evidence directory contains the copied manifest, source and formatted CST
 metrics, every verification command with its log, and `summary.json` with the
 resolved repository commits, bbtidy revision, runner details, tree changes,
 preservation counts, parse result, and semantic probe values. A pre-existing
 evidence directory is rejected so an artifact cannot silently mix results from
-multiple runs.
+multiple runs. The `lint/` subdirectory contains `findings.json` with every
+normalized finding, `summary.json` with counts, digests, files, rules, review
+totals, and sampled false-positive/unclear counts, plus
+`baseline-comparison.json` with count and digest changes, added/removed finding
+fingerprints, newly active/clean rules, and review failures.
 
 ## Development
 

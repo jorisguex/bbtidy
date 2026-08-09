@@ -218,7 +218,7 @@ fn broader_recipe_qa_rules_cover_identity_sources_packages_and_uri_parameters() 
         "LIC_FILES_CHKSUM = \"file://LICENSE\"\n",
         "SRC_URI = \"https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https\"\n",
         "PACKAGECONFIG = \"defined missing\"\n",
-        "PACKAGECONFIG[defined] = \"--enable-defined\"\n",
+        "PACKAGECONFIG[defined] = \"1,2,3,4,5,6,7\"\n",
         "PACKAGES = \"${PN} pkg pkg\"\n",
         "FILES:missing = \"/missing\"\n",
     );
@@ -256,12 +256,15 @@ fn broader_recipe_qa_accepts_valid_checksums_packageconfig_and_package_scope() {
         "SUMMARY = \"example\"\n",
         "DESCRIPTION = \"example\"\n",
         "LICENSE = \"MIT\"\n",
-        "LIC_FILES_CHKSUM = \"file://LICENSE;md5=0123456789abcdef0123456789abcdef\"\n",
-        "SRC_URI = \"https://example.invalid/source.tar.gz;sha256sum=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n",
+        "LIC_FILES_CHKSUM = \"file://${COREBASE}/meta/files/common-licenses/MIT;md5=0123456789abcdef0123456789abcdef\"\n",
+        "SRC_URI = \"https://example.invalid/source.tar.gz;sha256sum=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef gitsm://example.invalid/source.git;protocol=https;branch=main;destsuffix=\"\n",
         "PACKAGECONFIG = \"feature\"\n",
         "PACKAGECONFIG[feature] = \"--enable-feature,--disable-feature,feature-dependency\"\n",
+        "FILESEXTRAPATHS[doc] = \"Documentation flag\"\n",
         "PACKAGES = \"valid valid-dev\"\n",
         "FILES:valid-dev = \"/usr/include\"\n",
+        "PACKAGES_DYNAMIC = \"^generated-.*\"\n",
+        "FILES:generated-one = \"/generated\"\n",
     );
     let recipe = layer.write("recipes-example/valid_1.0.bb", source);
     let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
@@ -271,6 +274,77 @@ fn broader_recipe_qa_accepts_valid_checksums_packageconfig_and_package_scope() {
     assert!(
         diagnostics.is_empty(),
         "unexpected diagnostics for valid recipe QA metadata: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn packageconfig_accepts_all_bitbake_field_lengths() {
+    let layer = TemporaryLayer::new("lint-packageconfig-field-lengths");
+    let configuration = layer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
+    let source = concat!(
+        "SUMMARY = \"example\"\n",
+        "DESCRIPTION = \"example\"\n",
+        "LICENSE = \"MIT\"\n",
+        "LIC_FILES_CHKSUM = \"file://LICENSE;md5=0123456789abcdef0123456789abcdef\"\n",
+        "PACKAGECONFIG = \"zero one two three four five six\"\n",
+        "PACKAGECONFIG[zero] = \"\"\n",
+        "PACKAGECONFIG[one] = \"--enable-one\"\n",
+        "PACKAGECONFIG[two] = \"--enable-two,--disable-two\"\n",
+        "PACKAGECONFIG[three] = \"--enable-three,--disable-three,dep-three\"\n",
+        "PACKAGECONFIG[four] = \"--enable-four,--disable-four,dep-four,rdep-four\"\n",
+        "PACKAGECONFIG[five] = \"--enable-five,--disable-five,dep-five,rdep-five,rrec-five\"\n",
+        "PACKAGECONFIG[six] = \"--enable-six,--disable-six,dep-six,rdep-six,rrec-six,conflict-six\"\n",
+        "PACKAGES = \"example\"\n",
+    );
+    let recipe = layer.write("recipes-example/valid_1.0.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert!(
+        diagnostics.is_empty(),
+        "unexpected diagnostics for valid PACKAGECONFIG field lengths: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn packageconfig_rejects_more_than_six_bitbake_fields() {
+    let layer = TemporaryLayer::new("lint-packageconfig-too-many-fields");
+    let configuration = layer.write(
+        "conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"test\"\n",
+            "BBFILE_PATTERN_test = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_test = \"1\"\n",
+            "LAYERSERIES_COMPAT_test = \"test\"\n",
+        ),
+    );
+    let source = concat!(
+        "SUMMARY = \"example\"\n",
+        "DESCRIPTION = \"example\"\n",
+        "LICENSE = \"MIT\"\n",
+        "PACKAGECONFIG[feature] = \"1,2,3,4,5,6,7\"\n",
+    );
+    let recipe = layer.write("recipes-example/example_1.0.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, recipe.clone()]).unwrap();
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert_eq!(
+        diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.rule_id() == "BBT025")
+            .count(),
+        1
     );
 }
 
@@ -323,6 +397,27 @@ fn broader_lint_rules_require_metadata_for_complete_recipe_workspaces() {
 
     let isolated = lint(source).unwrap();
     assert!(isolated.is_empty());
+}
+
+#[test]
+fn recipe_metadata_rules_follow_static_required_includes() {
+    let layer = TemporaryLayer::new("lint-recipe-metadata-include");
+    let configuration = layer.write("conf/layer.conf", "BBPATH .= \":${LAYERDIR}\"\n");
+    let included = layer.write(
+        "recipes-example/common.inc",
+        "SUMMARY = \"included summary\"\nDESCRIPTION = \"included description\"\nLICENSE = \"MIT\"\nPACKAGECONFIG[feature] = \"--enable-feature,--disable-feature\"\n",
+    );
+    let source = "require common.inc\nPACKAGECONFIG = \"feature\"\nSRC_URI = \"\"\n";
+    let recipe = layer.write("recipes-example/example_1.0.bb", source);
+    let index = WorkspaceIndex::from_paths([configuration, included, recipe.clone()]).unwrap();
+
+    let diagnostics =
+        lint_with_workspace(source, &recipe, &index, &LintOptions::default()).unwrap();
+    assert!(
+        !diagnostics
+            .iter()
+            .any(|diagnostic| { matches!(diagnostic.rule_id(), "BBT011" | "BBT012" | "BBT013") })
+    );
 }
 
 #[test]

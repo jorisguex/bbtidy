@@ -361,7 +361,7 @@ if [ "$1" = "--parse-only" ]; then
   exit 0
 fi
 if [ "$1" = "--environment" ]; then
-  printf 'FILE="/layer/recipes-demo/wrong_1.0.bb"\nPN="other"\nPV="2.0"\nSUMMARY="demo"\nDESCRIPTION="demo"\nLICENSE="MIT"\nLIC_FILES_CHKSUM="file://LICENSE"\nSRC_URI="https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https"\nPACKAGECONFIG="defined missing"\nPACKAGECONFIG[defined]="--enable-defined"\nPACKAGES="demo demo"\nFILES:missing="/missing"\nOVERRIDES="machine"\nUNRESOLVED:unknown="bad"\nBBFILE_COLLECTIONS="core core other"\nBBFILE_PATTERN_core=""\nBBFILE_PRIORITY_core="not-an-integer"\nLAYERDEPENDS_core="missing"\nBBFILE_PATTERN_other="^/other/"\nBBFILE_PRIORITY_other="1"\nLAYERSERIES_COMPAT_other="test"\n'
+  printf 'FILE="/layer/recipes-demo/wrong_1.0.bb"\nPN="other"\nPV="2.0"\nSUMMARY="demo"\nDESCRIPTION="demo"\nLICENSE="MIT"\nLIC_FILES_CHKSUM="file://LICENSE"\nSRC_URI="https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https"\nPACKAGECONFIG="defined missing"\nPACKAGECONFIG[defined]="1,2,3,4,5,6,7"\nPACKAGES="demo demo"\nFILES:missing="/missing"\nOVERRIDES="machine"\nUNRESOLVED:unknown="bad"\nBBFILE_COLLECTIONS="core core other"\nBBFILE_PATTERN_core=""\nBBFILE_PRIORITY_core="not-an-integer"\nLAYERDEPENDS_core="missing"\nBBFILE_PATTERN_other="^/other/"\nBBFILE_PRIORITY_other="1"\nLAYERSERIES_COMPAT_other="test"\n'
   exit 0
 fi
 exit 0

@@ -9,6 +9,7 @@ use crate::{BodyDiagnosticKind, FunctionKind, analyze_python_body, analyze_shell
 use crate::{parse_override_key_with_overrides, resolve_overrides};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt;
+use std::fs;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -206,7 +207,7 @@ static LINT_RULES: &[LintRule] = &[
         "BBT025",
         "packageconfig-format",
         LintSeverity::Warning,
-        "PACKAGECONFIG flags must provide enable, disable, and dependency fields.",
+        "PACKAGECONFIG flags must use no more than the six supported BitBake fields.",
         false,
     ),
     LintRule::new(
@@ -1046,13 +1047,13 @@ fn check_resolved_packageconfig(
             continue;
         };
         let fields = value.split(',').collect::<Vec<_>>();
-        if !(3..=4).contains(&fields.len()) {
+        if fields.len() > 6 {
             add_semantic_finding(
                 findings,
                 label,
                 &LINT_RULES[RULE_PACKAGECONFIG_FORMAT],
                 format!(
-                    "target '{target}' resolves PACKAGECONFIG feature '{feature}' with {} fields; expected 3 or 4",
+                    "target '{target}' resolves PACKAGECONFIG feature '{feature}' with {} fields; expected at most 6",
                     fields.len()
                 ),
             );
@@ -1386,12 +1387,23 @@ pub fn lint_syntax_with_workspace(
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
     let mut diagnostics = collect_lint_diagnostics(tree);
-    check_recipe_qa(tree, path, &mut diagnostics);
+    let recipe_assignments =
+        if path.extension().and_then(|extension| extension.to_str()) == Some("bb") {
+            let mut assignments = HashSet::new();
+            let mut visited = HashSet::new();
+            collect_recipe_assignments(tree, path, workspace, &mut visited, &mut assignments);
+            Some(assignments)
+        } else {
+            None
+        };
+    check_recipe_qa(tree, path, &mut diagnostics, recipe_assignments.as_ref());
     if workspace.is_workspace_file(path) {
         check_workspace_references(tree, path, workspace, &mut diagnostics);
     }
     if workspace.is_complete_for(path) {
-        check_recipe_metadata(tree, path, &mut diagnostics);
+        if let Some(assignments) = recipe_assignments.as_ref() {
+            check_recipe_metadata(tree, &mut diagnostics, assignments);
+        }
         if is_layer_configuration(path) {
             check_layer_qa(tree, workspace, &mut diagnostics);
         }
@@ -1658,21 +1670,9 @@ fn check_workspace_references(
 
 fn check_recipe_metadata(
     tree: &SyntaxTree<'_>,
-    path: &Path,
     diagnostics: &mut Vec<LintDiagnostic>,
+    assignments: &HashSet<String>,
 ) {
-    if path.extension().and_then(|extension| extension.to_str()) != Some("bb") {
-        return;
-    }
-
-    let assignments = tree
-        .nodes()
-        .iter()
-        .filter_map(|node| match node.kind() {
-            SyntaxKind::Assignment(assignment) => Some(assignment.name()),
-            _ => None,
-        })
-        .collect::<HashSet<_>>();
     let source = tree.source();
     for (rule, name, message) in [
         (
@@ -1704,7 +1704,78 @@ fn check_recipe_metadata(
     }
 }
 
-fn check_recipe_qa(tree: &SyntaxTree<'_>, path: &Path, diagnostics: &mut Vec<LintDiagnostic>) {
+fn collect_recipe_assignments(
+    tree: &SyntaxTree<'_>,
+    path: &Path,
+    workspace: &WorkspaceIndex,
+    visited: &mut HashSet<std::path::PathBuf>,
+    assignments: &mut HashSet<String>,
+) {
+    let canonical_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    if !visited.insert(canonical_path) {
+        return;
+    }
+    for node in tree.nodes() {
+        if let SyntaxKind::Assignment(assignment) = node.kind() {
+            assignments.insert(assignment.name().to_owned());
+        }
+    }
+
+    for node in tree.nodes() {
+        let SyntaxKind::Directive(directive) = node.kind() else {
+            continue;
+        };
+        let (directive_kind, retain_all) = match directive.keyword() {
+            DirectiveKeyword::Include => (WorkspaceFileDirective::Include, false),
+            DirectiveKeyword::IncludeAll => (WorkspaceFileDirective::IncludeAll, true),
+            DirectiveKeyword::Require => (WorkspaceFileDirective::Require, false),
+            _ => continue,
+        };
+        let arguments = directive.arguments();
+        let code_end = comment_start(arguments).unwrap_or(arguments.len());
+        let recipe_name = path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .map(|stem| stem.rsplit_once('_').map_or(stem, |(name, _)| name));
+        for (_, raw_target) in words(&arguments[..code_end]) {
+            let raw_target = raw_target.strip_suffix('\\').unwrap_or(raw_target);
+            let target = recipe_name
+                .map(|name| raw_target.replace("${BPN}", name).replace("${PN}", name))
+                .unwrap_or_else(|| raw_target.to_owned());
+            if target.contains(['$', '{', '}']) {
+                continue;
+            }
+            let candidates = workspace.file_candidates_for(path, &target, directive_kind);
+            for candidate in candidates
+                .into_iter()
+                .take(if retain_all { usize::MAX } else { 1 })
+            {
+                let source = match fs::read_to_string(candidate.path()) {
+                    Ok(source) => source,
+                    Err(_) => continue,
+                };
+                let included = match parse(&source) {
+                    Ok(tree) => tree,
+                    Err(_) => continue,
+                };
+                collect_recipe_assignments(
+                    &included,
+                    candidate.path(),
+                    workspace,
+                    visited,
+                    assignments,
+                );
+            }
+        }
+    }
+}
+
+fn check_recipe_qa(
+    tree: &SyntaxTree<'_>,
+    path: &Path,
+    diagnostics: &mut Vec<LintDiagnostic>,
+    resolved_assignments: Option<&HashSet<String>>,
+) {
     if path.extension().and_then(|extension| extension.to_str()) != Some("bb") {
         return;
     }
@@ -1712,7 +1783,7 @@ fn check_recipe_qa(tree: &SyntaxTree<'_>, path: &Path, diagnostics: &mut Vec<Lin
     check_recipe_identity(tree, path, diagnostics);
     check_license_checksum(tree, diagnostics);
     check_source_checksums(tree, diagnostics);
-    check_packageconfig(tree, diagnostics);
+    check_packageconfig(tree, diagnostics, resolved_assignments);
     check_package_scope(tree, diagnostics);
     check_uri_parameters(tree, diagnostics);
 }
@@ -1801,7 +1872,8 @@ fn check_license_checksum(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagn
         return;
     };
     let mut found_file = false;
-    for (relative_offset, uri) in static_words(value) {
+    for (relative_offset, raw_uri) in words(value) {
+        let uri = raw_uri.strip_suffix('\\').unwrap_or(raw_uri);
         if !uri.starts_with("file://") {
             continue;
         }
@@ -1822,7 +1894,7 @@ fn check_license_checksum(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagn
             &LINT_RULES[RULE_LICENSE_CHECKSUM],
             tree.source(),
             checksum_assignment.name_range(),
-            "LIC_FILES_CHKSUM must contain at least one static file:// entry",
+            "LIC_FILES_CHKSUM must contain at least one file:// entry",
         ));
     }
 }
@@ -1856,7 +1928,11 @@ fn check_source_checksums(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagn
     }
 }
 
-fn check_packageconfig(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
+fn check_packageconfig(
+    tree: &SyntaxTree<'_>,
+    diagnostics: &mut Vec<LintDiagnostic>,
+    resolved_assignments: Option<&HashSet<String>>,
+) {
     let mut enabled = Vec::new();
     let mut definitions = HashSet::new();
     for node in tree.nodes() {
@@ -1883,13 +1959,13 @@ fn check_packageconfig(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnost
                 continue;
             }
             let fields = value.split(',').collect::<Vec<_>>();
-            if !(3..=4).contains(&fields.len()) {
+            if fields.len() > 6 {
                 diagnostics.push(LintDiagnostic::at(
                     &LINT_RULES[RULE_PACKAGECONFIG_FORMAT],
                     tree.source(),
                     assignment.name_range(),
                     format!(
-                        "PACKAGECONFIG feature '{feature}' has {} fields; expected 3 or 4",
+                        "PACKAGECONFIG feature '{feature}' has {} fields; expected at most 6",
                         fields.len()
                     ),
                 ));
@@ -1897,7 +1973,13 @@ fn check_packageconfig(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnost
         }
     }
     for (feature, offset, length) in enabled {
-        if definitions.contains(&feature) {
+        if definitions.contains(&feature)
+            || resolved_assignments.is_some_and(|assignments| {
+                assignments
+                    .iter()
+                    .any(|name| packageconfig_feature(name) == Some(feature.as_str()))
+            })
+        {
             continue;
         }
         diagnostics.push(LintDiagnostic::at(
@@ -1911,6 +1993,7 @@ fn check_packageconfig(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnost
 
 fn check_package_scope(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic>) {
     let mut packages = BTreeSet::new();
+    let mut dynamic_prefixes = Vec::new();
     let mut package_assignment = None;
     let mut seen = HashSet::new();
     for node in tree.nodes() {
@@ -1918,6 +2001,18 @@ fn check_package_scope(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnost
             continue;
         };
         if assignment.name() != "PACKAGES" {
+            if (assignment.name() == "PACKAGES_DYNAMIC"
+                || assignment.name().starts_with("PACKAGES_DYNAMIC:")
+                || assignment.name().starts_with("PACKAGES_DYNAMIC_"))
+                && let Some((value, _)) = simple_quoted_value(assignment.value())
+            {
+                dynamic_prefixes.extend(
+                    static_words(value)
+                        .filter_map(|(_, pattern)| pattern.strip_prefix('^'))
+                        .filter_map(|pattern| pattern.strip_suffix(".*"))
+                        .map(str::to_owned),
+                );
+            }
             continue;
         }
         package_assignment = Some(assignment);
@@ -1948,7 +2043,12 @@ fn check_package_scope(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnost
         let Some(package) = package_scope(assignment.name()) else {
             continue;
         };
-        if package.contains('$') || packages.contains(package) {
+        if package.contains('$')
+            || packages.contains(package)
+            || dynamic_prefixes
+                .iter()
+                .any(|prefix| package.starts_with(prefix))
+        {
             continue;
         }
         diagnostics.push(LintDiagnostic::at(
@@ -1976,14 +2076,14 @@ fn check_uri_parameters(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnos
         };
         for (relative_offset, uri) in static_words(value) {
             let mut parameters = HashSet::new();
-            let is_git = uri.starts_with("git://");
+            let is_git = uri.starts_with("git://") || uri.starts_with("gitsm://");
             for parameter in uri.split(';').skip(1) {
                 let Some((key, parameter_value)) = parameter.split_once('=') else {
                     continue;
                 };
                 let invalid = key.is_empty()
                     || !parameters.insert(key)
-                    || parameter_value.is_empty()
+                    || (parameter_value.is_empty() && key != "destsuffix")
                     || (key == "branch" && !is_git)
                     || (key == "protocol" && !is_git)
                     || (key == "protocol"
@@ -2215,6 +2315,9 @@ fn has_valid_checksum(uri: &str, key: &str) -> bool {
         let Some(value) = parameter.strip_prefix(&format!("{key}=")) else {
             return false;
         };
+        if value.starts_with("${") && value.ends_with('}') {
+            return true;
+        }
         let expected_length = if key == "md5" || key == "md5sum" {
             32
         } else {
@@ -2447,6 +2550,7 @@ fn check_file_paths(
     diagnostics: &mut Vec<LintDiagnostic>,
 ) {
     if !assignment.name().starts_with("FILESEXTRAPATHS")
+        || assignment.name().contains('[')
         || assignment.operator() == AssignmentOperator::Immediate
     {
         return;
@@ -2660,20 +2764,25 @@ fn words(text: &str) -> impl Iterator<Item = (usize, &str)> {
 }
 
 fn static_words(text: &str) -> impl Iterator<Item = (usize, &str)> {
-    let mut dynamic_expression = false;
+    let mut dynamic_depth = 0usize;
     words(text).filter_map(move |(offset, word)| {
-        if dynamic_expression {
-            dynamic_expression = !word.contains('}');
+        if dynamic_depth > 0 {
+            let opens = word.bytes().filter(|byte| *byte == b'{').count();
+            let closes = word.bytes().filter(|byte| *byte == b'}').count();
+            dynamic_depth = dynamic_depth.saturating_add(opens).saturating_sub(closes);
             return None;
         }
         if word.contains('$') || word.contains('{') {
-            dynamic_expression = !word.contains('}');
+            let opens = word.bytes().filter(|byte| *byte == b'{').count();
+            let closes = word.bytes().filter(|byte| *byte == b'}').count();
+            dynamic_depth = opens.saturating_sub(closes);
             return None;
         }
         if word == "\\" || word.contains('}') {
             return None;
         }
-        Some((offset, word))
+        let word = word.strip_suffix('\\').unwrap_or(word);
+        (!word.is_empty()).then_some((offset, word))
     })
 }
 
@@ -2814,6 +2923,28 @@ mod tests {
         assert_eq!(diagnostics[0].rule_id(), "BBT005");
         assert_eq!(diagnostics[0].line(), 2);
         assert_eq!(diagnostics[0].column(), 21);
+    }
+
+    #[test]
+    fn static_words_skips_multiline_dynamic_expressions() {
+        let input = r#"${@"conf/${MACHINE}.conf" if "${MACHINE}" != "" else ""} static.conf"#;
+
+        assert_eq!(
+            static_words(input)
+                .map(|(_, word)| word)
+                .collect::<Vec<_>>(),
+            ["static.conf"]
+        );
+    }
+
+    #[test]
+    fn static_words_strips_bitbake_line_continuation_markers() {
+        assert_eq!(
+            static_words("one\\\n two \\\n three")
+                .map(|(_, word)| word)
+                .collect::<Vec<_>>(),
+            ["one", "two", "three"]
+        );
     }
 
     #[test]
