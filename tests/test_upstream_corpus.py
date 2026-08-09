@@ -360,8 +360,8 @@ class LintQualityTests(unittest.TestCase):
             ]
         )
         self.assertEqual([finding["rule_id"] for finding in findings], ["BBT004", "BBT001"])
-        self.assertEqual(findings[0]["repository"], "poky")
-        self.assertEqual(findings[0]["path"], "meta/example.bb")
+        self.assertEqual(findings[0]["source"]["repository"], "poky")
+        self.assertEqual(findings[0]["source"]["path"], "meta/example.bb")
         self.assertNotIn(str(self.root), json.dumps(findings))
 
     def test_malformed_version_unknown_rule_and_missing_fields_are_rejected(self):
@@ -545,6 +545,27 @@ class LintQualityTests(unittest.TestCase):
         )
         stored = json.loads((evidence / "lint" / "findings.json").read_text(encoding="utf-8"))
         self.assertEqual(len(stored["findings"]), 1)
+
+    def test_reordered_reports_write_identical_normalized_evidence(self):
+        diagnostics = [
+            lint_diagnostic(self.metadata, rule_id="BBT002", message="second"),
+            lint_diagnostic(self.metadata, rule_id="BBT001", message="first"),
+        ]
+        first = self.parse(diagnostics)
+        second = self.parse(list(reversed(diagnostics)))
+        first_evidence = self.root / "first-evidence"
+        second_evidence = self.root / "second-evidence"
+        for evidence, findings in ((first_evidence, first), (second_evidence, second)):
+            summary = summarize_lint_findings("example", findings)
+            comparison = compare_lint_baseline(
+                summary, None, "development", "example", self.root / "baseline.json"
+            )
+            write_lint_evidence(evidence, findings, summary, comparison)
+        for name in ("findings.json", "summary.json"):
+            self.assertEqual(
+                (first_evidence / "lint" / name).read_bytes(),
+                (second_evidence / "lint" / name).read_bytes(),
+            )
 
     def test_old_text_line_counting_output_is_rejected(self):
         with self.assertRaisesRegex(CompatibilityError, "malformed"):

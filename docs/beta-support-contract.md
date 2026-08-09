@@ -32,6 +32,26 @@ normal BitBake build and test validation. Lint-quality baselines prove
 reproducible findings and documented sample review; they do not prove that every
 finding is a true positive or that a clean result is semantic or runtime proof.
 
+## Lint fingerprint contract
+
+The pure normalizer in `scripts/lint_quality.py` is the source of truth for
+machine-independent lint findings. It accepts a parsed version-1 JSON report
+and explicit repository roots, then emits fixed-key canonical findings with
+fingerprint version 1, repository-relative POSIX source paths, positive
+line/column positions, non-negative byte offsets, Unicode-preserving text, and
+deterministically sorted fixes. Known checkout prefixes in diagnostic text use
+`$CORPUS/<repository>`; unrelated text and fix replacement contents are kept
+exactly.
+
+The whole-corpus digest uses the canonical payload
+`{"kind":"bbtidy-lint-findings","fingerprint_version":1,"findings": [...]}`.
+Each per-rule digest uses the same canonical representation with kind
+`bbtidy-lint-rule-findings` and the applicable `rule_id`. Both use lowercase
+SHA-256 over compact UTF-8 JSON with sorted keys, no incidental whitespace, and
+`allow_nan=False`. Evidence may be pretty-printed, but its findings and summary
+are derived from the same sorted normalized list. A future incompatible change
+must increment the fingerprint version.
+
 The contract applies to a release only when that release is identified as a
 beta release in its release notes. Alpha prereleases are evaluation builds and
 must not be represented as having completed the beta support gate.

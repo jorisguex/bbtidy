@@ -588,6 +588,22 @@ includes/classes, and resolved BitBake semantics are inspected when needed.
 Changed fingerprints are unreviewed until a human reviews them. A corrected
 false-positive pattern must also receive a focused local regression fixture.
 
+Lint fingerprint semantics are defined independently of the baseline policy.
+The normalizer in `scripts/lint_quality.py` accepts the parsed version-1 JSON
+report and explicit repository checkout roots. Each finding uses fingerprint
+version 1, a `(repository, relative POSIX path)` source identity, positive
+line/column positions, non-negative byte offsets, exact Unicode message/help
+text, and deterministically sorted fix edits. Known checkout prefixes in
+diagnostic text are replaced with `$CORPUS/<repository>`; unrelated source text
+and fix replacement text are not rewritten. Findings are sorted by repository,
+path, byte and positional range, rule, severity, message, help, fixes, and a
+canonical-byte tie-breaker. Whole-corpus and per-rule SHA-256 digests hash
+domain-separated payloads containing `kind`, `fingerprint_version`, and the
+sorted findings. The canonical serializer uses UTF-8 JSON with sorted keys,
+compact separators, and `allow_nan=False`; evidence may be pretty-printed
+separately. Any future fingerprint change must increment the fingerprint
+version.
+
 Run a stable corpus check locally after building a release binary:
 
 ```bash
@@ -624,8 +640,8 @@ resolved repository commits, bbtidy revision, runner details, tree changes,
 preservation counts, parse result, and semantic probe values. A pre-existing
 evidence directory is rejected so an artifact cannot silently mix results from
 multiple runs. The `lint/` subdirectory contains `findings.json` with every
-normalized finding, `summary.json` with counts, digests, files, rules, review
-totals, and sampled false-positive/unclear counts, plus
+normalized finding, `summary.json` with deterministic counts, digests, files,
+and rules derived solely from those findings, plus
 `baseline-comparison.json` with count and digest changes, added/removed finding
 fingerprints, newly active/clean rules, and review failures.
 

@@ -15,6 +15,27 @@ import tempfile
 import time
 from pathlib import Path
 
+try:
+    from scripts.lint_quality import (
+        KNOWN_RULE_IDS,
+        LintNormalizationError,
+        NormalizationContext,
+        canonical_json_bytes,
+        digest_rule_findings,
+        normalize_lint_report as normalize_parsed_lint_report,
+        summarize_findings,
+    )
+except ModuleNotFoundError:  # Direct ``python3 scripts/check_upstream_corpus.py``.
+    from lint_quality import (  # type: ignore[no-redef]
+        KNOWN_RULE_IDS,
+        LintNormalizationError,
+        NormalizationContext,
+        canonical_json_bytes,
+        digest_rule_findings,
+        normalize_lint_report as normalize_parsed_lint_report,
+        summarize_findings,
+    )
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = (
     PROJECT_ROOT / "tests" / "upstream-corpora" / "yocto-5.0-scarthgap.json"
@@ -82,29 +103,11 @@ def report_warning(message):
 
 def canonical_json(value):
     """Serialize JSON values in the format used for reproducible fingerprints."""
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
-
-
-def json_digest(value):
-    return hashlib.sha256(canonical_json(value)).hexdigest()
-
-
-def _required_field(value, field, kind=None):
-    if not isinstance(value, dict) or field not in value:
-        raise CompatibilityError(
-            "lint report diagnostic is missing required field {!r}".format(field)
-        )
-    result = value[field]
-    if kind is not None and not isinstance(result, kind):
-        raise CompatibilityError(
-            "lint report field {!r} has the wrong type".format(field)
-        )
-    return result
+    return canonical_json_bytes(value)
 
 
 def _lint_integer(value, field, minimum=0):
+    """Validate legacy baseline metadata integers in the harness."""
     if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
         raise CompatibilityError(
             "lint report field {!r} must be an integer >= {}".format(field, minimum)
@@ -112,153 +115,24 @@ def _lint_integer(value, field, minimum=0):
     return value
 
 
-def normalize_lint_path(path, corpus_roots):
-    if not isinstance(path, str) or not path:
-        raise CompatibilityError("lint diagnostic path must be a non-empty string")
-    candidate = Path(path)
-    if not candidate.is_absolute():
-        candidate = Path.cwd() / candidate
-    candidate = candidate.resolve(strict=False)
-    roots = sorted(
-        ((repository, root.resolve(strict=False)) for repository, root in corpus_roots),
-        key=lambda item: len(str(item[1])),
-        reverse=True,
-    )
-    for repository, root in roots:
-        try:
-            relative = candidate.relative_to(root)
-        except ValueError:
-            continue
-        if relative == Path(".") or any(part in {"", ".", ".."} for part in relative.parts):
-            break
-        return repository, relative.as_posix()
-    raise CompatibilityError(
-        "lint diagnostic path cannot be normalized into the corpus: {}".format(path)
-    )
-
-
-def _normalize_lint_fix(fix, diagnostic_index, fix_index):
-    if not isinstance(fix, dict):
-        raise CompatibilityError(
-            "lint diagnostic {} fix {} is not an object".format(
-                diagnostic_index, fix_index
-            )
-        )
-    start_byte = _lint_integer(
-        _required_field(fix, "start_byte"), "fix.start_byte"
-    )
-    end_byte = _lint_integer(_required_field(fix, "end_byte"), "fix.end_byte")
-    if end_byte < start_byte:
-        raise CompatibilityError("lint fix end_byte precedes start_byte")
-    replacement = _required_field(fix, "replacement", str)
-    message = _required_field(fix, "message", str)
-    return {
-        "start_byte": start_byte,
-        "end_byte": end_byte,
-        "replacement": replacement,
-        "message": message,
-    }
-
-
 def normalize_lint_report(report_text, corpus_id, corpus_roots):
-    """Validate bbtidy's JSON report and return canonical, machine-independent findings."""
+    """Compatibility wrapper for the pure parsed-report normalizer."""
     try:
-        report = json.loads(report_text)
+        report = report_text if isinstance(report_text, dict) else json.loads(report_text)
     except (TypeError, UnicodeError, json.JSONDecodeError) as error:
         raise CompatibilityError("bbtidy returned malformed lint JSON: {}".format(error)) from error
-    if not isinstance(report, dict):
-        raise CompatibilityError("bbtidy lint report must be a JSON object")
-    if isinstance(report.get("version"), bool) or report.get("version") != LINT_REPORT_VERSION:
-        raise CompatibilityError(
-            "unsupported bbtidy lint report version: {}".format(report.get("version"))
-        )
-    diagnostics = report.get("diagnostics")
-    if not isinstance(diagnostics, list):
-        raise CompatibilityError("bbtidy lint report diagnostics must be a list")
-
-    findings = []
-    for diagnostic_index, diagnostic in enumerate(diagnostics):
-        if not isinstance(diagnostic, dict):
-            raise CompatibilityError(
-                "lint diagnostic {} is not an object".format(diagnostic_index)
-            )
-        path = _required_field(diagnostic, "path", str)
-        repository, relative_path = normalize_lint_path(path, corpus_roots)
-        rule_id = _required_field(diagnostic, "rule_id", str)
-        if rule_id not in LINT_RULE_IDS:
-            raise CompatibilityError("lint report contains unknown rule ID: {}".format(rule_id))
-        severity = _required_field(diagnostic, "severity", str)
-        if severity not in LINT_SEVERITIES:
-            raise CompatibilityError("lint report contains unknown severity: {}".format(severity))
-        line = _lint_integer(_required_field(diagnostic, "line"), "line", 1)
-        column = _lint_integer(_required_field(diagnostic, "column"), "column", 1)
-        end_line = _lint_integer(_required_field(diagnostic, "end_line"), "end_line", 1)
-        end_column = _lint_integer(
-            _required_field(diagnostic, "end_column"), "end_column", 1
-        )
-        if (end_line, end_column) < (line, column):
-            raise CompatibilityError("lint diagnostic end range precedes start range")
-        message = _required_field(diagnostic, "message", str)
-        fixable = _required_field(diagnostic, "fixable")
-        if not isinstance(fixable, bool):
-            raise CompatibilityError("lint report field 'fixable' must be a boolean")
-        fixes = _required_field(diagnostic, "fixes")
-        if not isinstance(fixes, list):
-            raise CompatibilityError("lint report field 'fixes' must be a list")
-        normalized_fixes = [
-            _normalize_lint_fix(fix, diagnostic_index, fix_index)
-            for fix_index, fix in enumerate(fixes)
-        ]
-        normalized_fixes.sort(
-            key=lambda fix: (
-                fix["start_byte"],
-                fix["end_byte"],
-                fix["message"],
-                fix["replacement"],
-            )
-        )
-        finding = {
-            "corpus_id": corpus_id,
-            "repository": repository,
-            "path": relative_path,
-            "rule_id": rule_id,
-            "severity": severity,
-            "range": {
-                "start_line": line,
-                "start_column": column,
-                "end_line": end_line,
-                "end_column": end_column,
-            },
-            "message": message,
-            "fixable": fixable,
-            "fixes": normalized_fixes,
-        }
-        if "help" in diagnostic:
-            help_text = diagnostic["help"]
-            if help_text is not None and not isinstance(help_text, str):
-                raise CompatibilityError("lint report field 'help' must be a string or null")
-            if help_text is not None:
-                finding["help"] = help_text
-        findings.append(finding)
-
-    findings.sort(
-        key=lambda finding: (
-            finding["repository"],
-            finding["path"],
-            finding["range"]["start_line"],
-            finding["range"]["start_column"],
-            finding["range"]["end_line"],
-            finding["range"]["end_column"],
-            finding["rule_id"],
-            finding["message"],
-            canonical_json(finding),
-        )
+    context = NormalizationContext(
+        repository_roots=tuple(corpus_roots),
+        path_base=Path.cwd(),
     )
-    return findings
+    try:
+        return normalize_parsed_lint_report(report, context)
+    except LintNormalizationError as error:
+        raise CompatibilityError(str(error)) from error
 
 
 def lint_finding_digest(finding):
-    return json_digest(finding)
+    return hashlib.sha256(canonical_json(finding)).hexdigest()
 
 
 def _default_lint_review(status="unreviewed"):
@@ -272,70 +146,12 @@ def _default_lint_review(status="unreviewed"):
     }
 
 
-def _review_for_finding_digest(rule_id, count, findings_sha256, baseline):
-    if not baseline:
-        return _default_lint_review()
-    entry = baseline.get("rules", {}).get(rule_id)
-    if not entry or entry.get("count") != count or entry.get("findings_sha256") != findings_sha256:
-        return _default_lint_review()
-    review = entry.get("review")
-    return dict(review) if isinstance(review, dict) else _default_lint_review()
-
-
 def summarize_lint_findings(corpus_id, findings, baseline=None):
-    by_rule = {}
-    for finding in findings:
-        by_rule.setdefault(finding["rule_id"], []).append(finding)
-    rules = {}
-    for rule_id in sorted(by_rule):
-        rule_findings = by_rule[rule_id]
-        finding_digests = sorted(lint_finding_digest(finding) for finding in rule_findings)
-        digest = json_digest(rule_findings)
-        review = _review_for_finding_digest(rule_id, len(rule_findings), digest, baseline)
-        rules[rule_id] = {
-            "count": len(rule_findings),
-            "findings_sha256": digest,
-            "finding_digests": finding_digests,
-            "review": review,
-        }
-    severity_counts = {severity: 0 for severity in LINT_SEVERITIES}
-    for finding in findings:
-        severity_counts[finding["severity"]] += 1
-    files = sorted(
-        "{}/{}".format(finding["repository"], finding["path"])
-        for finding in findings
-    )
-    files = sorted(set(files))
-    reviewed = [
-        rule
-        for rule in rules.values()
-        if rule["review"].get("status") == "reviewed"
-    ]
-    unreviewed = [
-        rule
-        for rule in rules.values()
-        if rule["review"].get("status") != "reviewed"
-    ]
-    sampled = [
-        rule["review"]
-        for rule in rules.values()
-        if rule["review"].get("status") == "reviewed"
-    ]
-    return {
-        "schema": 1,
-        "corpus_id": corpus_id,
-        "total_findings": len(findings),
-        "findings_sha256": json_digest(findings),
-        "severity_counts": severity_counts,
-        "rules": rules,
-        "files_with_findings": files,
-        "rules_with_findings": sorted(rules),
-        "reviewed_rule_count": len(reviewed),
-        "unreviewed_rule_count": len(unreviewed),
-        "true_positive_sample_total": sum(item.get("true_positive", 0) for item in sampled),
-        "false_positive_sample_total": sum(item.get("false_positive", 0) for item in sampled),
-        "unclear_sample_total": sum(item.get("unclear", 0) for item in sampled),
-    }
+    # Baseline review policy remains a harness concern.  The summary itself is
+    # intentionally derived only from canonical findings.
+    summary = summarize_findings(findings, KNOWN_RULE_IDS)
+    summary["corpus_id"] = corpus_id
+    return summary
 
 
 def validate_lint_review(review, count, rule_id):
@@ -453,8 +269,9 @@ def compare_lint_baseline(summary, baseline, tier, corpus_id, baseline_path):
     previous_rules = baseline.get("rules", {})
     current_rules = summary["rules"]
     for rule_id in sorted(set(previous_rules) | set(current_rules)):
-        previous = previous_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": json_digest([])})
-        current = current_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": json_digest([])})
+        empty_rule = digest_rule_findings(rule_id, [])
+        previous = previous_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": empty_rule})
+        current = current_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": empty_rule})
         if previous["count"] != current["count"]:
             comparison["count_changes"][rule_id] = {
                 "baseline": previous["count"],
@@ -483,6 +300,8 @@ def compare_lint_baseline(summary, baseline, tier, corpus_id, baseline_path):
             comparison["removed_findings_by_rule"][rule_id] = None
 
     for rule_id, current in sorted(current_rules.items()):
+        if current.get("count", 0) == 0:
+            continue
         previous = previous_rules.get(rule_id)
         if previous is None:
             comparison["review_status_failures"].append(
@@ -527,7 +346,7 @@ def build_lint_baseline(summary, previous=None):
             rule_id,
             {
                 "count": 0,
-                "findings_sha256": json_digest([]),
+                "findings_sha256": digest_rule_findings(rule_id, []),
                 "finding_digests": [],
             },
         )
@@ -1480,8 +1299,13 @@ def check_compatibility(arguments, workspace, evidence_dir):
     print(
         "  lint findings: {} ({} rules, {} reviewed)".format(
             lint_summary["total_findings"],
-            len(lint_summary["rules"]),
-            lint_summary["reviewed_rule_count"],
+            sum(rule["count"] > 0 for rule in lint_summary["rules"].values()),
+            sum(
+                rule.get("count", 0) > 0
+                and isinstance(rule.get("review"), dict)
+                and rule["review"].get("status") == "reviewed"
+                for rule in (lint_baseline or {}).get("rules", {}).values()
+            ),
         )
     )
 
