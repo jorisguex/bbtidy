@@ -1273,7 +1273,7 @@ fn add_semantic_finding(
 
 /// Runs BitBake and converts its semantic results into lint diagnostics.
 ///
-/// This is the library equivalent of the CLI's `lint --semantic` integration.
+/// This is the library equivalent of the CLI's `check --semantic` integration.
 /// Source-local rules still use [`lint_with_workspace`]; this function covers
 /// BitBake diagnostics and checks that require resolved target environments.
 pub fn lint_with_bitbake(

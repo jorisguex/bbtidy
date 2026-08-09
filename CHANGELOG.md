@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Adopted Ruff-style command names: `check` now runs linting, while
+  `format --check` validates formatting. The former top-level formatting
+  `check` command and `lint` command are no longer separate entry points.
+
 ### Fixed
 
 - Workspace class resolution now distinguishes BitBake's global and recipe
@@ -13,16 +19,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Whole-build offline workspace linting through `lint --workspace`, including
+- Whole-build offline workspace linting through `check --workspace`, including
   static `BBLAYERS` discovery, build configuration indexing, cross-layer
   dependency resolution, and complete-scope safety/exclusion handling.
-- Rich BitBake analysis output for `semantic` and `lint --semantic`, including
+- Rich BitBake analysis output for `semantic` and `check --semantic`, including
   requested variables, phase- and stream-aware diagnostics, per-target query
   results, and selected resolved environments in JSON and SARIF provenance.
 - Broader authoritative semantic QA for resolved recipe identity/version,
   checksums, `PACKAGECONFIG`, package scopes/lists, `SRC_URI` parameters, layer
   collections, and override components (`BBT020` through `BBT033` and `BBT037`).
-- Opt-in BitBake-backed semantic linting through `lint --semantic`, including
+- Opt-in BitBake-backed semantic linting through `check --semantic`, including
   source-aware `BBT019` diagnostics, resolved target metadata checks, and JSON
   semantic provenance.
 - Broader lint coverage for recipe metadata completeness, immediate
@@ -37,7 +43,7 @@ All notable changes to this project will be documented in this file.
   key expansion, and `append`/`prepend`/`remove` operations, with public
   resolver APIs and unknown-component diagnostics.
 - Structured lint diagnostics with source ranges, help, SARIF/JSON fix
-  metadata, `--show-fixes`, and transactional `lint --fix` support for safe
+  metadata, `--show-fixes`, and transactional `check --fix` support for safe
   trailing-whitespace and final-newline edits.
 - Project/build-context discovery for semantic analysis, with configuration,
   `BBTIDY_BITBAKE_BUILD_DIR`/`BUILDDIR` environment support, conventional

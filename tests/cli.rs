@@ -66,12 +66,12 @@ fn format_diff_emits_a_unified_diff_without_modifying_the_file() {
 }
 
 #[test]
-fn check_and_write_have_stable_exit_codes() {
-    let directory = TemporaryDirectory::new("check-write");
+fn format_check_and_write_have_stable_exit_codes() {
+    let directory = TemporaryDirectory::new("format-check-write");
     let file = directory.write("example.bb", UNFORMATTED);
     let path = file.to_str().unwrap();
 
-    let check_before = run(["check", path]);
+    let check_before = run(["format", "--check", path]);
     assert_eq!(check_before.status.code(), Some(1));
     assert_eq!(
         String::from_utf8(check_before.stdout).unwrap(),
@@ -82,9 +82,42 @@ fn check_and_write_have_stable_exit_codes() {
     assert_success(&write);
     assert_eq!(fs::read_to_string(&file).unwrap(), FORMATTED);
 
-    let check_after = run(["check", path]);
+    let check_after = run(["format", "--check", path]);
     assert_success(&check_after);
     assert!(check_after.stdout.is_empty());
+}
+
+#[test]
+fn format_check_accepts_multiple_inputs_without_writing() {
+    let directory = TemporaryDirectory::new("format-check-multiple");
+    let first = directory.write("first.bb", UNFORMATTED);
+    let second = directory.write("second.bb", FORMATTED);
+
+    let output = run([
+        "format",
+        "--check",
+        first.to_str().unwrap(),
+        second.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("would reformat: {}\n", first.display())
+    );
+    assert_eq!(fs::read_to_string(&first).unwrap(), UNFORMATTED);
+    assert_eq!(fs::read_to_string(&second).unwrap(), FORMATTED);
+}
+
+#[test]
+fn legacy_lint_subcommand_is_rejected() {
+    let directory = TemporaryDirectory::new("legacy-lint-command");
+    let file = directory.write("example.bb", "SUMMARY = \"demo\"\n");
+
+    let output = run(["lint", file.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("unrecognized subcommand"));
 }
 
 #[test]
@@ -201,7 +234,7 @@ fn config_filters_lint_rules_and_overrides_severity() {
     );
 
     let output = run([
-        "lint",
+        "check",
         "--config",
         config.to_str().unwrap(),
         file.to_str().unwrap(),
@@ -223,10 +256,10 @@ fn lint_failure_threshold_controls_status_without_filtering_findings() {
     let file = directory.write("example.bb", "SRCREV = \"${AUTOREV}\"\n");
     let path = file.to_str().unwrap();
 
-    let default = run(["lint", path]);
+    let default = run(["check", path]);
     assert_eq!(default.status.code(), Some(1));
 
-    let error_threshold = run(["lint", "--fail-on", "error", path]);
+    let error_threshold = run(["check", "--fail-on", "error", path]);
     assert_eq!(error_threshold.status.code(), Some(0));
     assert!(
         String::from_utf8(error_threshold.stdout)
@@ -234,13 +267,13 @@ fn lint_failure_threshold_controls_status_without_filtering_findings() {
             .contains("warning[BBT004]")
     );
 
-    let info_threshold = run(["lint", "--fail-on", "info", path]);
+    let info_threshold = run(["check", "--fail-on", "info", path]);
     assert_eq!(info_threshold.status.code(), Some(1));
 
-    let never_threshold = run(["lint", "--fail-on", "never", path]);
+    let never_threshold = run(["check", "--fail-on", "never", path]);
     assert_eq!(never_threshold.status.code(), Some(0));
 
-    let json = run(["lint", "--output", "json", "--fail-on", "error", path]);
+    let json = run(["check", "--output", "json", "--fail-on", "error", path]);
     assert_eq!(json.status.code(), Some(0));
     let report: Value = serde_json::from_slice(&json.stdout).unwrap();
     assert_eq!(report["diagnostics"].as_array().unwrap().len(), 1);
@@ -254,10 +287,10 @@ fn lint_failure_threshold_cli_overrides_config() {
     let path = file.to_str().unwrap();
     let config_path = config.to_str().unwrap();
 
-    let from_config = run(["lint", "--config", config_path, path]);
+    let from_config = run(["check", "--config", config_path, path]);
     assert_eq!(from_config.status.code(), Some(0));
 
-    let from_cli = run(["lint", "--config", config_path, "--fail-on", "info", path]);
+    let from_cli = run(["check", "--config", config_path, "--fail-on", "info", path]);
     assert_eq!(from_cli.status.code(), Some(1));
 }
 
@@ -362,7 +395,7 @@ fn lint_cli_overrides_safety_limits() {
     let second = directory.write("second.bb", "SUMMARY = \"second\"\n");
     let path = directory.path().to_str().unwrap();
 
-    let file_limit = run(["lint", "--max-files", "1", path]);
+    let file_limit = run(["check", "--max-files", "1", path]);
     assert_eq!(file_limit.status.code(), Some(2));
     assert!(
         String::from_utf8(file_limit.stderr)
@@ -371,7 +404,7 @@ fn lint_cli_overrides_safety_limits() {
     );
 
     let byte_limit = run([
-        "lint",
+        "check",
         "--max-bytes",
         "1",
         first.to_str().unwrap(),
@@ -550,7 +583,7 @@ fn lex_accepts_standard_input_and_reports_lexer_errors() {
 
 #[test]
 fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
-    let directory = TemporaryDirectory::new("lint");
+    let directory = TemporaryDirectory::new("check");
     let file = directory.write(
         "example.bb",
         concat!(
@@ -561,7 +594,7 @@ fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
         ),
     );
 
-    let output = run(["lint", file.to_str().unwrap()]);
+    let output = run(["check", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -572,7 +605,7 @@ fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
     assert!(findings[2].contains(":4:9: warning[BBT005]:"));
 
     fs::write(&file, "SUMMARY = \"demo\"\n").unwrap();
-    let clean = run(["lint", file.to_str().unwrap()]);
+    let clean = run(["check", file.to_str().unwrap()]);
     assert_success(&clean);
     assert!(clean.stdout.is_empty());
 }
@@ -590,7 +623,7 @@ fn lint_json_output_has_a_stable_schema() {
         ),
     );
 
-    let output = run(["lint", "--output", "json", file.to_str().unwrap()]);
+    let output = run(["check", "--output", "json", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stderr.is_empty());
@@ -614,7 +647,7 @@ fn lint_show_fixes_explains_safe_edits_without_changing_default_text() {
     let directory = TemporaryDirectory::new("lint-show-fixes");
     let file = directory.write("example.bb", "SUMMARY = \"demo\"  \n");
 
-    let output = run(["lint", "--show-fixes", file.to_str().unwrap()]);
+    let output = run(["check", "--show-fixes", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -632,7 +665,7 @@ fn lint_fix_applies_safe_edits_and_reports_remaining_findings() {
         "SUMMARY = \"demo\"  \nSRCREV = \"${AUTOREV}\"",
     );
 
-    let output = run(["lint", "--fix", file.to_str().unwrap()]);
+    let output = run(["check", "--fix", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -645,7 +678,7 @@ fn lint_fix_applies_safe_edits_and_reports_remaining_findings() {
         "SUMMARY = \"demo\"\nSRCREV = \"${AUTOREV}\"\n"
     );
 
-    let second = run(["lint", "--fix", file.to_str().unwrap()]);
+    let second = run(["check", "--fix", file.to_str().unwrap()]);
     assert_eq!(second.status.code(), Some(1));
     assert!(!String::from_utf8(second.stdout).unwrap().contains("fixed:"));
 }
@@ -655,7 +688,7 @@ fn lint_fix_json_reports_applied_edits_and_empty_post_fix_findings() {
     let directory = TemporaryDirectory::new("lint-fix-json");
     let file = directory.write("example.bb", "SUMMARY = \"demo\"  ");
 
-    let output = run(["lint", "--fix", "--output", "json", file.to_str().unwrap()]);
+    let output = run(["check", "--fix", "--output", "json", file.to_str().unwrap()]);
 
     assert_success(&output);
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
@@ -670,7 +703,7 @@ fn lint_fix_json_reports_applied_edits_and_empty_post_fix_findings() {
 
 #[test]
 fn lint_fix_rejects_standard_input_before_reading_or_writing() {
-    let output = run_with_stdin(["lint", "--fix", "-"], "SUMMARY = \"demo\"");
+    let output = run_with_stdin(["check", "--fix", "-"], "SUMMARY = \"demo\"");
 
     assert_eq!(output.status.code(), Some(2));
     assert!(
@@ -686,7 +719,7 @@ fn lint_fix_is_transactional_when_another_input_fails_analysis() {
     let fixable = directory.write("a.bb", "SUMMARY = \"demo\"  ");
     directory.write("b.bb", "BROKEN = \"unterminated\n");
 
-    let output = run(["lint", "--fix", directory.path().to_str().unwrap()]);
+    let output = run(["check", "--fix", directory.path().to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(fs::read_to_string(fixable).unwrap(), "SUMMARY = \"demo\"  ");
@@ -702,7 +735,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     let directory = TemporaryDirectory::new("lint-sarif");
     let file = directory.write("example.bb", "SRCREV = \"${AUTOREV}\"\n");
 
-    let output = run(["lint", "--output", "sarif", file.to_str().unwrap()]);
+    let output = run(["check", "--output", "sarif", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stderr.is_empty());
@@ -742,7 +775,7 @@ fn lint_sarif_output_contains_formal_fix_metadata() {
     let directory = TemporaryDirectory::new("lint-sarif-fix");
     let file = directory.write("example.bb", "SUMMARY = \"demo\"  \n");
 
-    let output = run(["lint", "--output", "sarif", file.to_str().unwrap()]);
+    let output = run(["check", "--output", "sarif", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
@@ -780,7 +813,7 @@ fn workspace_cycles_are_reported_in_json_and_sarif() {
     );
 
     let json = run([
-        "lint",
+        "check",
         "--output",
         "json",
         directory.path().to_str().unwrap(),
@@ -801,7 +834,7 @@ fn workspace_cycles_are_reported_in_json_and_sarif() {
     );
 
     let sarif = run([
-        "lint",
+        "check",
         "--output",
         "sarif",
         directory.path().to_str().unwrap(),
@@ -830,7 +863,7 @@ fn machine_lint_output_is_not_partial_when_analysis_fails() {
     let directory = TemporaryDirectory::new("lint-json-error");
     let file = directory.write("malformed.bb", "SUMMARY = \"unterminated\n");
 
-    let output = run(["lint", "--output", "json", file.to_str().unwrap()]);
+    let output = run(["check", "--output", "json", file.to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
@@ -870,7 +903,7 @@ fn lint_directories_report_unresolved_static_layer_references() {
         ),
     );
 
-    let output = run(["lint", directory.path().to_str().unwrap()]);
+    let output = run(["check", directory.path().to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(output.stderr, b"");
@@ -976,7 +1009,7 @@ exit 1
     fs::set_permissions(&bitbake, permissions).unwrap();
 
     let output = run([
-        "lint",
+        "check",
         "--workspace",
         build.to_str().unwrap(),
         "--bitbake",
@@ -1009,7 +1042,7 @@ exit 1
         "[paths]\nexclude = [\"meta-second/**\"]\n",
     );
     let excluded = run([
-        "lint",
+        "check",
         "--workspace",
         build.to_str().unwrap(),
         "--bitbake",
@@ -1036,7 +1069,7 @@ exit 1
     }));
 
     let limited = run([
-        "lint",
+        "check",
         "--workspace",
         build.to_str().unwrap(),
         "--bitbake",
@@ -1068,7 +1101,7 @@ fn lint_reports_broader_recipe_metadata_rules_in_machine_output() {
     let recipe = directory.write("recipes-example/example.bb", "SUMMARY = \"example\"\n");
 
     let output = run([
-        "lint",
+        "check",
         "--output",
         "json",
         recipe.to_str().unwrap(),
@@ -1095,7 +1128,7 @@ fn lint_reports_broader_recipe_metadata_rules_in_machine_output() {
 
 #[test]
 fn lint_accepts_standard_input() {
-    let output = run_with_stdin(["lint", "-"], "SUMMARY = \"demo\"");
+    let output = run_with_stdin(["check", "-"], "SUMMARY = \"demo\"");
 
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
@@ -1103,7 +1136,7 @@ fn lint_accepts_standard_input() {
         "<stdin>:1:17: warning[BBT002]: file does not end with a newline\n"
     );
 
-    let limited = run_with_stdin(["lint", "--max-bytes", "1", "-"], "SUMMARY = \"demo\"");
+    let limited = run_with_stdin(["check", "--max-bytes", "1", "-"], "SUMMARY = \"demo\"");
     assert_eq!(limited.status.code(), Some(2));
     assert!(
         String::from_utf8(limited.stderr)
@@ -1119,7 +1152,7 @@ fn lint_directories_are_deterministic_and_malformed_input_is_an_error() {
     let root = directory.write("z.bb", "Z = \"z\"");
     directory.write("ignored.txt", "IGNORED = \"value\"");
 
-    let output = run(["lint", directory.path().to_str().unwrap()]);
+    let output = run(["check", directory.path().to_str().unwrap()]);
 
     assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -1130,7 +1163,7 @@ fn lint_directories_are_deterministic_and_malformed_input_is_an_error() {
     assert!(!stdout.contains("ignored.txt"));
 
     fs::write(&nested, "BROKEN = \"value\n").unwrap();
-    let malformed = run(["lint", directory.path().to_str().unwrap()]);
+    let malformed = run(["check", directory.path().to_str().unwrap()]);
     assert_eq!(malformed.status.code(), Some(2));
     assert!(
         String::from_utf8(malformed.stderr)
@@ -1297,7 +1330,7 @@ exit 0
 
     let build_dir = directory.path().join("build");
     let output = run([
-        "lint",
+        "check",
         "--semantic",
         "--build-dir",
         build_dir.to_str().unwrap(),
@@ -1400,7 +1433,7 @@ exit 0
     fs::set_permissions(&bitbake, permissions).unwrap();
 
     let output = run([
-        "lint",
+        "check",
         "--semantic",
         "--build-dir",
         directory.path().join("build").to_str().unwrap(),
@@ -1436,7 +1469,7 @@ fn semantic_lint_requires_the_semantic_flag_for_bitbake_options() {
     let file = directory.write("example.bb", "SUMMARY = \"demo\"\n");
 
     let output = run([
-        "lint",
+        "check",
         "--build-dir",
         directory.path().to_str().unwrap(),
         file.to_str().unwrap(),
@@ -1477,7 +1510,7 @@ exit 0
     fs::set_permissions(&bitbake, permissions).unwrap();
 
     let output = run([
-        "lint",
+        "check",
         "--semantic",
         "--build-dir",
         directory.path().join("build").to_str().unwrap(),

@@ -29,9 +29,9 @@ the [beta user guide](docs/beta-user-guide.md).
   blank lines, embedded functions, and unsupported syntax.
 - **Fail-safe writes**: Refuses to rewrite structurally incomplete input and
   replaces successfully formatted files atomically.
-- **Automation-friendly CLI**: Provides explicit `format`, `check`, `lint`,
-  `lex`, and authoritative `semantic` commands, standard-input support,
-  unified diffs, and documented exit codes.
+- **Automation-friendly CLI**: Provides Ruff-style `format`, `format --check`,
+  and `check` commands, plus `lex` and authoritative `semantic`, standard-input
+  support, unified diffs, and documented exit codes.
 - **Project configuration**: Loads an optional `.bbtidy.toml` with formatter
   settings, lint rule selection, severity overrides, and path exclusions.
 - **Project/build-context discovery**: Finds configured BitBake build trees from
@@ -40,11 +40,11 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order and indexes complete supplied layers for semantic
   checks.
-- **Whole-build workspace linting**: `lint --workspace` asks BitBake for the
+- **Whole-build workspace linting**: `check --workspace` asks BitBake for the
   expanded build scope, indexes every resolved layer plus build configuration,
   and resolves dynamic includes/classes across the complete parsed workspace.
 - **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
-  and safe edit suggestions, with transactional `lint --fix` support for
+  and safe edit suggestions, with transactional `check --fix` support for
   whitespace and final-newline findings.
 - **BitBake-backed semantic linting and build analysis**: Optionally runs the
   configured BitBake parser, target environment queries, dependency graph,
@@ -114,21 +114,21 @@ bbtidy format --diff recipes-example/
 To check formatting in CI, then explicitly rewrite files when desired:
 
 ```bash
-bbtidy check recipes-example/
+bbtidy format --check recipes-example/
 bbtidy format --write recipes-example/
 ```
 
 To lint a file, recipe directory, or layer:
 
 ```bash
-bbtidy lint recipes-example/
+bbtidy check recipes-example/
 ```
 
 To lint every configured layer and build configuration file in a BitBake
 workspace:
 
 ```bash
-bbtidy lint --workspace build --bitbake bitbake
+bbtidy check --workspace build --bitbake bitbake
 ```
 
 Workspace mode asks the selected BitBake engine to parse the build, then uses
@@ -142,13 +142,13 @@ error; bbtidy never falls back to a partial static workspace. Use
 To combine static linting with authoritative BitBake semantics:
 
 ```bash
-bbtidy lint --semantic \
+bbtidy check --semantic \
   --build-dir build \
   --target core-image-minimal \
   recipes-example/
 ```
 
-`lint --semantic` requires an initialized BitBake build directory and uses the
+`check --semantic` requires an initialized BitBake build directory and uses the
 same project, environment-variable, configuration, and executable discovery
 as `semantic`. It runs `bitbake --parse-only` once, then `bitbake -e` for each
 selected `--target`. BitBake warnings and errors are reported as `BBT019` lint
@@ -164,12 +164,12 @@ The mode is file-based and cannot be combined with standard input.
 For CI integrations, select a machine-readable report format:
 
 ```bash
-bbtidy lint --output json recipes-example/
-bbtidy lint --output sarif recipes-example/
+bbtidy check --output json recipes-example/
+bbtidy check --output sarif recipes-example/
 
 # Explain safe edits without changing files, or apply them transactionally.
-bbtidy lint --show-fixes recipes-example/
-bbtidy lint --fix recipes-example/
+bbtidy check --show-fixes recipes-example/
+bbtidy check --fix recipes-example/
 ```
 
 To run BitBake's authoritative parser and inspect fully expanded recipe values:
@@ -220,11 +220,11 @@ applicable, output stream, severity, message,
 and optional source location fields. Text output remains the default. The Rust
 API retains each complete `bitbake -e` dump through
 `SemanticEnvironment::raw`; the JSON report omits that verbose field. The
-`lint --semantic` command embeds the same diagnostics, environments, target
+`check --semantic` command embeds the same diagnostics, environments, target
 results, and any requested `build_analysis` sections under its `semantic`
 object, so JSON and SARIF consumers do not lose BitBake detail.
 Lint JSON retains `version: 1` and adds diagnostic end positions,
-byte ranges, help, `fixable`, and structured `fixes` entries. A `lint --fix`
+byte ranges, help, `fixable`, and structured `fixes` entries. A `check --fix`
 report also contains `fixes_applied`. SARIF output follows SARIF 2.1.0 with the
 complete lint rule catalog, fixability properties, source ranges, and SARIF
 fixes.
@@ -260,13 +260,14 @@ is always processed. Paths are sorted and deduplicated before processing.
 Standard input must be the only input, and `--write` cannot be used with it.
 
 `format` writes formatted source to standard output and requires one input
-unless `--diff` or `--write` is selected. `format --diff`, ordinary `lint`, and
-`lex` can process multiple inputs without changing them. Before
-`format --write` or `lint --fix` changes any files, every input is read,
+unless `--check`, `--diff`, or `--write` is selected. `format --check`,
+`format --diff`, ordinary `check`, and `lex` can process multiple inputs
+without changing them. Before `format --write` or `check --fix` changes any
+files, every input is read,
 analyzed, staged, and checked for concurrent changes. Changed files are then
 replaced as one transactional batch; if a commit step fails, previously
 replaced files are restored from their staged recovery copies. Symbolic links
-are never replaced. `lint --fix` refuses standard input and applies only edits
+are never replaced. `check --fix` refuses standard input and applies only edits
 proposed by safe fixable rules; structural analysis failures prevent all
 writes.
 
@@ -324,17 +325,17 @@ malformed or mixed-line-ending values remain unchanged apart from normal
 assignment spacing.
 
 The safety limits default to 10,000 files and 256 MiB of original source per
-`format` or `lint` invocation; `lint --fix` also enforces them before editing.
+`format` or `check` invocation; `check --fix` also enforces them before editing.
 They apply after recursive discovery and exclusions, including the files
-retained by `lint --workspace`, so a repository-wide operation cannot silently
+retained by `check --workspace`, so a repository-wide operation cannot silently
 expand beyond a bounded scope. `--max-files` and `--max-bytes` override the
 configured values for either command. Zero is rejected. A file that changes
 after it was read is also rejected rather than overwritten.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. `fail_on` controls the minimum effective
-severity that makes `lint` exit with code `1`; it defaults to `warning`, and
-`never` makes lint advisory while still reporting findings. The command-line
+severity that makes `check` exit with code `1`; it defaults to `warning`, and
+`never` makes check advisory while still reporting findings. The command-line
 `--fail-on` option overrides the configuration for one invocation. Exclusion
 globs are relative to the configuration file’s directory and apply to
 explicit files, recursively discovered files, and BitBake workspace files.
@@ -352,7 +353,7 @@ analysis, staging, or the transactional commit fails.
 ### Exit codes
 
 - `0`: the command completed successfully.
-- `1`: `check` found formatting differences or `lint` found diagnostics at or
+- `1`: `format --check` found formatting differences or `check` found diagnostics at or
   above its configured `fail_on` threshold.
 - `1`: `semantic` completed but BitBake reported parse or target-analysis
   errors.
@@ -361,7 +362,7 @@ analysis, staging, or the transactional commit fails.
 Operational diagnostics are written to standard error. Lexer error tokens
 remain part of the token stream on standard output and cause exit code `2`.
 `format --diff` returns `0` when it successfully reports differences; use
-`check` when differences should fail a CI job.
+`format --check` when differences should fail a CI job.
 
 ## Lint rules
 
@@ -421,9 +422,9 @@ when a `.bb` file belongs to a complete indexed layer; isolated files and
 standard input do not receive those path-dependent findings. Recipe QA rules
 `BBT020` through `BBT028` run on `.bb` files and validate static filename
 identity, license/source checksums, `PACKAGECONFIG` definitions, package
-declarations/scopes, and `SRC_URI` parameters. When `lint` receives a complete
+declarations/scopes, and `SRC_URI` parameters. When `check` receives a complete
 layer directory, it indexes the supplied metadata into a static dependency
-graph. `lint --workspace BUILD_DIR` instead loads every configured layer from
+graph. `check --workspace BUILD_DIR` instead loads every configured layer from
 `conf/bblayers.conf` through BitBake, then includes the build's `conf`
 metadata and every file reported by BitBake's `BBINCLUDED` environments in the
 same graph.
@@ -476,7 +477,7 @@ The public `OverrideKey`, `OverrideResolution`, `parse_override_key`, and
 `resolve_overrides` APIs expose this model. Dynamic expansion remains delegated
 to BitBake.
 
-When `lint --semantic` is selected, BitBake becomes the authoritative semantic
+When `check --semantic` is selected, BitBake becomes the authoritative semantic
 boundary. Its parse diagnostics are emitted as `BBT019`; target environment
 queries additionally validate resolved recipe identity/version, license and
 source checksums, `PACKAGECONFIG`, package declarations/scopes, `SRC_URI`
@@ -497,7 +498,7 @@ assignments, directives, shell and Python functions, and top-level Python
 definitions. Blank lines, comments, and unsupported top-level constructs remain
 explicit nodes. Function and Python-definition nodes expose body ranges for
 analysis. Body text remains immutable and byte-for-byte lossless even when
-`lint` performs its conservative embedded-language checks.
+`check` performs its conservative embedded-language checks.
 
 ```rust
 use bbtidy::{SyntaxKind, format_syntax, lint_syntax, parse};
@@ -514,7 +515,7 @@ let diagnostics = lint_syntax(&tree);
 # Ok::<(), bbtidy::SyntaxError>(())
 ```
 
-`format` and `lint` are convenience entry points that parse source and then
+`format` and `check` are convenience entry points that parse source and then
 delegate to `format_syntax` and `lint_syntax`. Callers performing multiple
 operations can parse once and reuse the same tree.
 

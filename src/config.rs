@@ -14,7 +14,7 @@ const CONFIG_FILE_NAME: &str = ".bbtidy.toml";
 const DEFAULT_MAX_FILES: usize = 10_000;
 const DEFAULT_MAX_BYTES: u64 = 256 * 1024 * 1024;
 
-/// Limits the amount of source a single format or lint invocation may process.
+/// Limits the amount of source a single format or check invocation may process.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SafetyOptions {
     /// Maximum number of discovered or explicitly supplied files.
@@ -30,7 +30,7 @@ pub struct SemanticConfig {
     pub build_dir: Option<PathBuf>,
     /// BitBake executable or command name.
     pub bitbake: Option<PathBuf>,
-    /// Default additional analyses for `semantic` and `lint --semantic`.
+    /// Default additional analyses for `semantic` and `check --semantic`.
     pub analysis: SemanticAnalysisOptions,
 }
 

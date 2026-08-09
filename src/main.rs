@@ -45,11 +45,8 @@ enum Command {
     /// Format BitBake metadata
     Format(FormatArgs),
 
-    /// Check whether BitBake metadata is already formatted
-    Check(InputArgs),
-
     /// Check BitBake metadata for lint findings
-    Lint(LintArgs),
+    Check(LintArgs),
 
     /// Print the lexer token stream
     Lex(InputArgs),
@@ -64,6 +61,10 @@ enum Command {
 
 #[derive(Args)]
 struct FormatArgs {
+    /// Check whether files are formatted without writing them.
+    #[arg(long, conflicts_with_all = ["write", "diff"])]
+    check: bool,
+
     /// Rewrite files in place
     #[arg(long, conflicts_with = "diff")]
     write: bool,
@@ -278,8 +279,7 @@ fn main() {
     };
     let exit_code = match cli.command {
         Command::Format(args) => run_format(args, &config),
-        Command::Check(args) => run_check(args, &config),
-        Command::Lint(args) => run_lint(args, &config),
+        Command::Check(args) => run_lint(args, &config),
         Command::Lex(args) => run_lex(args, &config),
         Command::Semantic(args) => run_semantic(args, &config),
         Command::SyntaxStats(args) => run_syntax_stats(args, &config),
@@ -563,9 +563,9 @@ fn run_format(args: FormatArgs, config: &Config) -> i32 {
         }
     };
 
-    if !args.write && !args.diff && inputs.len() != 1 {
+    if !args.write && !args.diff && !args.check && inputs.len() != 1 {
         eprintln!(
-            "error: formatting to standard output requires exactly one input; use --diff or --write for multiple inputs"
+            "error: formatting to standard output requires exactly one input; use --check, --diff, or --write for multiple inputs"
         );
         return EXIT_ERROR;
     }
@@ -598,6 +598,8 @@ fn run_format(args: FormatArgs, config: &Config) -> i32 {
         write_inputs(&formatted_inputs)
     } else if args.diff {
         print_diffs(&formatted_inputs)
+    } else if args.check {
+        check_formatted_inputs(&formatted_inputs)
     } else {
         let mut stdout = io::stdout().lock();
         match stdout.write_all(formatted_inputs[0].formatted.as_bytes()) {
@@ -611,19 +613,7 @@ fn run_format(args: FormatArgs, config: &Config) -> i32 {
     }
 }
 
-fn run_check(args: InputArgs, config: &Config) -> i32 {
-    let inputs = match resolve_inputs(&args.paths, config) {
-        Ok(inputs) => inputs,
-        Err(error) => {
-            eprintln!("error: {error}");
-            return EXIT_ERROR;
-        }
-    };
-    let formatted_inputs = match format_inputs(&inputs, &config.format) {
-        Ok(formatted_inputs) => formatted_inputs,
-        Err(()) => return EXIT_ERROR,
-    };
-
+fn check_formatted_inputs(formatted_inputs: &[FormattedInput]) -> i32 {
     let mut differences = false;
     for input in formatted_inputs {
         if input.original != input.formatted {

@@ -69,7 +69,7 @@ The beta contract does not promise compatibility for:
 Unsupported input is preserved where possible. Preservation does not mean that
 the input was fully understood or semantically validated. These static
 limitations apply to the formatter, file-local linting, and offline
-`WorkspaceIndex` API. The CLI `lint --workspace` mode and the `semantic`
+`WorkspaceIndex` API. The CLI `check --workspace` mode and the `semantic`
 command use the installed BitBake engine when a build context is available.
 
 ## Command guarantees
@@ -89,14 +89,14 @@ replaced. The complete write set is committed transactionally with recovery
 copies; symbolic links are never replaced. Repository-wide formatting is also
 bounded by configurable file-count and source-byte limits.
 
-### `check`
+### `format --check`
 
 - Exit code `0` means all selected inputs already match bbtidy's configured
   formatting.
 - Exit code `1` means at least one selected input would change.
 - Exit code `2` means input discovery, parsing, formatting, or output failed.
 
-### `lint`
+### `check`
 
 Linting reports findings only within the selected analysis scope. File-local
 linting does not claim to resolve a complete layer. Layer-aware linting only
@@ -104,7 +104,7 @@ uses files supplied in the indexed input set, while `--workspace` derives that
 set from BitBake's resolved build context after applying configured exclusions
 and safety limits.
 
-`lint --workspace BUILD_DIR` is the BitBake-backed whole-build workspace mode.
+`check --workspace BUILD_DIR` is the BitBake-backed whole-build workspace mode.
 It invokes the selected BitBake executable, requires its complete parse to
 succeed, and obtains the expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
 per-recipe `BBINCLUDED` values from the engine. It therefore includes dynamic
@@ -113,7 +113,7 @@ actually resolves. A BitBake invocation or resolution failure is an
 operational error; bbtidy never silently falls back to a partial workspace.
 Excluded files are removed from the workspace index before class/include
 resolution and recipe-specific environment discovery. `--max-files` and
-`--max-bytes` apply to lint as well as format, including workspace mode.
+`--max-bytes` apply to `check` as well as `format`, including workspace mode.
 
 The public offline `WorkspaceIndex::from_build_dir` API remains available for
 callers that explicitly need source-level static indexing. Dynamic values,
@@ -122,7 +122,7 @@ Python behavior remain outside that offline model. A clean BitBake-backed lint
 result means that no enabled rule found a diagnostic in the resolved scope; it
 does not mean that the entire BitBake build is free of issues.
 
-`lint --semantic` is the opt-in authoritative target-analysis overlay. It
+`check --semantic` is the opt-in authoritative target-analysis overlay. It
 requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
@@ -169,7 +169,7 @@ the CLI `--fail-on` value overrides `[lint].fail_on` for one invocation.
 Diagnostics include stable rule IDs, primary source ranges, and optional help
 and fix metadata. `--show-fixes` adds that metadata to text output. `BBT001`
 and `BBT002` are the only automatically fixable rules in this beta: they remove
-trailing spaces/tabs and append a final newline. `lint --fix` applies those
+trailing spaces/tabs and append a final newline. `check --fix` applies those
 edits, re-lints the resulting source, and still reports non-fixable findings.
 The broader source checks cover duplicate direct assignments and function
 declarations, empty dependency directives, missing Git fetch protocols, and
@@ -200,7 +200,7 @@ Requested target environments come from `bitbake -e` and are not reconstructed
 by bbtidy. JSON reports include the requested targets and variables, BitBake
 identity, parse and target-query status, phase- and stream-aware diagnostics,
 selected environments, and an explicit result for every requested target;
-`lint --semantic` embeds the same data in JSON and SARIF provenance.
+`check --semantic` embeds the same data in JSON and SARIF provenance.
 
 The command is read-only from bbtidy's perspective, but BitBake may update its
 normal parse cache and server metadata in the supplied build directory. A
@@ -219,7 +219,7 @@ it would not be discovered recursively.
 The offline workspace model remains intentionally conservative. It understands
 the static layer metadata and search behavior documented by bbtidy, but it does
 not execute BitBake variable expansion or Python expressions. The CLI's
-`lint --workspace` mode uses the BitBake-backed resolver; use
+`check --workspace` mode uses the BitBake-backed resolver; use
 `WorkspaceIndex::from_build_dir` only when an offline static index is desired.
 
 ## User acceptance checklist
@@ -227,14 +227,14 @@ not execute BitBake variable expansion or Python expressions. The CLI's
 Before enabling bbtidy as a required repository check, users should:
 
 1. Pin the bbtidy version and record `bbtidy --version` in CI output.
-2. Run `bbtidy check` and `bbtidy lint` on a representative layer without
+2. Run `bbtidy format --check` and `bbtidy check` on a representative layer without
    allowing either command to write files.
 3. Review `bbtidy format --diff` output and confirm that only intended metadata
    boundaries change.
 4. Run the project's normal BitBake parse, build, package, and runtime tests.
 5. Enable `format --write` only in a clean branch or worktree with an agreed
    configuration and explicit safety limits.
-6. Re-run `check`, the relevant BitBake validation, and the project's normal
+6. Re-run `format --check`, the relevant BitBake validation, and the project's normal
    tests after writing.
 
 This checklist is an adoption control, not additional compatibility evidence

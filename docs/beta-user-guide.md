@@ -44,9 +44,9 @@ Run the read-only checks before allowing any repository-wide write:
 
 ```bash
 bbtidy --version
-bbtidy check meta-my-layer/
+bbtidy format --check meta-my-layer/
 bbtidy format --diff meta-my-layer/
-bbtidy lint --output sarif meta-my-layer/
+bbtidy check --output sarif meta-my-layer/
 bbtidy semantic --build-dir build --target core-image-minimal --output json
 ```
 
@@ -54,7 +54,7 @@ For a complete configured build, lint every listed layer and build
 configuration file together:
 
 ```bash
-bbtidy lint --workspace build --bitbake bitbake
+bbtidy check --workspace build --bitbake bitbake
 ```
 
 This invokes BitBake and uses its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
@@ -70,7 +70,7 @@ formatting in a clean branch or worktree:
 
 ```bash
 bbtidy format --write meta-my-layer/
-bbtidy check meta-my-layer/
+bbtidy format --check meta-my-layer/
 bitbake --parse-only core-image-minimal
 ```
 
@@ -78,9 +78,9 @@ Keep the generated diff and the BitBake results with the change review. For a
 large repository, start with one layer or recipe family and expand the scope
 only after the smaller run is understood.
 
-`format --diff`, `check`, and ordinary `lint` runs do not modify source files.
-`format --write` and `lint --fix` are the repository-writing operations.
-`lint --fix` applies only safe whitespace and final-newline edits, re-runs lint,
+`format --check`, `format --diff`, and ordinary `check` runs do not modify source files.
+`format --write` and `check --fix` are the repository-writing operations.
+`check --fix` applies only safe whitespace and final-newline edits, re-runs the check,
 and refuses standard input. Both write modes stage all changed files and use
 the same concurrent-change checks and rollback-capable transaction. A parse or
 analysis failure prevents any fix from being written.
@@ -96,10 +96,10 @@ discovery root. If more than one build variant matches, pass `--build-dir`
 explicitly.
 
 For CI linting that should include the same authoritative checks, use
-`lint --semantic` with one or more explicit targets:
+`check --semantic` with one or more explicit targets:
 
 ```bash
-bbtidy lint --semantic \
+bbtidy check --semantic \
   --build-dir build \
   --target core-image-minimal \
   --variable IMAGE_FSTYPES \
@@ -125,7 +125,7 @@ parameters. Layer QA rules `BBT029` through `BBT033` validate collection names,
 patterns, priorities, dependencies, and `LAYERSERIES_COMPAT` in
 `conf/layer.conf`.
 Dynamic values are skipped by these checks and should be validated with
-`lint --semantic` or the project's normal BitBake workflow.
+`check --semantic` or the project's normal BitBake workflow.
 
 Lint also analyzes embedded bodies with `BBT034` through `BBT036`: shell
 control-flow pairing, Python delimiters/compound-statement syntax, and Python
@@ -135,17 +135,17 @@ continues to leave shell and Python body bytes unchanged.
 When `OVERRIDES` is statically known, offline lint normalizes modern colon and
 unambiguous legacy underscore keys, resolves active precedence, and applies
 `append`, `prepend`, and `remove` operations. `BBT037` identifies literal
-override components missing from `OVERRIDES`; `lint --semantic` performs the
+override components missing from `OVERRIDES`; `check --semantic` performs the
 same check against BitBake's expanded environment.
 
 ## CI integration
 
-Use `check` as the formatting gate and choose the lint output that matches the
-CI system:
+Use `format --check` as the formatting gate and choose the check output that
+matches the CI system:
 
 ```bash
-bbtidy check meta-my-layer/
-bbtidy lint --output sarif meta-my-layer/ > bbtidy.sarif
+bbtidy format --check meta-my-layer/
+bbtidy check --output sarif meta-my-layer/ > bbtidy.sarif
 ```
 
 Lint exits with code `1` only when a finding meets the configured failure
@@ -153,15 +153,15 @@ threshold. The default is warning-level gating. Use `--fail-on error` to make
 warnings advisory, or `--fail-on never` for report-only mode:
 
 ```bash
-bbtidy lint --fail-on error meta-my-layer/
-bbtidy lint --fail-on never --output sarif meta-my-layer/ > bbtidy.sarif
+bbtidy check --fail-on error meta-my-layer/
+bbtidy check --fail-on never --output sarif meta-my-layer/ > bbtidy.sarif
 ```
 
 For a local cleanup pass, preview or apply the safe lint edits explicitly:
 
 ```bash
-bbtidy lint --show-fixes meta-my-layer/
-bbtidy lint --fix meta-my-layer/
+bbtidy check --show-fixes meta-my-layer/
+bbtidy check --fix meta-my-layer/
 ```
 
 The fix command reports the edits it applied, then reports any remaining
@@ -173,13 +173,13 @@ The exit codes are:
 
 | Code | Meaning |
 | --- | --- |
-| `0` | The command completed successfully; `check` found no changes and `lint` found no findings. |
-| `1` | `check` found formatting differences or `lint` found diagnostics at or above its `fail_on` threshold. |
+| `0` | The command completed successfully; `format --check` found no changes and `check` found no findings. |
+| `1` | `format --check` found formatting differences or `check` found diagnostics at or above its `fail_on` threshold. |
 | `2` | Usage, discovery, parsing, formatting, lint analysis, or output failed. |
 
 `format --diff` is a reporting command and returns `0` when it successfully
-prints differences. Use `check` when differences must fail a CI job. JSON and
-SARIF output is emitted only after all inputs have been analyzed successfully,
+prints differences. Use `format --check` when differences must fail a CI job.
+JSON and SARIF output is emitted only after all inputs have been analyzed successfully,
 so an operational error does not leave a partial machine-readable report.
 
 A minimal project configuration can make local and CI behavior explicit:
@@ -216,10 +216,10 @@ recipe-specific BitBake discovery.
 ## Repository-wide safety
 
 The default repository-wide limits are 10,000 discovered files and 256 MiB of
-original source per `format` or `lint` invocation. Set lower limits for an
+original source per `format` or `check` invocation. Set lower limits for an
 initial rollout and raise them deliberately when the repository is known to
 require more. `--max-files` and `--max-bytes` override the configured limits
-for either command, including `lint --workspace`.
+for either command, including `check --workspace`.
 
 Before writing, bbtidy reads and formats the complete input set, checks the
 limits, stages recovery copies, and checks that sources have not changed. It
@@ -240,7 +240,7 @@ proof.
 
 At minimum, after formatting a production layer:
 
-1. Run `bbtidy check` on the same scope to prove the result is idempotent.
+1. Run `bbtidy format --check` on the same scope to prove the result is idempotent.
 2. Run `bitbake --parse-only` for the images or recipes that the change can
    affect.
 3. Run the normal build, package, and runtime tests used by the project.
@@ -257,7 +257,7 @@ Open an issue with a minimal reproducible example when possible. Include:
 - host operating system, architecture, and Rust/Python versions when relevant;
 - Yocto Project and BitBake versions, including layer and repository commits;
 - the exact command, configuration file, and input path scope;
-- whether the issue occurred in `format`, `check`, `lint`, or `lex`;
+- whether the issue occurred in `format`, `format --check`, `check`, or `lex`;
 - the original and formatted metadata, if it can be shared safely; and
 - the first relevant bbtidy or BitBake diagnostic, exit code, and CI log.
 
