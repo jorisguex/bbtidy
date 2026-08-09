@@ -46,10 +46,11 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
   and safe edit suggestions, with transactional `lint --fix` support for
   whitespace and final-newline findings.
-- **BitBake-backed semantic linting**: Optionally runs the configured BitBake
-  parser and target environment queries, reports source-aware BitBake findings,
-  applies selected metadata rules to fully resolved values, and preserves rich
-  phase- and target-level analysis output in machine-readable reports.
+- **BitBake-backed semantic linting and build analysis**: Optionally runs the
+  configured BitBake parser, target environment queries, dependency graph,
+  dry-run scheduler, recipe/provider inventory, and package/image metadata
+  analysis, preserving rich phase- and target-level output in machine-readable
+  reports.
 - **Broader recipe and layer QA**: Checks recipe identity/version alignment,
   license and source checksums, `PACKAGECONFIG`, package-scoped variables and
   lists, `SRC_URI` parameters, and layer collection metadata.
@@ -156,7 +157,9 @@ variables in the semantic section of the report. `SUMMARY`, `DESCRIPTION`,
 `LICENSE`, `SRCREV`/`SRCPV`, and
 resolved `SRC_URI` values from target environments are also checked by the
 corresponding metadata rules, so dynamic expansions are included when a target
-is queried. The mode is file-based and cannot be combined with standard input.
+is queried. Add `--full` to include the build analysis sections below, or
+select `--graph`, `--dry-run`, `--inventory`, and `--packages` individually.
+The mode is file-based and cannot be combined with standard input.
 
 For CI integrations, select a machine-readable report format:
 
@@ -195,7 +198,17 @@ variable expansion, overrides, anonymous Python, class inheritance, layer
 priorities, machine and distro configuration, and external providers are
 evaluated by the installed BitBake version rather than approximated by
 bbtidy. The command performs a parse-only check first; requested targets are
-then queried with `bitbake -e`.
+then queried with `bitbake -e`. `--graph` uses BitBake's graph artifacts,
+`--dry-run` asks BitBake's scheduler for a non-executing build plan,
+`--inventory` parses `--show-versions`, and `--packages` summarizes resolved
+package, provider, runtime dependency, and image variables. These analyses do
+not execute build tasks; BitBake may still update its normal parse cache.
+
+For the complete report:
+
+```bash
+bbtidy semantic --build-dir build --target core-image-minimal --full --output json
+```
 
 Semantic JSON is a versioned object with `version: 1`, the selected BitBake
 executable and version, resolved project and build directories,
@@ -206,9 +219,9 @@ target-query phase, target when applicable, output stream, severity, message,
 and optional source location fields. Text output remains the default. The Rust
 API retains each complete `bitbake -e` dump through
 `SemanticEnvironment::raw`; the JSON report omits that verbose field. The
-`lint --semantic` command embeds the same diagnostics, environments, and target
-results under its `semantic` object, so JSON and SARIF consumers do not lose
-BitBake detail.
+`lint --semantic` command embeds the same diagnostics, environments, target
+results, and any requested `build_analysis` sections under its `semantic`
+object, so JSON and SARIF consumers do not lose BitBake detail.
 Lint JSON retains `version: 1` and adds diagnostic end positions,
 byte ranges, help, `fixable`, and structured `fixes` entries. A `lint --fix`
 report also contains `fixes_applied`. SARIF output follows SARIF 2.1.0 with the
@@ -274,6 +287,11 @@ metadata_list_layout = "preserve" # or "one-per-line"
 [semantic]
 build_dir = "build" # optional; auto-discovery is used when omitted
 bitbake = "bitbake" # command name or a path such as "./tools/bitbake"
+full = false # enable graph, dry-run, inventory, and package analysis
+graph = false
+dry_run = false
+inventory = false
+packages = false
 
 [lint]
 disable = ["BBT003"]

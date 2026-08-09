@@ -1,9 +1,9 @@
 use bbtidy::{
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
-    LintSeverity, SafetyOptions, SemanticOptions, SemanticReport, SyntaxKind, Token,
-    WorkspaceIndex, analyze_bitbake, apply_lint_fixes, discover_build_context_with_options,
-    format_with_options, get_line_col, lint_rules, lint_with_options, lint_with_workspace,
-    load_config, parse, semantic_lint_diagnostics,
+    LintSeverity, SafetyOptions, SemanticAnalysisOptions, SemanticOptions, SemanticReport,
+    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake, apply_lint_fixes,
+    discover_build_context_with_options, format_with_options, get_line_col, lint_rules,
+    lint_with_options, lint_with_workspace, load_config, parse, semantic_lint_diagnostics,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -138,6 +138,26 @@ struct SemanticLintArgs {
     /// Fully expanded variable to include in the semantic report. May be supplied more than once.
     #[arg(long = "variable", value_name = "NAME")]
     variables: Vec<String>,
+
+    /// Run every available BitBake build analysis section.
+    #[arg(long)]
+    full: bool,
+
+    /// Collect BitBake task, recipe, and package dependency graphs.
+    #[arg(long)]
+    graph: bool,
+
+    /// Run BitBake's scheduler in dry-run mode and report planned tasks.
+    #[arg(long)]
+    dry_run: bool,
+
+    /// Include the parsed recipe/version inventory.
+    #[arg(long)]
+    inventory: bool,
+
+    /// Include resolved package, provider, runtime dependency, and image metadata.
+    #[arg(long)]
+    packages: bool,
 }
 
 #[derive(Args)]
@@ -161,6 +181,26 @@ struct SemanticArgs {
     /// Fully expanded variable to report for every selected target. May be supplied more than once.
     #[arg(long = "variable", value_name = "NAME")]
     variables: Vec<String>,
+
+    /// Run every available BitBake build analysis section.
+    #[arg(long)]
+    full: bool,
+
+    /// Collect BitBake task, recipe, and package dependency graphs.
+    #[arg(long)]
+    graph: bool,
+
+    /// Run BitBake's scheduler in dry-run mode and report planned tasks.
+    #[arg(long)]
+    dry_run: bool,
+
+    /// Include the parsed recipe/version inventory.
+    #[arg(long)]
+    inventory: bool,
+
+    /// Include resolved package, provider, runtime dependency, and image metadata.
+    #[arg(long)]
+    packages: bool,
 
     /// Select human-readable text or JSON output.
     #[arg(long, value_enum, default_value_t = SemanticOutput::Text, value_name = "FORMAT")]
@@ -277,6 +317,14 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
         build_dir: context.build_dir().to_path_buf(),
         targets: args.targets,
         variables: args.variables,
+        analysis: semantic_analysis_options(
+            args.full,
+            args.graph,
+            args.dry_run,
+            args.inventory,
+            args.packages,
+            &config.semantic.analysis,
+        ),
     };
     let report = match analyze_bitbake(&options) {
         Ok(report) => report,
@@ -302,6 +350,7 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
             "diagnostics": report.diagnostics(),
             "environments": report.environments(),
             "target_results": report.target_results(),
+            "build_analysis": report.build_analysis(),
         });
         match serde_json::to_writer_pretty(io::stdout().lock(), &value) {
             Ok(()) => println!(),
@@ -378,6 +427,39 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
                 }
             }
         }
+        if let Some(analysis) = report.build_analysis() {
+            println!(
+                "Build analysis: {}",
+                if analysis.succeeded() {
+                    "passed"
+                } else {
+                    "failed"
+                }
+            );
+            for graph in analysis.graphs() {
+                println!(
+                    "Dependency graph {}: {} task edges, {} recipe edges, {} package edges",
+                    graph.target(),
+                    graph.task_edges().len(),
+                    graph.recipe_edges().len(),
+                    graph.package_edges().len()
+                );
+            }
+            if let Some(dry_run) = analysis.dry_run() {
+                println!("Dry-run: {} planned tasks", dry_run.tasks().len());
+            }
+            if let Some(inventory) = analysis.inventory() {
+                println!("Recipe inventory: {} recipes", inventory.recipes().len());
+            }
+            for packages in analysis.packages() {
+                println!(
+                    "Packages {}: {} packages, {} build dependencies",
+                    packages.target(),
+                    packages.packages().len(),
+                    packages.build_dependencies().len()
+                );
+            }
+        }
     }
 
     if report.analysis_succeeded() && !report.has_errors() {
@@ -431,9 +513,37 @@ fn analyze_semantic_lint(
         build_dir: context.build_dir().to_path_buf(),
         targets: args.targets.clone(),
         variables,
+        analysis: semantic_analysis_options(
+            args.full,
+            args.graph,
+            args.dry_run,
+            args.inventory,
+            args.packages,
+            &config.semantic.analysis,
+        ),
     };
     let report = analyze_bitbake(&options).map_err(|error| error.to_string())?;
     Ok(SemanticLintAnalysis { context, report })
+}
+
+fn semantic_analysis_options(
+    full: bool,
+    graph: bool,
+    dry_run: bool,
+    inventory: bool,
+    packages: bool,
+    configured: &SemanticAnalysisOptions,
+) -> SemanticAnalysisOptions {
+    if full {
+        SemanticAnalysisOptions::full()
+    } else {
+        SemanticAnalysisOptions {
+            dependency_graph: configured.dependency_graph || graph,
+            dry_run: configured.dry_run || dry_run,
+            inventory: configured.inventory || inventory,
+            packages: configured.packages || packages,
+        }
+    }
 }
 
 fn run_format(args: FormatArgs, config: &Config) -> i32 {
@@ -579,10 +689,15 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             || args.semantic.project_dir.is_some()
             || !args.semantic.targets.is_empty()
             || !args.semantic.variables.is_empty()
+            || args.semantic.full
+            || args.semantic.graph
+            || args.semantic.dry_run
+            || args.semantic.inventory
+            || args.semantic.packages
             || (args.semantic.bitbake.is_some() && args.workspace.is_none()))
     {
         eprintln!(
-            "error: --build-dir, --project-dir, --target, and --variable require --semantic; --bitbake requires --semantic unless used with --workspace"
+            "error: --build-dir, --project-dir, --target, --variable, --full, --graph, --dry-run, --inventory, and --packages require --semantic; --bitbake requires --semantic unless used with --workspace"
         );
         return EXIT_ERROR;
     }
@@ -941,6 +1056,7 @@ fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
         "diagnostics": report.diagnostics(),
         "environments": report.environments(),
         "target_results": report.target_results(),
+        "build_analysis": report.build_analysis(),
     })
 }
 

@@ -1,3 +1,4 @@
+use crate::semantic::SemanticAnalysisOptions;
 use crate::{
     FormatOptions, LintFailurePolicy, LintOptions, LintSeverity, MetadataListLayout, lint_rules,
 };
@@ -29,6 +30,8 @@ pub struct SemanticConfig {
     pub build_dir: Option<PathBuf>,
     /// BitBake executable or command name.
     pub bitbake: Option<PathBuf>,
+    /// Default additional analyses for `semantic` and `lint --semantic`.
+    pub analysis: SemanticAnalysisOptions,
 }
 
 impl Default for SafetyOptions {
@@ -177,6 +180,16 @@ impl Config {
                     .semantic
                     .bitbake
                     .map(|path| resolve_config_command(base_dir, path)),
+                analysis: if file_config.semantic.full {
+                    SemanticAnalysisOptions::full()
+                } else {
+                    SemanticAnalysisOptions {
+                        dependency_graph: file_config.semantic.graph,
+                        dry_run: file_config.semantic.dry_run,
+                        inventory: file_config.semantic.inventory,
+                        packages: file_config.semantic.packages,
+                    }
+                },
             },
             safety,
             base_dir: base_dir.to_path_buf(),
@@ -267,6 +280,16 @@ struct FileConfig {
 struct FileSemanticConfig {
     build_dir: Option<PathBuf>,
     bitbake: Option<PathBuf>,
+    #[serde(default)]
+    full: bool,
+    #[serde(default)]
+    graph: bool,
+    #[serde(default)]
+    dry_run: bool,
+    #[serde(default)]
+    inventory: bool,
+    #[serde(default)]
+    packages: bool,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -375,6 +398,8 @@ exclude = ["vendor/**", "**/files/**"]
 [semantic]
 build_dir = "build"
 bitbake = "tools/bitbake"
+graph = true
+packages = true
 
 [safety]
 max_files = 500
@@ -396,6 +421,9 @@ max_bytes = 1048576
             config.semantic.bitbake,
             Some(PathBuf::from("/project/tools/bitbake"))
         );
+        assert!(config.semantic.analysis.dependency_graph);
+        assert!(config.semantic.analysis.packages);
+        assert!(!config.semantic.analysis.dry_run);
         assert_eq!(config.safety.max_files, 500);
         assert_eq!(config.safety.max_bytes, 1_048_576);
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));

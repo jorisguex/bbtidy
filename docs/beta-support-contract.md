@@ -122,11 +122,13 @@ does not mean that the entire BitBake build is free of issues.
 requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
-metadata, source checksum, and source URI rules where applicable. Static
-file-local linting remains the default and continues to avoid invoking
-BitBake. Machine-readable lint output preserves the semantic diagnostics,
-selected resolved variables, and per-target query outcomes under its
-`semantic` report object.
+metadata, source checksum, and source URI rules where applicable. Its optional
+full build analysis adds BitBake-produced dependency graphs, a non-executing
+dry-run task plan, recipe/provider inventory, and resolved package/image
+metadata. Static file-local linting remains the default and continues to avoid
+invoking BitBake. Machine-readable lint output preserves the semantic
+diagnostics, selected resolved variables, per-target query outcomes, and
+requested `build_analysis` sections under its `semantic` report object.
 
 The static catalog includes recipe and layer QA rules in `BBT020` through
 `BBT033`. Recipe QA validates explicit filename identity/version values,

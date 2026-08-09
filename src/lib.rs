@@ -31,9 +31,11 @@ pub use project::{
     discover_build_context, discover_build_context_with_options,
 };
 pub use semantic::{
-    SemanticDiagnostic, SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticEnvironment,
-    SemanticError, SemanticOptions, SemanticReport, SemanticSeverity, SemanticTargetResult,
-    analyze_bitbake,
+    SemanticAnalysisOptions, SemanticBuildAnalysis, SemanticDependencyGraph, SemanticDiagnostic,
+    SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticDryRun, SemanticEnvironment,
+    SemanticError, SemanticGraphEdge, SemanticOptions, SemanticPackageSummary, SemanticProvider,
+    SemanticRecipeInventory, SemanticRecipeVersion, SemanticReport, SemanticSeverity,
+    SemanticTargetResult, analyze_bitbake,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,

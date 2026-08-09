@@ -1,6 +1,6 @@
 use bbtidy::{
-    LintOptions, SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticError, SemanticOptions,
-    SemanticSeverity, analyze_bitbake, lint_with_bitbake,
+    LintOptions, SemanticAnalysisOptions, SemanticDiagnosticPhase, SemanticDiagnosticStream,
+    SemanticError, SemanticOptions, SemanticSeverity, analyze_bitbake, lint_with_bitbake,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -20,6 +20,7 @@ fn authoritative_analysis_returns_resolved_environment_and_diagnostics() {
             "MULTI".to_owned(),
             "MISSING".to_owned(),
         ],
+        analysis: Default::default(),
     };
 
     let report = analyze_bitbake(&options).unwrap();
@@ -99,6 +100,7 @@ fn semantic_lint_api_converts_bitbake_results_into_rule_diagnostics() {
             "SRCPV".to_owned(),
             "SRC_URI".to_owned(),
         ],
+        analysis: Default::default(),
     };
 
     let (report, findings) = lint_with_bitbake(&options, &LintOptions::default()).unwrap();
@@ -188,6 +190,83 @@ fn invalid_build_context_is_reported_before_invocation() {
 }
 
 #[cfg(unix)]
+#[test]
+fn full_analysis_collects_graph_plan_inventory_and_package_metadata() {
+    let fixture = FakeBitBake::full_analysis();
+    fs::write(
+        fixture.build_dir.join("task-depends.dot"),
+        "digraph existing {}\n",
+    )
+    .unwrap();
+    let options = SemanticOptions {
+        bitbake: fixture.bitbake.clone(),
+        build_dir: fixture.build_dir.clone(),
+        targets: vec!["demo".to_owned()],
+        variables: vec!["PN".to_owned()],
+        analysis: SemanticAnalysisOptions::full(),
+    };
+
+    let report = analyze_bitbake(&options).unwrap();
+    assert!(report.analysis_succeeded());
+    let analysis = report.build_analysis().unwrap();
+    assert!(analysis.succeeded());
+
+    let graph = &analysis.graphs()[0];
+    assert_eq!(graph.task_edges()[0].from(), "demo:do_build");
+    assert_eq!(graph.task_edges()[0].to(), "lib:do_build");
+    assert_eq!(graph.recipe_edges().len(), 1);
+    assert_eq!(graph.package_edges().len(), 1);
+    assert_eq!(
+        graph.build_list(),
+        &[String::from("demo"), String::from("lib")]
+    );
+    assert!(
+        graph
+            .providers()
+            .iter()
+            .any(|provider| { provider.name() == "virtual/foo" && provider.recipe() == "lib" })
+    );
+
+    let dry_run = analysis.dry_run().unwrap();
+    assert_eq!(dry_run.tasks().len(), 2);
+    assert!(dry_run.tasks()[0].contains("do_fetch"));
+
+    let inventory = analysis.inventory().unwrap();
+    assert_eq!(inventory.recipes().len(), 2);
+    assert_eq!(inventory.recipes()[0].recipe(), "demo");
+    assert_eq!(inventory.recipes()[0].version(), "1.0");
+    assert!(
+        inventory
+            .providers()
+            .iter()
+            .any(|provider| { provider.name() == "virtual/foo" && provider.recipe() == "lib" })
+    );
+
+    let packages = &analysis.packages()[0];
+    assert_eq!(
+        packages.packages(),
+        &[String::from("demo"), String::from("demo-dev")]
+    );
+    assert_eq!(packages.build_dependencies(), &[String::from("lib")]);
+    assert_eq!(
+        packages.image_install(),
+        &[String::from("demo"), String::from("lib")]
+    );
+    assert_eq!(
+        packages.runtime_dependencies().get("demo"),
+        Some(&vec![String::from("lib")])
+    );
+    assert_eq!(
+        packages.image_fstypes(),
+        &[String::from("wic"), String::from("ext4")]
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.build_dir.join("task-depends.dot")).unwrap(),
+        "digraph existing {}\n"
+    );
+}
+
+#[cfg(unix)]
 struct FakeBitBake {
     root: PathBuf,
     build_dir: PathBuf,
@@ -197,14 +276,18 @@ struct FakeBitBake {
 #[cfg(unix)]
 impl FakeBitBake {
     fn new(parse_failure: bool) -> Self {
-        Self::create(parse_failure, false)
+        Self::create(parse_failure, false, false)
     }
 
     fn target_failure() -> Self {
-        Self::create(false, true)
+        Self::create(false, true, false)
     }
 
-    fn create(parse_failure: bool, target_failure: bool) -> Self {
+    fn full_analysis() -> Self {
+        Self::create(false, false, true)
+    }
+
+    fn create(parse_failure: bool, target_failure: bool, full_analysis: bool) -> Self {
         use std::os::unix::fs::PermissionsExt;
 
         let root = loop {
@@ -233,7 +316,40 @@ impl FakeBitBake {
         .unwrap();
 
         let bitbake = root.join("bitbake");
-        let script = if parse_failure {
+        let script = if full_analysis {
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  echo 'NOTE: Parsing recipes'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf 'PN="demo"\nPACKAGES="demo demo-dev"\nPROVIDES="demo virtual/foo"\nDEPENDS="lib"\nIMAGE_INSTALL="demo lib"\nIMAGE_FSTYPES="wic ext4"\nRDEPENDS:demo="lib"\nRRECOMMENDS:demo="optional"\nRPROVIDES:demo="demo-virtual"\n'
+  exit 0
+fi
+if [ "$1" = "--show-versions" ]; then
+  printf 'Recipe Name:Recipe Version:Preferred Provider\ndemo:1.0:demo\nlib:2.0:lib\n===============================\n'
+  exit 0
+fi
+if [ "$1" = "--graphviz" ]; then
+  printf 'digraph depends {\n  "demo:do_build" -> "lib:do_build";\n}\n' > task-depends.dot
+  printf 'digraph depends {\n  "demo" -> "lib";\n}\n' > pn-depends.dot
+  printf 'digraph depends {\n  "demo" -> "lib";\n}\n' > package-depends.dot
+  printf 'demo\nlib\n' > pn-buildlist
+  printf 'demo: demo\nlib: lib virtual/foo\n' > pn-provides
+  exit 0
+fi
+if [ "$1" = "--dry-run" ]; then
+  echo 'NOTE: Running task 1 of 2 (/layer/recipes-demo/demo.bb:do_fetch)'
+  echo 'NOTE: Running task 2 of 2 (/layer/recipes-demo/demo.bb:do_build)'
+  exit 0
+fi
+exit 0
+"###
+        } else if parse_failure {
             r###"#!/bin/sh
 if [ "$1" = "--version" ]; then
   echo 'BitBake Build Tool Core version 2.8.1'

@@ -1064,6 +1064,77 @@ exit 0
 
 #[cfg(unix)]
 #[test]
+fn semantic_full_analysis_emits_build_sections_in_json() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("semantic-full-cli");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf 'PN="demo"\nPACKAGES="demo"\nPROVIDES="demo"\nDEPENDS="lib"\nRDEPENDS:demo="lib"\n'
+  exit 0
+fi
+if [ "$1" = "--graphviz" ]; then
+  printf 'digraph depends { "demo:do_build" -> "lib:do_build"; }\n' > task-depends.dot
+  printf 'demo\nlib\n' > pn-buildlist
+  exit 0
+fi
+if [ "$1" = "--dry-run" ]; then
+  echo 'NOTE: Running task 1 of 1 (/layer/demo.bb:do_build)'
+  exit 0
+fi
+if [ "$1" = "--show-versions" ]; then
+  echo 'Recipe Name:Recipe Version:Preferred Provider'
+  echo 'demo:1.0:demo'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let output = run([
+        "semantic",
+        "--build-dir",
+        directory.path().join("build").to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--full",
+        "--output",
+        "json",
+    ]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["build_analysis"]["succeeded"], true);
+    assert_eq!(report["build_analysis"]["graphs"][0]["succeeded"], true);
+    assert_eq!(
+        report["build_analysis"]["dry_run"]["tasks"][0],
+        "/layer/demo.bb:do_build"
+    );
+    assert_eq!(
+        report["build_analysis"]["inventory"]["recipes"][0]["recipe"],
+        "demo"
+    );
+    assert_eq!(
+        report["build_analysis"]["packages"][0]["runtime_dependencies"]["demo"][0],
+        "lib"
+    );
+}
+
+#[cfg(unix)]
+#[test]
 fn semantic_lint_integrates_bitbake_diagnostics_and_resolved_metadata() {
     use std::os::unix::fs::PermissionsExt;
 

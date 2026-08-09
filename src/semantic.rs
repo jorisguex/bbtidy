@@ -15,6 +15,35 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
+/// Optional BitBake analyses to run after the parser check.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SemanticAnalysisOptions {
+    /// Collect BitBake's task, recipe, and package dependency graph files.
+    pub dependency_graph: bool,
+    /// Run BitBake's dry-run scheduler and retain the planned tasks.
+    pub dry_run: bool,
+    /// Collect the parsed recipe/version inventory from `bitbake --show-versions`.
+    pub inventory: bool,
+    /// Summarize resolved package, provider, runtime dependency, and image metadata.
+    pub packages: bool,
+}
+
+impl SemanticAnalysisOptions {
+    /// Enables every analysis supported by the semantic report.
+    pub const fn full() -> Self {
+        Self {
+            dependency_graph: true,
+            dry_run: true,
+            inventory: true,
+            packages: true,
+        }
+    }
+
+    pub const fn requested(&self) -> bool {
+        self.dependency_graph || self.dry_run || self.inventory || self.packages
+    }
+}
+
 /// Options used for an authoritative BitBake analysis.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SemanticOptions {
@@ -31,6 +60,8 @@ pub struct SemanticOptions {
     /// list keeps the full environment available through [`SemanticEnvironment::raw`]
     /// without materializing a huge default variable map.
     pub variables: Vec<String>,
+    /// Additional BitBake-backed analyses to include in the report.
+    pub analysis: SemanticAnalysisOptions,
 }
 
 impl Default for SemanticOptions {
@@ -40,6 +71,7 @@ impl Default for SemanticOptions {
             build_dir: PathBuf::new(),
             targets: Vec::new(),
             variables: Vec::new(),
+            analysis: SemanticAnalysisOptions::default(),
         }
     }
 }
@@ -68,6 +100,12 @@ impl SemanticOptions {
     /// Adds one variable to extract from every target environment.
     pub fn variable(mut self, variable: impl Into<String>) -> Self {
         self.variables.push(variable.into());
+        self
+    }
+
+    /// Enables the complete BitBake build analysis surface.
+    pub fn full_analysis(mut self) -> Self {
+        self.analysis = SemanticAnalysisOptions::full();
         self
     }
 }
@@ -99,6 +137,10 @@ impl fmt::Display for SemanticSeverity {
 pub enum SemanticDiagnosticPhase {
     Parse,
     TargetQuery,
+    DependencyGraph,
+    DryRun,
+    Inventory,
+    PackageSummary,
 }
 
 /// The stream from which BitBake emitted a semantic diagnostic.
@@ -203,6 +245,277 @@ pub struct SemanticTargetResult {
     environment: Option<SemanticEnvironment>,
 }
 
+/// One directed edge emitted by a BitBake dependency graph.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticGraphEdge {
+    from: String,
+    to: String,
+}
+
+impl SemanticGraphEdge {
+    pub fn from(&self) -> &str {
+        &self.from
+    }
+
+    pub fn to(&self) -> &str {
+        &self.to
+    }
+}
+
+/// A provider exposed by the parsed BitBake metadata.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticProvider {
+    name: String,
+    recipe: String,
+}
+
+impl SemanticProvider {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn recipe(&self) -> &str {
+        &self.recipe
+    }
+}
+
+/// Dependency graph artifacts produced by `bitbake --graphviz` for one target.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticDependencyGraph {
+    target: String,
+    succeeded: bool,
+    diagnostics: Vec<SemanticDiagnostic>,
+    task_edges: Vec<SemanticGraphEdge>,
+    recipe_edges: Vec<SemanticGraphEdge>,
+    package_edges: Vec<SemanticGraphEdge>,
+    build_list: Vec<String>,
+    providers: Vec<SemanticProvider>,
+    artifacts: BTreeMap<String, String>,
+}
+
+impl SemanticDependencyGraph {
+    pub fn target(&self) -> &str {
+        &self.target
+    }
+
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn task_edges(&self) -> &[SemanticGraphEdge] {
+        &self.task_edges
+    }
+
+    pub fn recipe_edges(&self) -> &[SemanticGraphEdge] {
+        &self.recipe_edges
+    }
+
+    pub fn package_edges(&self) -> &[SemanticGraphEdge] {
+        &self.package_edges
+    }
+
+    pub fn build_list(&self) -> &[String] {
+        &self.build_list
+    }
+
+    pub fn providers(&self) -> &[SemanticProvider] {
+        &self.providers
+    }
+
+    pub fn artifacts(&self) -> &BTreeMap<String, String> {
+        &self.artifacts
+    }
+}
+
+/// The scheduler output of a BitBake dry run.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticDryRun {
+    targets: Vec<String>,
+    succeeded: bool,
+    diagnostics: Vec<SemanticDiagnostic>,
+    tasks: Vec<String>,
+    stdout: String,
+    stderr: String,
+}
+
+impl SemanticDryRun {
+    pub fn targets(&self) -> &[String] {
+        &self.targets
+    }
+
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn tasks(&self) -> &[String] {
+        &self.tasks
+    }
+
+    pub fn stdout(&self) -> &str {
+        &self.stdout
+    }
+
+    pub fn stderr(&self) -> &str {
+        &self.stderr
+    }
+}
+
+/// One recipe/version row from `bitbake --show-versions`.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticRecipeVersion {
+    recipe: String,
+    version: String,
+    revision: Option<String>,
+}
+
+impl SemanticRecipeVersion {
+    pub fn recipe(&self) -> &str {
+        &self.recipe
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
+    pub fn revision(&self) -> Option<&str> {
+        self.revision.as_deref()
+    }
+}
+
+/// Parsed recipe/provider inventory for the active BitBake context.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticRecipeInventory {
+    succeeded: bool,
+    diagnostics: Vec<SemanticDiagnostic>,
+    recipes: Vec<SemanticRecipeVersion>,
+    providers: Vec<SemanticProvider>,
+    raw: String,
+}
+
+impl SemanticRecipeInventory {
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn recipes(&self) -> &[SemanticRecipeVersion] {
+        &self.recipes
+    }
+
+    pub fn providers(&self) -> &[SemanticProvider] {
+        &self.providers
+    }
+
+    pub fn raw(&self) -> &str {
+        &self.raw
+    }
+}
+
+/// Resolved package and image metadata for one target environment.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticPackageSummary {
+    target: String,
+    succeeded: bool,
+    diagnostics: Vec<SemanticDiagnostic>,
+    packages: Vec<String>,
+    provides: Vec<String>,
+    build_dependencies: Vec<String>,
+    image_install: Vec<String>,
+    image_fstypes: Vec<String>,
+    runtime_dependencies: BTreeMap<String, Vec<String>>,
+    runtime_recommends: BTreeMap<String, Vec<String>>,
+    runtime_provides: BTreeMap<String, Vec<String>>,
+}
+
+impl SemanticPackageSummary {
+    pub fn target(&self) -> &str {
+        &self.target
+    }
+
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn packages(&self) -> &[String] {
+        &self.packages
+    }
+
+    pub fn provides(&self) -> &[String] {
+        &self.provides
+    }
+
+    pub fn build_dependencies(&self) -> &[String] {
+        &self.build_dependencies
+    }
+
+    pub fn image_install(&self) -> &[String] {
+        &self.image_install
+    }
+
+    pub fn image_fstypes(&self) -> &[String] {
+        &self.image_fstypes
+    }
+
+    pub fn runtime_dependencies(&self) -> &BTreeMap<String, Vec<String>> {
+        &self.runtime_dependencies
+    }
+
+    pub fn runtime_recommends(&self) -> &BTreeMap<String, Vec<String>> {
+        &self.runtime_recommends
+    }
+
+    pub fn runtime_provides(&self) -> &BTreeMap<String, Vec<String>> {
+        &self.runtime_provides
+    }
+}
+
+/// All requested build-analysis sections in one semantic report.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticBuildAnalysis {
+    succeeded: bool,
+    graphs: Vec<SemanticDependencyGraph>,
+    dry_run: Option<SemanticDryRun>,
+    inventory: Option<SemanticRecipeInventory>,
+    packages: Vec<SemanticPackageSummary>,
+}
+
+impl SemanticBuildAnalysis {
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn graphs(&self) -> &[SemanticDependencyGraph] {
+        &self.graphs
+    }
+
+    pub fn dry_run(&self) -> Option<&SemanticDryRun> {
+        self.dry_run.as_ref()
+    }
+
+    pub fn inventory(&self) -> Option<&SemanticRecipeInventory> {
+        self.inventory.as_ref()
+    }
+
+    pub fn packages(&self) -> &[SemanticPackageSummary] {
+        &self.packages
+    }
+}
+
 impl SemanticTargetResult {
     pub fn target(&self) -> &str {
         &self.target
@@ -240,6 +553,7 @@ pub struct SemanticReport {
     diagnostics: Vec<SemanticDiagnostic>,
     environments: Vec<SemanticEnvironment>,
     target_results: Vec<SemanticTargetResult>,
+    build_analysis: Option<SemanticBuildAnalysis>,
 }
 
 impl SemanticReport {
@@ -271,8 +585,13 @@ impl SemanticReport {
         self.target_queries_succeeded
     }
 
-    pub const fn analysis_succeeded(&self) -> bool {
-        self.parse_succeeded && self.target_queries_succeeded
+    pub fn analysis_succeeded(&self) -> bool {
+        self.parse_succeeded
+            && self.target_queries_succeeded
+            && match &self.build_analysis {
+                Some(analysis) => analysis.succeeded,
+                None => true,
+            }
     }
 
     pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
@@ -285,6 +604,10 @@ impl SemanticReport {
 
     pub fn target_results(&self) -> &[SemanticTargetResult] {
         &self.target_results
+    }
+
+    pub fn build_analysis(&self) -> Option<&SemanticBuildAnalysis> {
+        self.build_analysis.as_ref()
     }
 
     pub fn has_errors(&self) -> bool {
@@ -300,6 +623,7 @@ pub enum SemanticError {
     InvalidBuildDirectory { path: PathBuf, reason: String },
     Io(io::Error),
     BitBakeVersion(String),
+    AnalysisTargetsRequired { mode: String },
 }
 
 impl fmt::Display for SemanticError {
@@ -315,6 +639,12 @@ impl fmt::Display for SemanticError {
             Self::Io(error) => write!(formatter, "could not invoke BitBake: {error}"),
             Self::BitBakeVersion(output) => {
                 write!(formatter, "BitBake did not report a version: {output}")
+            }
+            Self::AnalysisTargetsRequired { mode } => {
+                write!(
+                    formatter,
+                    "BitBake {mode} analysis requires at least one target"
+                )
             }
         }
     }
@@ -337,6 +667,21 @@ impl From<io::Error> for SemanticError {
 /// priorities, machine/distro configuration, and external providers.
 pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, SemanticError> {
     validate_build_dir(&options.build_dir)?;
+    if options.analysis.dependency_graph && options.targets.is_empty() {
+        return Err(SemanticError::AnalysisTargetsRequired {
+            mode: "dependency graph".to_owned(),
+        });
+    }
+    if options.analysis.dry_run && options.targets.is_empty() {
+        return Err(SemanticError::AnalysisTargetsRequired {
+            mode: "dry-run".to_owned(),
+        });
+    }
+    if options.analysis.packages && options.targets.is_empty() {
+        return Err(SemanticError::AnalysisTargetsRequired {
+            mode: "package".to_owned(),
+        });
+    }
 
     let version_output = run_bitbake(options, &["--version"])?;
     let bitbake_version = version_output
@@ -401,6 +746,25 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
         }));
     }
 
+    let build_analysis = if options.analysis.requested() {
+        if parse_succeeded {
+            let (analysis, analysis_diagnostics) =
+                run_build_analysis(options, &target_results, &environments)?;
+            diagnostics.extend(analysis_diagnostics);
+            Some(analysis)
+        } else {
+            Some(SemanticBuildAnalysis {
+                succeeded: false,
+                graphs: Vec::new(),
+                dry_run: None,
+                inventory: None,
+                packages: Vec::new(),
+            })
+        }
+    } else {
+        None
+    };
+
     Ok(SemanticReport {
         bitbake: options.bitbake.clone(),
         bitbake_version,
@@ -412,7 +776,466 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
         diagnostics,
         environments,
         target_results,
+        build_analysis,
     })
+}
+
+fn run_build_analysis(
+    options: &SemanticOptions,
+    target_results: &[SemanticTargetResult],
+    _environments: &[SemanticEnvironment],
+) -> Result<(SemanticBuildAnalysis, Vec<SemanticDiagnostic>), SemanticError> {
+    let mut diagnostics = Vec::new();
+    let mut succeeded = true;
+
+    let graphs = if options.analysis.dependency_graph {
+        let mut graphs = Vec::new();
+        for target in &options.targets {
+            let graph = run_dependency_graph(options, target)?;
+            succeeded &= graph.succeeded;
+            diagnostics.extend(graph.diagnostics.clone());
+            graphs.push(graph);
+        }
+        graphs
+    } else {
+        Vec::new()
+    };
+
+    let dry_run = if options.analysis.dry_run {
+        let dry_run = run_dry_run(options)?;
+        succeeded &= dry_run.succeeded;
+        diagnostics.extend(dry_run.diagnostics.clone());
+        Some(dry_run)
+    } else {
+        None
+    };
+
+    let mut inventory = if options.analysis.inventory {
+        let inventory = run_recipe_inventory(options)?;
+        succeeded &= inventory.succeeded;
+        diagnostics.extend(inventory.diagnostics.clone());
+        Some(inventory)
+    } else {
+        None
+    };
+
+    let packages = if options.analysis.packages {
+        let mut packages = Vec::new();
+        for result in target_results {
+            let summary = match result.environment() {
+                Some(environment) => package_summary_from_environment(environment),
+                None => failed_package_summary(result.target()),
+            };
+            succeeded &= summary.succeeded;
+            diagnostics.extend(summary.diagnostics.clone());
+            packages.push(summary);
+        }
+        packages
+    } else {
+        Vec::new()
+    };
+
+    if let Some(inventory) = inventory.as_mut() {
+        for graph in &graphs {
+            inventory.providers.extend(graph.providers.iter().cloned());
+        }
+        inventory.providers.sort_by(|left, right| {
+            left.name
+                .cmp(&right.name)
+                .then_with(|| left.recipe.cmp(&right.recipe))
+        });
+        inventory
+            .providers
+            .dedup_by(|left, right| left.name == right.name && left.recipe == right.recipe);
+    }
+
+    Ok((
+        SemanticBuildAnalysis {
+            succeeded,
+            graphs,
+            dry_run,
+            inventory,
+            packages,
+        },
+        diagnostics,
+    ))
+}
+
+fn run_dependency_graph(
+    options: &SemanticOptions,
+    target: &str,
+) -> Result<SemanticDependencyGraph, SemanticError> {
+    let filenames = [
+        "task-depends.dot",
+        "pn-depends.dot",
+        "package-depends.dot",
+        "pn-buildlist",
+        "pn-provides",
+    ];
+    let previous_artifacts = filenames
+        .iter()
+        .map(|filename| {
+            let path = options.build_dir.join(filename);
+            let contents = if path.is_file() {
+                Some(fs::read_to_string(&path)?)
+            } else {
+                None
+            };
+            Ok::<_, SemanticError>((*filename, contents))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    let arguments = ["--graphviz", target];
+    let output = match run_bitbake(options, &arguments) {
+        Ok(output) => output,
+        Err(error) => {
+            restore_graph_artifacts(&options.build_dir, &previous_artifacts)?;
+            return Err(error);
+        }
+    };
+    let mut diagnostics = parse_diagnostics(
+        &output,
+        SemanticDiagnosticPhase::DependencyGraph,
+        Some(target),
+    );
+    let artifact_result = filenames
+        .iter()
+        .filter_map(|filename| {
+            let path = options.build_dir.join(filename);
+            if path.is_file() {
+                Some(
+                    fs::read_to_string(path)
+                        .map(|contents| ((*filename).to_owned(), contents))
+                        .map_err(SemanticError::Io),
+                )
+            } else {
+                None
+            }
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>();
+    restore_graph_artifacts(&options.build_dir, &previous_artifacts)?;
+    let artifacts = artifact_result?;
+
+    let mut succeeded = output.status.success();
+    if !succeeded && diagnostics.is_empty() {
+        diagnostics.push(analysis_diagnostic(
+            SemanticDiagnosticPhase::DependencyGraph,
+            Some(target),
+            "BitBake dependency graph command failed",
+        ));
+    }
+    if succeeded && artifacts.is_empty() {
+        succeeded = false;
+        diagnostics.push(analysis_diagnostic(
+            SemanticDiagnosticPhase::DependencyGraph,
+            Some(target),
+            "BitBake did not emit dependency graph artifacts",
+        ));
+    }
+
+    let task_edges = artifacts
+        .get("task-depends.dot")
+        .map(|value| parse_dot_edges(value))
+        .unwrap_or_default();
+    let recipe_edges = artifacts
+        .get("pn-depends.dot")
+        .map(|value| parse_dot_edges(value))
+        .unwrap_or_default();
+    let package_edges = artifacts
+        .get("package-depends.dot")
+        .map(|value| parse_dot_edges(value))
+        .unwrap_or_default();
+    let build_list = artifacts
+        .get("pn-buildlist")
+        .map(|value| parse_lines(value))
+        .unwrap_or_default();
+    let providers = artifacts
+        .get("pn-provides")
+        .map(|value| parse_providers(value))
+        .unwrap_or_default();
+
+    Ok(SemanticDependencyGraph {
+        target: target.to_owned(),
+        succeeded,
+        diagnostics,
+        task_edges,
+        recipe_edges,
+        package_edges,
+        build_list,
+        providers,
+        artifacts,
+    })
+}
+
+fn restore_graph_artifacts(
+    build_dir: &Path,
+    previous_artifacts: &BTreeMap<&str, Option<String>>,
+) -> Result<(), SemanticError> {
+    for (filename, previous) in previous_artifacts {
+        let path = build_dir.join(filename);
+        match previous {
+            Some(contents) => fs::write(path, contents)?,
+            None if path.is_file() => fs::remove_file(path)?,
+            None => {}
+        }
+    }
+    Ok(())
+}
+
+fn run_dry_run(options: &SemanticOptions) -> Result<SemanticDryRun, SemanticError> {
+    let mut argument_storage = vec!["--dry-run".to_owned()];
+    argument_storage.extend(options.targets.iter().cloned());
+    let arguments = argument_storage
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    let output = run_bitbake(options, &arguments)?;
+    let diagnostics = parse_diagnostics(&output, SemanticDiagnosticPhase::DryRun, None);
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    let succeeded = output.status.success();
+    let mut diagnostics = diagnostics;
+    if !succeeded && diagnostics.is_empty() {
+        diagnostics.push(analysis_diagnostic(
+            SemanticDiagnosticPhase::DryRun,
+            None,
+            "BitBake dry-run command failed",
+        ));
+    }
+    Ok(SemanticDryRun {
+        targets: options.targets.clone(),
+        succeeded,
+        diagnostics,
+        tasks: parse_dry_run_tasks(&stdout, &stderr),
+        stdout,
+        stderr,
+    })
+}
+
+fn run_recipe_inventory(
+    options: &SemanticOptions,
+) -> Result<SemanticRecipeInventory, SemanticError> {
+    let output = run_bitbake(options, &["--show-versions"])?;
+    let diagnostics = parse_diagnostics(&output, SemanticDiagnosticPhase::Inventory, None);
+    let raw = combined_output(&output);
+    let succeeded = output.status.success();
+    let mut diagnostics = diagnostics;
+    if !succeeded && diagnostics.is_empty() {
+        diagnostics.push(analysis_diagnostic(
+            SemanticDiagnosticPhase::Inventory,
+            None,
+            "BitBake recipe inventory command failed",
+        ));
+    }
+    Ok(SemanticRecipeInventory {
+        succeeded,
+        diagnostics,
+        recipes: parse_recipe_versions(&raw),
+        providers: Vec::new(),
+        raw,
+    })
+}
+
+fn package_summary_from_environment(environment: &SemanticEnvironment) -> SemanticPackageSummary {
+    let values = parse_environment_values(&environment.raw);
+    let packages = split_words(values.get("PACKAGES"));
+    let provides = split_words(values.get("PROVIDES"));
+    let build_dependencies = split_words(values.get("DEPENDS"));
+    let image_install = split_words(values.get("IMAGE_INSTALL"));
+    let image_fstypes = split_words(values.get("IMAGE_FSTYPES"));
+    let mut runtime_dependencies = BTreeMap::new();
+    let mut runtime_recommends = BTreeMap::new();
+    let mut runtime_provides = BTreeMap::new();
+    for (name, value) in &values {
+        if let Some(package) = variable_package_suffix(name, "RDEPENDS") {
+            runtime_dependencies.insert(package, split_words(Some(value)));
+        } else if let Some(package) = variable_package_suffix(name, "RRECOMMENDS") {
+            runtime_recommends.insert(package, split_words(Some(value)));
+        } else if let Some(package) = variable_package_suffix(name, "RPROVIDES") {
+            runtime_provides.insert(package, split_words(Some(value)));
+        }
+    }
+    SemanticPackageSummary {
+        target: environment.target.clone(),
+        succeeded: true,
+        diagnostics: Vec::new(),
+        packages,
+        provides,
+        build_dependencies,
+        image_install,
+        image_fstypes,
+        runtime_dependencies,
+        runtime_recommends,
+        runtime_provides,
+    }
+}
+
+fn failed_package_summary(target: &str) -> SemanticPackageSummary {
+    SemanticPackageSummary {
+        target: target.to_owned(),
+        succeeded: false,
+        diagnostics: vec![analysis_diagnostic(
+            SemanticDiagnosticPhase::PackageSummary,
+            Some(target),
+            "package metadata unavailable because the target environment query failed",
+        )],
+        packages: Vec::new(),
+        provides: Vec::new(),
+        build_dependencies: Vec::new(),
+        image_install: Vec::new(),
+        image_fstypes: Vec::new(),
+        runtime_dependencies: BTreeMap::new(),
+        runtime_recommends: BTreeMap::new(),
+        runtime_provides: BTreeMap::new(),
+    }
+}
+
+fn variable_package_suffix(name: &str, prefix: &str) -> Option<String> {
+    let suffix = name
+        .strip_prefix(&format!("{prefix}:"))
+        .or_else(|| name.strip_prefix(&format!("{prefix}_")))?;
+    if suffix.is_empty() {
+        None
+    } else {
+        Some(
+            suffix
+                .trim_matches(|character| character == '{' || character == '}')
+                .to_owned(),
+        )
+    }
+}
+
+fn split_words(value: Option<&String>) -> Vec<String> {
+    value
+        .map(|value| value.split_whitespace().map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
+fn parse_dot_edges(raw: &str) -> Vec<SemanticGraphEdge> {
+    raw.lines()
+        .filter_map(|line| {
+            let (from, to) = line.split_once("->")?;
+            let from = parse_dot_node(from)?;
+            let to = parse_dot_node(to)?;
+            Some(SemanticGraphEdge { from, to })
+        })
+        .collect()
+}
+
+fn parse_dot_node(value: &str) -> Option<String> {
+    let value = value.trim();
+    if let Some(stripped) = value.strip_prefix('"') {
+        let end = stripped.find('"')?;
+        Some(stripped[..end].replace("\\\"", "\""))
+    } else {
+        value
+            .split_whitespace()
+            .next()
+            .map(|value| value.trim_matches(';').to_owned())
+    }
+}
+
+fn parse_lines(raw: &str) -> Vec<String> {
+    raw.lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_owned)
+        .collect()
+}
+
+fn parse_providers(raw: &str) -> Vec<SemanticProvider> {
+    let mut providers = Vec::new();
+    for line in parse_lines(raw) {
+        let (recipe, names) = if let Some((recipe, names)) = line.split_once(':') {
+            (recipe.trim().to_owned(), names.trim().to_owned())
+        } else {
+            let mut words = line.split_whitespace();
+            let recipe = words.next().unwrap_or_default().to_owned();
+            let names = words.collect::<Vec<_>>().join(" ");
+            (recipe, names)
+        };
+        if recipe.is_empty() || names.is_empty() {
+            continue;
+        }
+        for name in names.split_whitespace() {
+            providers.push(SemanticProvider {
+                name: name.to_owned(),
+                recipe: recipe.clone(),
+            });
+        }
+    }
+    providers
+}
+
+fn parse_recipe_versions(raw: &str) -> Vec<SemanticRecipeVersion> {
+    let mut recipes = Vec::new();
+    for line in raw.lines().map(str::trim) {
+        if line.is_empty()
+            || line.starts_with("Recipe Name")
+            || line.starts_with("NOTE:")
+            || line.starts_with("WARNING:")
+            || line.starts_with("DEBUG:")
+            || line
+                .chars()
+                .all(|character| character == '=' || character.is_whitespace())
+        {
+            continue;
+        }
+        let fields = line.split(':').map(str::trim).collect::<Vec<_>>();
+        let (recipe, version, revision) =
+            if fields.len() >= 2 && !fields[0].contains(char::is_whitespace) {
+                (fields[0], fields[1], fields.get(2).copied())
+            } else {
+                let mut fields = line.split_whitespace();
+                let recipe = fields.next().unwrap_or_default();
+                let version = fields.next().unwrap_or_default();
+                (recipe, version, fields.next())
+            };
+        if !recipe.is_empty() && !version.is_empty() {
+            recipes.push(SemanticRecipeVersion {
+                recipe: recipe.to_owned(),
+                version: version.to_owned(),
+                revision: revision
+                    .filter(|value| !value.is_empty())
+                    .map(str::to_owned),
+            });
+        }
+    }
+    recipes
+}
+
+fn parse_dry_run_tasks(stdout: &str, stderr: &str) -> Vec<String> {
+    stdout
+        .lines()
+        .chain(stderr.lines())
+        .filter_map(|line| {
+            let marker = ["Running task", "Executing task"]
+                .iter()
+                .find(|marker| line.contains(**marker))?;
+            if let Some(start) = line.find('(') {
+                let end = line[start + 1..].find(')')? + start + 1;
+                return Some(line[start + 1..end].to_owned());
+            }
+            Some(line[line.find(*marker)? + marker.len()..].trim().to_owned())
+        })
+        .collect()
+}
+
+fn analysis_diagnostic(
+    phase: SemanticDiagnosticPhase,
+    target: Option<&str>,
+    message: &str,
+) -> SemanticDiagnostic {
+    SemanticDiagnostic {
+        phase,
+        target: target.map(str::to_owned),
+        stream: SemanticDiagnosticStream::Stderr,
+        severity: SemanticSeverity::Error,
+        path: None,
+        line: None,
+        column: None,
+        message: message.to_owned(),
+        raw: message.to_owned(),
+    }
 }
 
 fn validate_build_dir(build_dir: &Path) -> Result<(), SemanticError> {
@@ -608,6 +1431,23 @@ fn parse_environment(
     raw: &str,
     requested_variables: &[String],
 ) -> SemanticEnvironment {
+    let all_values = parse_environment_values(raw);
+    let variables = all_values
+        .into_iter()
+        .filter(|(name, _)| {
+            requested_variables
+                .iter()
+                .any(|requested| requested == name)
+        })
+        .collect();
+    SemanticEnvironment {
+        target: target.to_owned(),
+        variables,
+        raw: raw.to_owned(),
+    }
+}
+
+fn parse_environment_values(raw: &str) -> BTreeMap<String, String> {
     let mut variables = BTreeMap::new();
     let lines = raw.lines().collect::<Vec<_>>();
     let mut index = 0;
@@ -624,19 +1464,10 @@ fn parse_environment(
             encoded_value.push_str(lines[next]);
             next += 1;
         }
-        if requested_variables
-            .iter()
-            .any(|requested| requested == name)
-        {
-            variables.insert(name.to_owned(), decode_environment_value(&encoded_value));
-        }
+        variables.insert(name.to_owned(), decode_environment_value(&encoded_value));
         index = next.max(index + 1);
     }
-    SemanticEnvironment {
-        target: target.to_owned(),
-        variables,
-        raw: raw.to_owned(),
-    }
+    variables
 }
 
 fn parse_environment_assignment(line: &str) -> Option<(&str, &str)> {
