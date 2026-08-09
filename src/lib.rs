@@ -207,6 +207,19 @@ impl Token {
 }
 
 pub fn get_line_col(text: &str, index: usize) -> (usize, usize) {
+    // Callers normally pass offsets from UTF-8-aware parsers, but fuzz inputs
+    // may be normalized through `String::from_utf8_lossy`, where an original
+    // byte offset can land inside the replacement character. Report the
+    // nearest preceding character position instead of panicking on the slice.
+    let index = index.min(text.len());
+    let index = if text.is_char_boundary(index) {
+        index
+    } else {
+        text.char_indices()
+            .take_while(|(offset, _)| *offset < index)
+            .last()
+            .map_or(0, |(offset, _)| offset)
+    };
     let prefix = &text[..index];
     let line = prefix.chars().filter(|&c| c == '\n').count() + 1;
     let last_newline = prefix.rfind('\n').map(|i| i + 1).unwrap_or(0);
@@ -950,6 +963,29 @@ mod tests {
 
         let utf8 = "éx\nå β";
         assert_eq!(get_line_col(utf8, utf8.find('β').unwrap()), (2, 3));
+
+        let replacement = "a�b";
+        assert_eq!(get_line_col(replacement, 2), (1, 2));
+    }
+
+    #[test]
+    fn fuzz_regression_handles_lossy_utf8_byte_offsets() {
+        let bytes = b"python do_Konfigure() {\n   \x0b if valuefigure()e\"\xb0\nfigure()e = \"$}\"\n}dO\0\n   \xe0\x89\x9e\x8bue  =\"}#\n}all() F\x14\0\0\0\0\0\n";
+        let source = String::from_utf8_lossy(bytes);
+        let tree = parse(&source).expect("fuzz regression input should parse");
+        let formatted = format_syntax(&tree);
+        let formatted_tree =
+            parse(&formatted).expect("formatting the fuzz regression input must remain parseable");
+        assert_eq!(format_syntax(&formatted_tree), formatted);
+        let diagnostics = lint_syntax(&tree);
+        let invalid_ranges = diagnostics
+            .iter()
+            .filter(|diagnostic| {
+                !source.is_char_boundary(diagnostic.range().start())
+                    || !source.is_char_boundary(diagnostic.range().end())
+            })
+            .collect::<Vec<_>>();
+        assert!(invalid_ranges.is_empty(), "{invalid_ranges:?}");
     }
 
     #[test]

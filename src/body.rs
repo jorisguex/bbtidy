@@ -693,7 +693,10 @@ fn analyze_python_compound_statements(source: &str) -> Vec<BodyDiagnostic> {
             .strip_suffix('\r')
             .unwrap_or_else(|| line.strip_suffix('\n').unwrap_or(line));
         let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
-        let code = strip_python_comment(&content[leading..]).trim();
+        let code_without_comment = strip_python_comment(&content[leading..]);
+        let code_leading = code_without_comment.len() - code_without_comment.trim_start().len();
+        let code = code_without_comment.trim();
+        let code_start = offset + leading + code_leading;
         if code.is_empty()
             || code.ends_with('\\')
             || delimiter_depths
@@ -714,7 +717,7 @@ fn analyze_python_compound_statements(source: &str) -> Vec<BodyDiagnostic> {
         if !has_python_top_level_colon(code) {
             diagnostics.push(BodyDiagnostic::new(
                 BodyDiagnosticKind::PythonSyntax,
-                TextRange::new(offset + leading, offset + leading + code.len()),
+                TextRange::new(code_start, code_start + code.len()),
                 "Python compound statement is missing ':'",
             ));
         }
