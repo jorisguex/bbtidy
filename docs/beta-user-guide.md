@@ -99,6 +99,7 @@ For CI linting that should include the same authoritative checks, use
 bbtidy lint --semantic \
   --build-dir build \
   --target core-image-minimal \
+  --variable IMAGE_FSTYPES \
   --output sarif meta-my-layer/ > bbtidy-semantic.sarif
 ```
 
@@ -107,7 +108,9 @@ static lint rules. BitBake diagnostics are reported as `BBT019`, and resolved
 metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, license and
 source checksums, source revision, and `SRC_URI` values. It requires file inputs
 and an initialized build directory; standard input is not supported in semantic
-mode.
+mode. Additional `--variable NAME` options are included in the machine-readable
+semantic report. JSON and SARIF preserve the parse/target-query phase, output
+stream, target result, diagnostics, and selected resolved environments.
 
 Offline linting also includes recipe QA rules `BBT020` through `BBT028` for
 static filename identity/version values, license and remote-source checksums,

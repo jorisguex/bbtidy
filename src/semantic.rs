@@ -93,9 +93,28 @@ impl fmt::Display for SemanticSeverity {
     }
 }
 
+/// The BitBake phase that produced a semantic diagnostic.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticDiagnosticPhase {
+    Parse,
+    TargetQuery,
+}
+
+/// The stream from which BitBake emitted a semantic diagnostic.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SemanticDiagnosticStream {
+    Stdout,
+    Stderr,
+}
+
 /// A source-aware diagnostic parsed from BitBake's standard output or error.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct SemanticDiagnostic {
+    phase: SemanticDiagnosticPhase,
+    target: Option<String>,
+    stream: SemanticDiagnosticStream,
     severity: SemanticSeverity,
     path: Option<PathBuf>,
     line: Option<usize>,
@@ -105,6 +124,18 @@ pub struct SemanticDiagnostic {
 }
 
 impl SemanticDiagnostic {
+    pub const fn phase(&self) -> SemanticDiagnosticPhase {
+        self.phase
+    }
+
+    pub fn target(&self) -> Option<&str> {
+        self.target.as_deref()
+    }
+
+    pub const fn stream(&self) -> SemanticDiagnosticStream {
+        self.stream
+    }
+
     pub fn severity(&self) -> SemanticSeverity {
         self.severity
     }
@@ -162,24 +193,74 @@ impl SemanticEnvironment {
     }
 }
 
+/// The outcome of querying one requested BitBake target.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct SemanticTargetResult {
+    target: String,
+    succeeded: bool,
+    queried: bool,
+    diagnostics: Vec<SemanticDiagnostic>,
+    environment: Option<SemanticEnvironment>,
+}
+
+impl SemanticTargetResult {
+    pub fn target(&self) -> &str {
+        &self.target
+    }
+
+    /// Returns whether BitBake was invoked for this target.
+    pub const fn queried(&self) -> bool {
+        self.queried
+    }
+
+    /// Returns whether the target environment query succeeded.
+    pub const fn succeeded(&self) -> bool {
+        self.succeeded
+    }
+
+    pub fn diagnostics(&self) -> &[SemanticDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn environment(&self) -> Option<&SemanticEnvironment> {
+        self.environment.as_ref()
+    }
+}
+
 /// The result of a complete BitBake parse and optional environment queries.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct SemanticReport {
+    bitbake: PathBuf,
     bitbake_version: String,
     build_dir: PathBuf,
+    requested_targets: Vec<String>,
+    requested_variables: Vec<String>,
     parse_succeeded: bool,
     target_queries_succeeded: bool,
     diagnostics: Vec<SemanticDiagnostic>,
     environments: Vec<SemanticEnvironment>,
+    target_results: Vec<SemanticTargetResult>,
 }
 
 impl SemanticReport {
+    pub fn bitbake(&self) -> &Path {
+        &self.bitbake
+    }
+
     pub fn bitbake_version(&self) -> &str {
         &self.bitbake_version
     }
 
     pub fn build_dir(&self) -> &Path {
         &self.build_dir
+    }
+
+    pub fn requested_targets(&self) -> &[String] {
+        &self.requested_targets
+    }
+
+    pub fn requested_variables(&self) -> &[String] {
+        &self.requested_variables
     }
 
     pub const fn parse_succeeded(&self) -> bool {
@@ -200,6 +281,10 @@ impl SemanticReport {
 
     pub fn environments(&self) -> &[SemanticEnvironment] {
         &self.environments
+    }
+
+    pub fn target_results(&self) -> &[SemanticTargetResult] {
+        &self.target_results
     }
 
     pub fn has_errors(&self) -> bool {
@@ -264,33 +349,69 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
     let mut diagnostics = Vec::new();
     let parse_args = parse_arguments(&options.targets);
     let parse_output = run_bitbake(options, &parse_args)?;
-    diagnostics.extend(parse_diagnostics(&parse_output));
+    diagnostics.extend(parse_diagnostics(
+        &parse_output,
+        SemanticDiagnosticPhase::Parse,
+        None,
+    ));
 
     let parse_succeeded = parse_output.status.success();
     let mut target_queries_succeeded = true;
     let mut environments = Vec::new();
+    let mut target_results = Vec::new();
     if parse_succeeded {
         for target in &options.targets {
             let environment_output = run_bitbake(options, &["--environment", target])?;
-            diagnostics.extend(parse_diagnostics(&environment_output));
+            let target_diagnostics = parse_diagnostics(
+                &environment_output,
+                SemanticDiagnosticPhase::TargetQuery,
+                Some(target),
+            );
+            diagnostics.extend(target_diagnostics.clone());
             if environment_output.status.success() {
                 let raw = String::from_utf8_lossy(&environment_output.stdout).into_owned();
-                environments.push(parse_environment(target, &raw, &options.variables));
+                let environment = parse_environment(target, &raw, &options.variables);
+                environments.push(environment.clone());
+                target_results.push(SemanticTargetResult {
+                    target: target.clone(),
+                    succeeded: true,
+                    queried: true,
+                    diagnostics: target_diagnostics,
+                    environment: Some(environment),
+                });
             } else {
                 target_queries_succeeded = false;
+                target_results.push(SemanticTargetResult {
+                    target: target.clone(),
+                    succeeded: false,
+                    queried: true,
+                    diagnostics: target_diagnostics,
+                    environment: None,
+                });
             }
         }
     } else if !options.targets.is_empty() {
         target_queries_succeeded = false;
+        target_results.extend(options.targets.iter().map(|target| SemanticTargetResult {
+            target: target.clone(),
+            succeeded: false,
+            queried: false,
+            diagnostics: Vec::new(),
+            environment: None,
+        }));
     }
 
     Ok(SemanticReport {
+        bitbake: options.bitbake.clone(),
         bitbake_version,
         build_dir: options.build_dir.clone(),
+        requested_targets: options.targets.clone(),
+        requested_variables: options.variables.clone(),
         parse_succeeded,
         target_queries_succeeded,
         diagnostics,
         environments,
+        target_results,
     })
 }
 
@@ -357,14 +478,31 @@ fn parse_version(output: &Output) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn parse_diagnostics(output: &Output) -> Vec<SemanticDiagnostic> {
-    combined_output(output)
-        .lines()
-        .filter_map(parse_diagnostic_line)
-        .collect()
+fn parse_diagnostics(
+    output: &Output,
+    phase: SemanticDiagnosticPhase,
+    target: Option<&str>,
+) -> Vec<SemanticDiagnostic> {
+    [
+        (SemanticDiagnosticStream::Stdout, output.stdout.as_slice()),
+        (SemanticDiagnosticStream::Stderr, output.stderr.as_slice()),
+    ]
+    .into_iter()
+    .flat_map(|(stream, bytes)| {
+        String::from_utf8_lossy(bytes)
+            .lines()
+            .filter_map(move |line| parse_diagnostic_line(line, phase, target, stream))
+            .collect::<Vec<_>>()
+    })
+    .collect()
 }
 
-fn parse_diagnostic_line(line: &str) -> Option<SemanticDiagnostic> {
+fn parse_diagnostic_line(
+    line: &str,
+    phase: SemanticDiagnosticPhase,
+    target: Option<&str>,
+    stream: SemanticDiagnosticStream,
+) -> Option<SemanticDiagnostic> {
     let line = line.trim_end_matches('\r');
     let (severity, remainder) = if let Some(value) = line.strip_prefix("DEBUG:") {
         (SemanticSeverity::Debug, value.trim_start())
@@ -380,6 +518,9 @@ fn parse_diagnostic_line(line: &str) -> Option<SemanticDiagnostic> {
 
     let (path, line_number, column, message) = parse_source_location(remainder);
     Some(SemanticDiagnostic {
+        phase,
+        target: target.map(str::to_owned),
+        stream,
         severity,
         path,
         line: line_number,
@@ -406,7 +547,26 @@ fn parse_source_location(text: &str) -> (Option<PathBuf>, Option<usize>, Option<
         let line_number = std::str::from_utf8(&bytes[index + 1..end])
             .ok()
             .and_then(|value| value.parse().ok());
-        let mut message_start = end + 1;
+        let mut message_start = end;
+        let mut column = None;
+        if bytes.get(message_start) == Some(&b':') {
+            let mut column_start = message_start + 1;
+            while column_start < bytes.len() && bytes[column_start].is_ascii_whitespace() {
+                column_start += 1;
+            }
+            let mut column_end = column_start;
+            while column_end < bytes.len() && bytes[column_end].is_ascii_digit() {
+                column_end += 1;
+            }
+            if column_end > column_start && bytes.get(column_end) == Some(&b':') {
+                column = std::str::from_utf8(&bytes[column_start..column_end])
+                    .ok()
+                    .and_then(|value| value.parse().ok());
+                message_start = column_end + 1;
+            } else {
+                message_start = column_start;
+            }
+        }
         while message_start < bytes.len() && bytes[message_start].is_ascii_whitespace() {
             message_start += 1;
         }
@@ -419,7 +579,7 @@ fn parse_source_location(text: &str) -> (Option<PathBuf>, Option<usize>, Option<
             location = Some((
                 PathBuf::from(path_text),
                 line_number,
-                None,
+                column,
                 text[message_start..].trim().to_owned(),
             ));
             break;

@@ -31,8 +31,9 @@ pub use project::{
     discover_build_context, discover_build_context_with_options,
 };
 pub use semantic::{
-    SemanticDiagnostic, SemanticEnvironment, SemanticError, SemanticOptions, SemanticReport,
-    SemanticSeverity, analyze_bitbake,
+    SemanticDiagnostic, SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticEnvironment,
+    SemanticError, SemanticOptions, SemanticReport, SemanticSeverity, SemanticTargetResult,
+    analyze_bitbake,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,

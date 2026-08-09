@@ -134,6 +134,10 @@ struct SemanticLintArgs {
     /// Recipe or target to inspect. May be supplied more than once.
     #[arg(long = "target", value_name = "TARGET")]
     targets: Vec<String>,
+
+    /// Fully expanded variable to include in the semantic report. May be supplied more than once.
+    #[arg(long = "variable", value_name = "NAME")]
+    variables: Vec<String>,
 }
 
 #[derive(Args)]
@@ -285,15 +289,19 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
     if args.output == SemanticOutput::Json {
         let value = serde_json::json!({
             "version": 1,
+            "bitbake": report.bitbake(),
             "bitbake_version": report.bitbake_version(),
             "project_dir": context.project_dir(),
             "build_dir": report.build_dir(),
             "build_context_source": context.source(),
+            "requested_targets": report.requested_targets(),
+            "requested_variables": report.requested_variables(),
             "parse_succeeded": report.parse_succeeded(),
             "target_queries_succeeded": report.target_queries_succeeded(),
             "analysis_succeeded": report.analysis_succeeded(),
             "diagnostics": report.diagnostics(),
             "environments": report.environments(),
+            "target_results": report.target_results(),
         });
         match serde_json::to_writer_pretty(io::stdout().lock(), &value) {
             Ok(()) => println!(),
@@ -323,6 +331,18 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
                 "failed"
             }
         );
+        if !report.requested_targets().is_empty() {
+            println!(
+                "Requested targets: {}",
+                report.requested_targets().join(", ")
+            );
+        }
+        if !report.requested_variables().is_empty() {
+            println!(
+                "Requested variables: {}",
+                report.requested_variables().join(", ")
+            );
+        }
         for diagnostic in report.diagnostics() {
             let location = match (diagnostic.path(), diagnostic.line(), diagnostic.column()) {
                 (Some(path), Some(line), Some(column)) => {
@@ -343,10 +363,19 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
                 );
             }
         }
-        for environment in report.environments() {
-            println!("Target {}:", environment.target());
-            for (name, value) in environment.variables() {
-                println!("  {name}={value}");
+        for result in report.target_results() {
+            let status = if !result.queried() {
+                "skipped"
+            } else if result.succeeded() {
+                "passed"
+            } else {
+                "failed"
+            };
+            println!("Target {}: {status}", result.target());
+            if let Some(environment) = result.environment() {
+                for (name, value) in environment.variables() {
+                    println!("  {name}={value}");
+                }
             }
         }
     }
@@ -376,6 +405,23 @@ fn analyze_semantic_lint(
         }
     };
     let context = context_result.map_err(|error| error.to_string())?;
+    let mut variables = [
+        "SUMMARY",
+        "DESCRIPTION",
+        "LICENSE",
+        "LIC_FILES_CHKSUM",
+        "SRCREV",
+        "SRCPV",
+        "SRC_URI",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+    for variable in &args.variables {
+        if !variables.iter().any(|known| known == variable) {
+            variables.push(variable.clone());
+        }
+    }
     let options = SemanticOptions {
         bitbake: args
             .bitbake
@@ -384,18 +430,7 @@ fn analyze_semantic_lint(
             .unwrap_or_else(|| PathBuf::from("bitbake")),
         build_dir: context.build_dir().to_path_buf(),
         targets: args.targets.clone(),
-        variables: [
-            "SUMMARY",
-            "DESCRIPTION",
-            "LICENSE",
-            "LIC_FILES_CHKSUM",
-            "SRCREV",
-            "SRCPV",
-            "SRC_URI",
-        ]
-        .into_iter()
-        .map(str::to_owned)
-        .collect(),
+        variables,
     };
     let report = analyze_bitbake(&options).map_err(|error| error.to_string())?;
     Ok(SemanticLintAnalysis { context, report })
@@ -882,14 +917,20 @@ fn json_report(
 fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
     let report = &analysis.report;
     json!({
+        "bitbake": report.bitbake(),
         "bitbake_version": report.bitbake_version(),
         "project_dir": analysis.context.project_dir(),
         "build_dir": report.build_dir(),
         "build_context_source": analysis.context.source(),
+        "requested_targets": report.requested_targets(),
+        "requested_variables": report.requested_variables(),
+        "targets": report.requested_targets(),
         "parse_succeeded": report.parse_succeeded(),
         "target_queries_succeeded": report.target_queries_succeeded(),
         "analysis_succeeded": report.analysis_succeeded(),
-        "targets": report.environments().iter().map(|environment| environment.target()).collect::<Vec<_>>(),
+        "diagnostics": report.diagnostics(),
+        "environments": report.environments(),
+        "target_results": report.target_results(),
     })
 }
 

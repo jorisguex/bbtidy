@@ -120,7 +120,9 @@ It requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
 metadata, source checksum, and source URI rules where applicable. Static
-linting remains the default and continues to avoid invoking BitBake.
+linting remains the default and continues to avoid invoking BitBake. Machine
+readable lint output preserves the semantic diagnostics, selected resolved
+variables, and per-target query outcomes under its `semantic` report object.
 
 The static catalog includes recipe and layer QA rules in `BBT020` through
 `BBT033`. Recipe QA validates explicit filename identity/version values,
@@ -182,7 +184,10 @@ ancestor/conventional-directory discovery. BitBake performs the complete configu
 including variable expansion, overrides, anonymous Python, class inheritance,
 layer priorities, machine and distro configuration, and external providers.
 Requested target environments come from `bitbake -e` and are not reconstructed
-by bbtidy.
+by bbtidy. JSON reports include the requested targets and variables, BitBake
+identity, parse and target-query status, phase- and stream-aware diagnostics,
+selected environments, and an explicit result for every requested target;
+`lint --semantic` embeds the same data in JSON and SARIF provenance.
 
 The command is read-only from bbtidy's perspective, but BitBake may update its
 normal parse cache and server metadata in the supplied build directory. A

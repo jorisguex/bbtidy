@@ -1,6 +1,6 @@
 use bbtidy::{
-    LintOptions, SemanticError, SemanticOptions, SemanticSeverity, analyze_bitbake,
-    lint_with_bitbake,
+    LintOptions, SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticError, SemanticOptions,
+    SemanticSeverity, analyze_bitbake, lint_with_bitbake,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -29,7 +29,20 @@ fn authoritative_analysis_returns_resolved_environment_and_diagnostics() {
         "BitBake Build Tool Core version 2.8.1"
     );
     assert!(report.parse_succeeded());
+    assert_eq!(report.requested_targets(), &[String::from("demo")]);
+    assert_eq!(
+        report.requested_variables(),
+        &[
+            String::from("PN"),
+            String::from("OVERRIDES"),
+            String::from("MULTI"),
+            String::from("MISSING"),
+        ]
+    );
     assert_eq!(report.environments().len(), 1);
+    assert_eq!(report.target_results().len(), 1);
+    assert!(report.target_results()[0].queried());
+    assert!(report.target_results()[0].succeeded());
     let environment = &report.environments()[0];
     assert_eq!(environment.target(), "demo");
     assert_eq!(environment.get("PN"), Some("demo"));
@@ -42,6 +55,14 @@ fn authoritative_analysis_returns_resolved_environment_and_diagnostics() {
             .iter()
             .any(|diagnostic| diagnostic.severity() == SemanticSeverity::Note)
     );
+    let parse_note = report
+        .diagnostics()
+        .iter()
+        .find(|diagnostic| diagnostic.severity() == SemanticSeverity::Note)
+        .unwrap();
+    assert_eq!(parse_note.phase(), SemanticDiagnosticPhase::Parse);
+    assert_eq!(parse_note.target(), None);
+    assert_eq!(parse_note.stream(), SemanticDiagnosticStream::Stdout);
 }
 
 #[cfg(unix)]
@@ -128,6 +149,7 @@ fn parse_failures_include_bitbake_source_locations() {
         Some(Path::new("/layer/recipes-demo/demo.bb"))
     );
     assert_eq!(diagnostic.line(), Some(12));
+    assert_eq!(diagnostic.column(), Some(7));
     assert!(diagnostic.message().contains("invalid override"));
 }
 
@@ -148,6 +170,14 @@ fn target_query_failures_are_reported_separately_from_parse_failures() {
     assert!(!report.target_queries_succeeded());
     assert!(!report.analysis_succeeded());
     assert!(report.environments().is_empty());
+    assert_eq!(report.target_results().len(), 1);
+    assert!(report.target_results()[0].queried());
+    assert!(!report.target_results()[0].succeeded());
+    assert_eq!(report.target_results()[0].target(), "missing-target");
+    let target_error = &report.target_results()[0].diagnostics()[0];
+    assert_eq!(target_error.phase(), SemanticDiagnosticPhase::TargetQuery);
+    assert_eq!(target_error.target(), Some("missing-target"));
+    assert_eq!(target_error.stream(), SemanticDiagnosticStream::Stderr);
     assert!(report.has_errors());
 }
 
@@ -210,7 +240,7 @@ if [ "$1" = "--version" ]; then
   exit 0
 fi
 if [ "$1" = "--parse-only" ]; then
-  echo 'ERROR: ParseError at /layer/recipes-demo/demo.bb:12: invalid override' >&2
+  echo 'ERROR: ParseError at /layer/recipes-demo/demo.bb:12:7: invalid override' >&2
   exit 1
 fi
 exit 0

@@ -48,7 +48,8 @@ the [beta user guide](docs/beta-user-guide.md).
   whitespace and final-newline findings.
 - **BitBake-backed semantic linting**: Optionally runs the configured BitBake
   parser and target environment queries, reports source-aware BitBake findings,
-  and applies selected metadata rules to fully resolved values.
+  applies selected metadata rules to fully resolved values, and preserves rich
+  phase- and target-level analysis output in machine-readable reports.
 - **Broader recipe and layer QA**: Checks recipe identity/version alignment,
   license and source checksums, `PACKAGECONFIG`, package-scoped variables and
   lists, `SRC_URI` parameters, and layer collection metadata.
@@ -148,7 +149,9 @@ bbtidy lint --semantic \
 same project, environment-variable, configuration, and executable discovery
 as `semantic`. It runs `bitbake --parse-only` once, then `bitbake -e` for each
 selected `--target`. BitBake warnings and errors are reported as `BBT019` lint
-diagnostics. `SUMMARY`, `DESCRIPTION`, `LICENSE`, `SRCREV`/`SRCPV`, and
+diagnostics. Add `--variable NAME` to include additional fully expanded
+variables in the semantic section of the report. `SUMMARY`, `DESCRIPTION`,
+`LICENSE`, `SRCREV`/`SRCPV`, and
 resolved `SRC_URI` values from target environments are also checked by the
 corresponding metadata rules, so dynamic expansions are included when a target
 is queried. The mode is file-based and cannot be combined with standard input.
@@ -192,13 +195,19 @@ evaluated by the installed BitBake version rather than approximated by
 bbtidy. The command performs a parse-only check first; requested targets are
 then queried with `bitbake -e`.
 
-Semantic JSON is a versioned object with `version: 1`, the resolved project and
-build directories, `build_context_source`, parse and target-query status,
-source-aware BitBake diagnostics, and selected target environments.
-Semantic diagnostics contain severity, message, and optional source location
-fields. Text output remains the default. The Rust API retains each complete
-`bitbake -e` dump through `SemanticEnvironment::raw`; the JSON report omits that
-verbose field. Lint JSON retains `version: 1` and adds diagnostic end positions,
+Semantic JSON is a versioned object with `version: 1`, the selected BitBake
+executable and version, resolved project and build directories,
+`build_context_source`, requested targets and variables, parse and target-query
+status, source-aware BitBake diagnostics, selected target environments, and a
+target result for every requested target. Diagnostics identify their parse or
+target-query phase, target when applicable, output stream, severity, message,
+and optional source location fields. Text output remains the default. The Rust
+API retains each complete `bitbake -e` dump through
+`SemanticEnvironment::raw`; the JSON report omits that verbose field. The
+`lint --semantic` command embeds the same diagnostics, environments, and target
+results under its `semantic` object, so JSON and SARIF consumers do not lose
+BitBake detail.
+Lint JSON retains `version: 1` and adds diagnostic end positions,
 byte ranges, help, `fixable`, and structured `fixes` entries. A `lint --fix`
 report also contains `fixes_applied`. SARIF output follows SARIF 2.1.0 with the
 complete lint rule catalog, fixability properties, source ranges, and SARIF

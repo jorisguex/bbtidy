@@ -1014,8 +1014,12 @@ exit 0
     assert_eq!(report["version"], 1);
     assert_eq!(report["parse_succeeded"], true);
     assert_eq!(report["analysis_succeeded"], true);
+    assert_eq!(report["requested_targets"][0], "demo");
+    assert_eq!(report["requested_variables"][0], "PN");
     assert_eq!(report["environments"][0]["target"], "demo");
     assert_eq!(report["environments"][0]["variables"]["PN"], "demo");
+    assert_eq!(report["target_results"][0]["queried"], true);
+    assert_eq!(report["target_results"][0]["succeeded"], true);
 }
 
 #[cfg(unix)]
@@ -1039,7 +1043,7 @@ if [ "$1" = "--parse-only" ]; then
   exit 0
 fi
 if [ "$1" = "--environment" ]; then
-  printf 'SUMMARY="demo"\nDESCRIPTION=""\nLICENSE="CLOSED"\nSRCREV="AUTOINC+deadbeef"\nSRC_URI="git://example.invalid/demo.git;branch=main"\n'
+  printf 'SUMMARY="demo"\nDESCRIPTION=""\nLICENSE="CLOSED"\nSRCREV="AUTOINC+deadbeef"\nSRC_URI="git://example.invalid/demo.git;branch=main"\nCUSTOM="resolved"\n'
   exit 0
 fi
 exit 0
@@ -1059,6 +1063,8 @@ exit 0
         bitbake.to_str().unwrap(),
         "--target",
         "demo",
+        "--variable",
+        "CUSTOM",
         "--output",
         "json",
         recipe.to_str().unwrap(),
@@ -1070,6 +1076,18 @@ exit 0
     assert_eq!(report["semantic"]["parse_succeeded"], true);
     assert_eq!(report["semantic"]["build_context_source"], "explicit");
     assert_eq!(report["semantic"]["targets"][0], "demo");
+    assert_eq!(
+        report["semantic"]["environments"][0]["variables"]["CUSTOM"],
+        "resolved"
+    );
+    assert!(
+        report["semantic"]["requested_variables"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|variable| variable == "CUSTOM")
+    );
+    assert_eq!(report["semantic"]["target_results"][0]["succeeded"], true);
     let diagnostics = report["diagnostics"].as_array().unwrap();
     let bitbake_diagnostic = diagnostics
         .iter()
@@ -1082,6 +1100,12 @@ exit 0
             .as_str()
             .unwrap()
             .contains("dynamic provider")
+    );
+    let semantic_diagnostics = report["semantic"]["diagnostics"].as_array().unwrap();
+    assert!(
+        semantic_diagnostics.iter().any(|diagnostic| {
+            diagnostic["phase"] == "parse" && diagnostic["stream"] == "stdout"
+        })
     );
     assert!(diagnostics.iter().any(|diagnostic| {
         diagnostic["rule_id"] == "BBT012"
@@ -1166,6 +1190,8 @@ exit 0
 
     assert_eq!(output.status.code(), Some(1));
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["semantic"]["target_results"][0]["queried"], true);
+    assert_eq!(report["semantic"]["target_results"][0]["succeeded"], false);
     assert!(
         report["diagnostics"]
             .as_array()
