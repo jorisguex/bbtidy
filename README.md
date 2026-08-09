@@ -324,11 +324,12 @@ malformed or mixed-line-ending values remain unchanged apart from normal
 assignment spacing.
 
 The safety limits default to 10,000 files and 256 MiB of original source per
-repository-writing `format` invocation; `lint --fix` also enforces them from
-`[safety]`. They apply after recursive discovery and exclusions, so a
-repository-wide write cannot silently expand beyond a bounded scope. Zero is
-rejected. A file that changes after it was read is also rejected rather than
-overwritten.
+`format` or `lint` invocation; `lint --fix` also enforces them before editing.
+They apply after recursive discovery and exclusions, including the files
+retained by `lint --workspace`, so a repository-wide operation cannot silently
+expand beyond a bounded scope. `--max-files` and `--max-bytes` override the
+configured values for either command. Zero is rejected. A file that changes
+after it was read is also rejected rather than overwritten.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. `fail_on` controls the minimum effective
@@ -336,9 +337,11 @@ severity that makes `lint` exit with code `1`; it defaults to `warning`, and
 `never` makes lint advisory while still reporting findings. The command-line
 `--fail-on` option overrides the configuration for one invocation. Exclusion
 globs are relative to the configuration file’s directory and apply to
-explicit files and recursively discovered files. Standard input is never
-excluded. Unknown keys, rule IDs, severity values, failure policies,
-malformed TOML, and invalid globs are operational errors.
+explicit files, recursively discovered files, and BitBake workspace files.
+Excluded workspace metadata is removed from class/include resolution before
+recipe-specific workspace discovery. Standard input is never excluded.
+Unknown keys, rule IDs, severity values, failure policies, malformed TOML, and
+invalid globs are operational errors.
 
 `--show-fixes` adds indented help and edit details to text diagnostics. `--fix`
 applies all safe edits, re-runs lint on the resulting source, and uses the

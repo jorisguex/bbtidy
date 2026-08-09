@@ -285,6 +285,29 @@ fn config_excludes_paths_from_directory_processing() {
 }
 
 #[test]
+fn config_excludes_explicit_files() {
+    let directory = TemporaryDirectory::new("config-exclude-explicit");
+    let config = directory.write(".bbtidy.toml", "[paths]\nexclude = [\"ignored/**\"]\n");
+    let ignored = directory.write("ignored/example.bb", UNFORMATTED);
+
+    let output = run([
+        "format",
+        "--write",
+        "--config",
+        config.to_str().unwrap(),
+        ignored.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("no BitBake files found")
+    );
+    assert_eq!(fs::read_to_string(&ignored).unwrap(), UNFORMATTED);
+}
+
+#[test]
 fn format_write_enforces_repository_file_limit_before_rewriting() {
     let directory = TemporaryDirectory::new("safety-file-limit");
     let config = directory.write(".bbtidy.toml", "[safety]\nmax_files = 1\n");
@@ -332,6 +355,36 @@ fn format_write_enforces_repository_byte_limit_before_rewriting() {
     assert_eq!(fs::read_to_string(file).unwrap(), UNFORMATTED);
 }
 
+#[test]
+fn lint_cli_overrides_safety_limits() {
+    let directory = TemporaryDirectory::new("lint-safety-overrides");
+    let first = directory.write("first.bb", "SUMMARY = \"first\"\n");
+    let second = directory.write("second.bb", "SUMMARY = \"second\"\n");
+    let path = directory.path().to_str().unwrap();
+
+    let file_limit = run(["lint", "--max-files", "1", path]);
+    assert_eq!(file_limit.status.code(), Some(2));
+    assert!(
+        String::from_utf8(file_limit.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
+    );
+
+    let byte_limit = run([
+        "lint",
+        "--max-bytes",
+        "1",
+        first.to_str().unwrap(),
+        second.to_str().unwrap(),
+    ]);
+    assert_eq!(byte_limit.status.code(), Some(2));
+    assert!(
+        String::from_utf8(byte_limit.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn format_write_rejects_symlinks_before_changing_any_file() {
@@ -364,6 +417,29 @@ fn format_write_rejects_symlinks_before_changing_any_file() {
             .file_type()
             .is_symlink()
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn format_write_rejects_symlink_directory_roots() {
+    use std::os::unix::fs::symlink;
+
+    let directory = TemporaryDirectory::new("safety-symlink-directory");
+    let target_directory = directory.path().join("target");
+    fs::create_dir(&target_directory).unwrap();
+    let target = directory.write("target/example.bb", UNFORMATTED);
+    let link = directory.path().join("link");
+    symlink(&target_directory, &link).unwrap();
+
+    let output = run(["format", "--write", link.to_str().unwrap()]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("symbolic link")
+    );
+    assert_eq!(fs::read_to_string(&target).unwrap(), UNFORMATTED);
 }
 
 #[test]
@@ -927,6 +1003,53 @@ exit 1
             .iter()
             .all(|diagnostic| diagnostic["rule_id"] != "BBT007")
     );
+
+    let config = directory.write(
+        ".bbtidy-exclude-second.toml",
+        "[paths]\nexclude = [\"meta-second/**\"]\n",
+    );
+    let excluded = run([
+        "lint",
+        "--workspace",
+        build.to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--config",
+        config.to_str().unwrap(),
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(excluded.status.code(), Some(1));
+    let excluded_report: Value = serde_json::from_slice(&excluded.stdout).unwrap();
+    let excluded_diagnostics = excluded_report["diagnostics"].as_array().unwrap();
+    assert!(excluded_diagnostics.iter().any(|diagnostic| {
+        diagnostic["rule_id"] == "BBT007"
+            && diagnostic["message"]
+                .as_str()
+                .is_some_and(|message| message.contains("shared"))
+    }));
+    assert!(excluded_diagnostics.iter().all(|diagnostic| {
+        diagnostic["path"]
+            .as_str()
+            .is_none_or(|path| !path.contains("meta-second"))
+    }));
+
+    let limited = run([
+        "lint",
+        "--workspace",
+        build.to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--max-files",
+        "1",
+    ]);
+    assert_eq!(limited.status.code(), Some(2));
+    assert!(
+        String::from_utf8(limited.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
+    );
 }
 
 #[test]
@@ -978,6 +1101,14 @@ fn lint_accepts_standard_input() {
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
         "<stdin>:1:17: warning[BBT002]: file does not end with a newline\n"
+    );
+
+    let limited = run_with_stdin(["lint", "--max-bytes", "1", "-"], "SUMMARY = \"demo\"");
+    assert_eq!(limited.status.code(), Some(2));
+    assert!(
+        String::from_utf8(limited.stderr)
+            .unwrap()
+            .contains("safety limit exceeded")
     );
 }
 

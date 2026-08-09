@@ -122,6 +122,23 @@ fn rejects_dynamic_or_missing_bblayers_entries() {
 
 #[cfg(unix)]
 #[test]
+fn rejects_symbolic_link_build_directories() {
+    use std::os::unix::fs::symlink;
+
+    let project = TemporaryLayer::new("workspace-build-symlink");
+    let build = project.root.join("build");
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(build.join("conf/local.conf"), "MACHINE = \"qemux86-64\"\n").unwrap();
+    fs::write(build.join("conf/bblayers.conf"), "BBLAYERS = \"\"\n").unwrap();
+    let link = project.root.join("build-link");
+    symlink(&build, &link).unwrap();
+
+    let error = WorkspaceIndex::from_build_dir(&link).unwrap_err();
+    assert!(error.to_string().contains("symbolic link"));
+}
+
+#[cfg(unix)]
+#[test]
 fn bitbake_index_uses_engine_resolved_dynamic_metadata() {
     let project = TemporaryLayer::new("workspace-bitbake-resolved");
     let layer = project.root.join("meta-dynamic");

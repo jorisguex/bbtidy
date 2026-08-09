@@ -101,7 +101,8 @@ bounded by configurable file-count and source-byte limits.
 Linting reports findings only within the selected analysis scope. File-local
 linting does not claim to resolve a complete layer. Layer-aware linting only
 uses files supplied in the indexed input set, while `--workspace` derives that
-set from BitBake's resolved build context.
+set from BitBake's resolved build context after applying configured exclusions
+and safety limits.
 
 `lint --workspace BUILD_DIR` is the BitBake-backed whole-build workspace mode.
 It invokes the selected BitBake executable, requires its complete parse to
@@ -110,6 +111,9 @@ per-recipe `BBINCLUDED` values from the engine. It therefore includes dynamic
 layers, classes, includes, overrides, and external metadata that BitBake
 actually resolves. A BitBake invocation or resolution failure is an
 operational error; bbtidy never silently falls back to a partial workspace.
+Excluded files are removed from the workspace index before class/include
+resolution and recipe-specific environment discovery. `--max-files` and
+`--max-bytes` apply to lint as well as format, including workspace mode.
 
 The public offline `WorkspaceIndex::from_build_dir` API remains available for
 callers that explicitly need source-level static indexing. Dynamic values,
@@ -258,8 +262,9 @@ formatted versions of each supported manifest:
     before and after formatting after temporary corpus paths are normalized.
 11. Diagnostics and machine-readable reports are deterministic.
 12. No operational error causes a partial batch rewrite.
-13. Repository-wide runs respect the configured file-count and source-byte
-    limits, and write runs refuse symbolic links and concurrent source changes.
+13. Repository-wide format and lint runs respect the configured file-count and
+    source-byte limits, and write runs refuse symbolic links and concurrent
+    source changes.
 14. Release artifacts match the checked-in release manifest; archives contain
     only safe regular-file members, required package metadata, and the expected
     versioned executable; and both publication workflows pass their packaging

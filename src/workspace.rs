@@ -1,4 +1,7 @@
-use crate::{AssignmentOperator, DirectiveKeyword, SyntaxKind, SyntaxTree, comment_start, parse};
+use crate::{
+    AssignmentOperator, DirectiveKeyword, SafetyOptions, SyntaxKind, SyntaxTree, comment_start,
+    parse,
+};
 use globset::Glob;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
@@ -200,7 +203,7 @@ impl WorkspaceIndex {
     /// dynamic or missing layer path is rejected instead of silently creating
     /// an incomplete workspace.
     pub fn from_build_dir(path: impl AsRef<Path>) -> io::Result<Self> {
-        let build_dir = fs::canonicalize(path.as_ref())?;
+        let build_dir = canonicalize_build_dir(path.as_ref())?;
         validate_build_dir(&build_dir)?;
         let layer_roots = parse_build_layers(&build_dir)?;
         let mut files = BTreeSet::new();
@@ -227,7 +230,26 @@ impl WorkspaceIndex {
     /// captures dynamic includes, inherited classes, anonymous-Python-driven
     /// metadata, and external files that are not statically discoverable.
     pub fn from_bitbake(path: impl AsRef<Path>, bitbake: impl AsRef<Path>) -> io::Result<Self> {
-        let build_dir = fs::canonicalize(path.as_ref())?;
+        Self::from_bitbake_with_options(path, bitbake, |_| true, None)
+    }
+
+    /// Builds a BitBake workspace while retaining only files accepted by
+    /// `keep` and enforcing the optional source limits during discovery.
+    ///
+    /// Filtering happens before recipe-specific environment queries, so an
+    /// excluded recipe or included file cannot expand the workspace scope or
+    /// trigger work after it has been excluded. The same filtered file set is
+    /// used to construct search candidates and dependency edges.
+    pub fn from_bitbake_with_options<F>(
+        path: impl AsRef<Path>,
+        bitbake: impl AsRef<Path>,
+        keep: F,
+        limits: Option<SafetyOptions>,
+    ) -> io::Result<Self>
+    where
+        F: Fn(&Path) -> bool,
+    {
+        let build_dir = canonicalize_build_dir(path.as_ref())?;
         validate_build_dir(&build_dir)?;
         let bitbake = bitbake.as_ref();
 
@@ -266,13 +288,21 @@ impl WorkspaceIndex {
             }
         }
 
-        let build_files = discover_metadata_files(&build_dir, MetadataTree::Build)?;
+        let mut build_files = discover_metadata_files(&build_dir, MetadataTree::Build)?;
+        build_files.retain(|path| keep(path));
         let mut files = build_files.clone();
+        let mut limit_tracker = WorkspaceLimitTracker::new(limits, &files)?;
         add_resolved_files(&mut files, &global, "BBINCLUDED", &build_dir);
+        files.retain(|path| keep(path));
+        limit_tracker.check(&files)?;
         for layer in &layer_roots {
             add_resolved_file(&mut files, layer.join("conf/layer.conf"));
         }
+        files.retain(|path| keep(path));
+        limit_tracker.check(&files)?;
         add_bbfiles(&mut files, &global, &build_dir)?;
+        files.retain(|path| keep(path));
+        limit_tracker.check(&files)?;
 
         let recipes = files
             .iter()
@@ -291,6 +321,8 @@ impl WorkspaceIndex {
             }
             let environment = parse_bitbake_environment(&output.stdout);
             add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
+            files.retain(|path| keep(path));
+            limit_tracker.check(&files)?;
         }
 
         let mut roots = layer_roots.iter().cloned().collect::<BTreeSet<_>>();
@@ -302,6 +334,21 @@ impl WorkspaceIndex {
         index.apply_bitbake_context(&global, &build_dir);
         index.dependencies = index.build_dependencies();
         Ok(index)
+    }
+
+    /// Retains a subset of the indexed metadata and rebuilds its dependency
+    /// graph without discarding BitBake-resolved layer and search metadata.
+    pub fn retain_files<F>(&mut self, mut keep: F)
+    where
+        F: FnMut(&Path) -> bool,
+    {
+        self.files.retain(|path| keep(path));
+        let files = &self.files;
+        self.build_files.retain(|path| files.contains(path));
+        for layer in &mut self.layers {
+            layer.files.retain(|path| files.contains(path));
+        }
+        self.dependencies = self.build_dependencies();
     }
 
     fn from_canonical_files(
@@ -341,6 +388,10 @@ impl WorkspaceIndex {
             layer.metadata.collections.clear();
             layer.metadata.patterns.clear();
             layer.metadata.priorities.clear();
+
+            if !layer.is_complete() {
+                continue;
+            }
 
             for collection in split_bitbake_words(environment.get("BBFILE_COLLECTIONS")) {
                 let Some(pattern) = environment.get(&format!("BBFILE_PATTERN_{collection}")) else {
@@ -1030,8 +1081,25 @@ enum MetadataTree {
     Build,
 }
 
+fn canonicalize_build_dir(path: &Path) -> io::Result<PathBuf> {
+    let metadata = fs::symlink_metadata(path)?;
+    if metadata.file_type().is_symlink() {
+        return Err(invalid_data(format!(
+            "BitBake build path {} is a symbolic link",
+            path.display()
+        )));
+    }
+    if !metadata.is_dir() {
+        return Err(invalid_data(format!(
+            "BitBake build path {} is not a directory",
+            path.display()
+        )));
+    }
+    fs::canonicalize(path)
+}
+
 fn validate_build_dir(build_dir: &Path) -> io::Result<()> {
-    let metadata = fs::metadata(build_dir)?;
+    let metadata = fs::symlink_metadata(build_dir)?;
     if !metadata.is_dir() {
         return Err(invalid_data(format!(
             "BitBake build path {} is not a directory",
@@ -1046,6 +1114,64 @@ fn validate_build_dir(build_dir: &Path) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+struct WorkspaceLimitTracker {
+    limits: Option<SafetyOptions>,
+    accounted: BTreeSet<PathBuf>,
+    bytes: u64,
+}
+
+impl WorkspaceLimitTracker {
+    fn new(limits: Option<SafetyOptions>, files: &BTreeSet<PathBuf>) -> io::Result<Self> {
+        let mut tracker = Self {
+            limits,
+            accounted: BTreeSet::new(),
+            bytes: 0,
+        };
+        tracker.check(files)?;
+        Ok(tracker)
+    }
+
+    fn check(&mut self, files: &BTreeSet<PathBuf>) -> io::Result<()> {
+        let Some(limits) = self.limits else {
+            return Ok(());
+        };
+        if limits.max_files == 0 {
+            return Err(invalid_data(
+                "safety limit max_files must be greater than zero",
+            ));
+        }
+        if limits.max_bytes == 0 {
+            return Err(invalid_data(
+                "safety limit max_bytes must be greater than zero",
+            ));
+        }
+        if files.len() > limits.max_files {
+            return Err(invalid_data(format!(
+                "safety limit exceeded: {} files discovered, maximum is {}",
+                files.len(),
+                limits.max_files
+            )));
+        }
+
+        for path in files {
+            if self.accounted.insert(path.clone()) {
+                let size = fs::symlink_metadata(path)?.len();
+                self.bytes = self
+                    .bytes
+                    .checked_add(size)
+                    .ok_or_else(|| invalid_data("safety limit exceeded: source size overflowed"))?;
+            }
+        }
+        if self.bytes > limits.max_bytes {
+            return Err(invalid_data(format!(
+                "safety limit exceeded: {} bytes discovered, maximum is {}",
+                self.bytes, limits.max_bytes
+            )));
+        }
+        Ok(())
+    }
 }
 
 fn run_bitbake_command(build_dir: &Path, bitbake: &Path, arguments: &[&str]) -> io::Result<Output> {

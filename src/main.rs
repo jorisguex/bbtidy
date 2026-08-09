@@ -102,6 +102,14 @@ struct LintArgs {
     #[arg(long)]
     show_fixes: bool,
 
+    /// Override the configured maximum number of files for this invocation.
+    #[arg(long, value_name = "N")]
+    max_files: Option<usize>,
+
+    /// Override the configured maximum total source size in bytes.
+    #[arg(long, value_name = "BYTES")]
+    max_bytes: Option<u64>,
+
     /// Lint the complete BitBake workspace described by build/conf/bblayers.conf.
     #[arg(long, value_name = "BUILD_DIR")]
     workspace: Option<PathBuf>,
@@ -636,6 +644,10 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         eprintln!("error: --workspace cannot be combined with file or directory inputs");
         return EXIT_ERROR;
     }
+    let limits = SafetyOptions {
+        max_files: args.max_files.unwrap_or(config.safety.max_files),
+        max_bytes: args.max_bytes.unwrap_or(config.safety.max_bytes),
+    };
     let (inputs, workspace) = if let Some(build_dir) = args.workspace.as_deref() {
         let bitbake = args
             .semantic
@@ -643,7 +655,12 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             .clone()
             .or_else(|| config.semantic.bitbake.clone())
             .unwrap_or_else(|| PathBuf::from("bitbake"));
-        let workspace = match WorkspaceIndex::from_bitbake(build_dir, &bitbake) {
+        let workspace = match WorkspaceIndex::from_bitbake_with_options(
+            build_dir,
+            &bitbake,
+            |path| !config.is_excluded(path),
+            Some(limits),
+        ) {
             Ok(workspace) => workspace,
             Err(error) => {
                 eprintln!(
@@ -655,7 +672,6 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         };
         let inputs = workspace
             .files()
-            .filter(|path| !config.is_excluded(path))
             .map(|path| Input::File(path.to_path_buf()))
             .collect::<Vec<_>>();
         if inputs.is_empty() {
@@ -709,7 +725,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         eprintln!("error: --fix cannot be used with standard input");
         return EXIT_ERROR;
     }
-    if let Err(error) = validate_input_limits(&inputs, config.safety) {
+    if let Err(error) = validate_input_limits(&inputs, limits) {
         eprintln!("error: {error}");
         return EXIT_ERROR;
     }
@@ -741,6 +757,15 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
                 continue;
             }
         };
+        if matches!(input, Input::Stdin) && text.len() as u64 > limits.max_bytes {
+            eprintln!(
+                "error: safety limit exceeded: {} bytes read, maximum is {}",
+                text.len(),
+                limits.max_bytes
+            );
+            had_error = true;
+            continue;
+        }
         let diagnostics = match input {
             Input::Stdin => lint_with_options(&text, &lint_options),
             Input::File(path) => lint_with_workspace(&text, path, &workspace, &lint_options),
@@ -1328,7 +1353,7 @@ fn validate_input_limits(inputs: &[Input], limits: SafetyOptions) -> Result<(), 
         let Input::File(path) = input else {
             continue;
         };
-        let size = fs::metadata(path)
+        let size = fs::symlink_metadata(path)
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?
             .len();
         bytes = bytes
@@ -1383,11 +1408,19 @@ fn resolve_inputs(paths: &[PathBuf], config: &Config) -> Result<Vec<Input>, Stri
 
     let mut files = BTreeSet::new();
     for path in paths {
-        let metadata = fs::metadata(path)
+        let metadata = fs::symlink_metadata(path)
             .map_err(|error| format!("could not inspect {}: {error}", path.display()))?;
-        if metadata.is_dir() {
+        if config.is_excluded(path) {
+            continue;
+        }
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "{} is a symbolic link; refusing to process it",
+                path.display()
+            ));
+        } else if metadata.is_dir() {
             collect_directory(path, path, config, &mut files)?;
-        } else if metadata.is_file() && !config.is_excluded(path) {
+        } else if metadata.is_file() {
             files.insert(path.clone());
         } else {
             return Err(format!(

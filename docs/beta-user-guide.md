@@ -208,19 +208,23 @@ max_bytes = 268435456
 Configuration is discovered as `.bbtidy.toml` in the current directory and
 then its parents. Use `--config PATH` to select a file explicitly or
 `--no-config` to disable discovery. Exclusion globs are relative to the
-configuration file and do not exclude standard input.
+configuration file and apply to explicit paths, recursive discovery, and
+BitBake workspace files; they do not exclude standard input. Excluded
+workspace metadata is removed before class/include resolution and
+recipe-specific BitBake discovery.
 
 ## Repository-wide safety
 
 The default repository-wide limits are 10,000 discovered files and 256 MiB of
-original source per formatting invocation. Set lower limits for an initial
-rollout and raise them deliberately when the repository is known to require
-more. `--max-files` and `--max-bytes` override the configured limits for one
-invocation.
+original source per `format` or `lint` invocation. Set lower limits for an
+initial rollout and raise them deliberately when the repository is known to
+require more. `--max-files` and `--max-bytes` override the configured limits
+for either command, including `lint --workspace`.
 
 Before writing, bbtidy reads and formats the complete input set, checks the
 limits, stages recovery copies, and checks that sources have not changed. It
-refuses symbolic links and does not replace any file when a later input fails.
+refuses symbolic links, including directory roots, and does not replace any
+file when a later input fails.
 If a write or commit step fails, already replaced files are restored from the
 staged recovery copies. These controls reduce accidental damage; they do not
 replace version control, backups, or review.

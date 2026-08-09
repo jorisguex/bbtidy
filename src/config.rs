@@ -14,7 +14,7 @@ const CONFIG_FILE_NAME: &str = ".bbtidy.toml";
 const DEFAULT_MAX_FILES: usize = 10_000;
 const DEFAULT_MAX_BYTES: u64 = 256 * 1024 * 1024;
 
-/// Limits the amount of source a single format invocation may process.
+/// Limits the amount of source a single format or lint invocation may process.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SafetyOptions {
     /// Maximum number of discovered or explicitly supplied files.
