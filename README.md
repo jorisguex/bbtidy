@@ -214,8 +214,9 @@ Semantic JSON is a versioned object with `version: 1`, the selected BitBake
 executable and version, resolved project and build directories,
 `build_context_source`, requested targets and variables, parse and target-query
 status, source-aware BitBake diagnostics, selected target environments, and a
-target result for every requested target. Diagnostics identify their parse or
-target-query phase, target when applicable, output stream, severity, message,
+target result for every requested target. Diagnostics identify their parse,
+target-query, graph, dry-run, inventory, or package-summary phase, target when
+applicable, output stream, severity, message,
 and optional source location fields. Text output remains the default. The Rust
 API retains each complete `bitbake -e` dump through
 `SemanticEnvironment::raw`; the JSON report omits that verbose field. The
@@ -381,7 +382,7 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT016` | `duplicate-assignment` | A variable is assigned directly more than once in one file | Manual |
 | `BBT017` | `duplicate-function` | A task or function is declared more than once in one file | Manual |
 | `BBT018` | `empty-directive` | A static dependency directive has no target | Manual |
-| `BBT019` | `bitbake-diagnostic` | A BitBake parse or target-query diagnostic | Manual |
+| `BBT019` | `bitbake-diagnostic` | A BitBake semantic diagnostic from parsing, querying, graphing, inventory, or build-plan analysis | Manual |
 | `BBT020` | `recipe-name` | An explicit `PN` does not match the recipe filename | Manual |
 | `BBT021` | `recipe-version` | An explicit `PV` does not match the recipe filename | Manual |
 | `BBT022` | `license-checksum` | A non-`CLOSED` recipe lacks valid license file checksums | Manual |
@@ -474,9 +475,12 @@ to BitBake.
 
 When `lint --semantic` is selected, BitBake becomes the authoritative semantic
 boundary. Its parse diagnostics are emitted as `BBT019`; target environment
-queries additionally validate resolved recipe metadata and fetch URLs. This
-does not replace the normal `semantic` command, which remains the query-focused
-API for inspecting arbitrary expanded variables and complete BitBake reports.
+queries additionally validate resolved recipe identity/version, license and
+source checksums, `PACKAGECONFIG`, package declarations/scopes, `SRC_URI`
+parameters, effective layer collection metadata (`BBT020` through `BBT033`),
+and resolved override components (`BBT037`). This does not replace the normal
+`semantic` command, which remains the query-focused API for inspecting
+arbitrary expanded variables and complete BitBake reports.
 
 ## Lossless syntax tree
 

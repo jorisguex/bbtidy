@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Rich BitBake analysis output for `semantic` and `lint --semantic`, including
   requested variables, phase- and stream-aware diagnostics, per-target query
   results, and selected resolved environments in JSON and SARIF provenance.
+- Broader authoritative semantic QA for resolved recipe identity/version,
+  checksums, `PACKAGECONFIG`, package scopes/lists, `SRC_URI` parameters, layer
+  collections, and override components (`BBT020` through `BBT033` and `BBT037`).
 - Opt-in BitBake-backed semantic linting through `lint --semantic`, including
   source-aware `BBT019` diagnostics, resolved target metadata checks, and JSON
   semantic provenance.

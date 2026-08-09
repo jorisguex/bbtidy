@@ -740,6 +740,7 @@ pub fn semantic_lint_diagnostics(
 
     for environment in report.environments() {
         let label = format!("bitbake -e {}", environment.target());
+        let resolved_values = environment.resolved_values();
         for (rule, variable, message) in [
             (
                 &LINT_RULES[10],
@@ -757,7 +758,7 @@ pub fn semantic_lint_diagnostics(
                 "BitBake resolved LICENSE to an empty value",
             ),
         ] {
-            if environment
+            if resolved_values
                 .get(variable)
                 .is_some_and(|value| !value.trim().is_empty())
             {
@@ -778,10 +779,10 @@ pub fn semantic_lint_diagnostics(
             });
         }
 
-        if environment
+        if resolved_values
             .get("SRCREV")
             .is_some_and(|value| value.contains("${AUTOREV}") || value.contains("AUTOINC"))
-            || environment
+            || resolved_values
                 .get("SRCPV")
                 .is_some_and(|value| value.contains("AUTOINC"))
         {
@@ -800,7 +801,7 @@ pub fn semantic_lint_diagnostics(
             });
         }
 
-        if let Some(value) = environment.get("SRC_URI") {
+        if let Some(value) = resolved_values.get("SRC_URI") {
             for uri in value.split_whitespace() {
                 if uri.starts_with("git://")
                     && !uri.split(';').any(|part| part.starts_with("protocol="))
@@ -874,12 +875,15 @@ pub fn semantic_lint_diagnostics(
             }
         }
 
-        if environment.get("LICENSE").is_some_and(|value| {
+        if resolved_values.get("LICENSE").is_some_and(|value| {
             !value
                 .split_ascii_whitespace()
                 .any(|license| license == "CLOSED")
         }) {
-            let checksum = environment.get("LIC_FILES_CHKSUM").unwrap_or_default();
+            let checksum = resolved_values
+                .get("LIC_FILES_CHKSUM")
+                .map(String::as_str)
+                .unwrap_or_default();
             let file_entries = checksum
                 .split_whitespace()
                 .filter(|uri| uri.starts_with("file://"))
@@ -903,7 +907,7 @@ pub fn semantic_lint_diagnostics(
                 .any(|uri| !has_valid_checksum(uri, "md5") && !has_valid_checksum(uri, "sha256"))
             {
                 findings.push(ExternalLintDiagnostic {
-                    label,
+                    label: label.clone(),
                     diagnostic: LintDiagnostic::external(
                         &LINT_RULES[RULE_LICENSE_CHECKSUM],
                         LINT_RULES[RULE_LICENSE_CHECKSUM].severity(),
@@ -917,6 +921,8 @@ pub fn semantic_lint_diagnostics(
                 });
             }
         }
+
+        check_resolved_broader_qa(environment, &resolved_values, &label, &mut findings);
     }
 
     findings.retain(|finding| options.is_enabled(finding.diagnostic.rule_id()));
@@ -938,6 +944,331 @@ pub fn semantic_lint_diagnostics(
             ))
     });
     findings
+}
+
+fn check_resolved_broader_qa(
+    environment: &crate::semantic::SemanticEnvironment,
+    values: &BTreeMap<String, String>,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    check_resolved_recipe_identity(values, environment.target(), label, findings);
+    check_resolved_packageconfig(values, environment.target(), label, findings);
+    check_resolved_package_scope(values, environment.target(), label, findings);
+    check_resolved_layer_qa(values, environment.target(), label, findings);
+    check_resolved_unknown_overrides(values, environment.target(), label, findings);
+}
+
+fn check_resolved_recipe_identity(
+    values: &BTreeMap<String, String>,
+    target: &str,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    let Some(file) = values.get("FILE").filter(|value| !value.trim().is_empty()) else {
+        return;
+    };
+    let Some(stem) = Path::new(file).file_stem().and_then(|stem| stem.to_str()) else {
+        return;
+    };
+    let Some((expected_name, expected_version)) = stem.rsplit_once('_') else {
+        return;
+    };
+    if expected_name.is_empty()
+        || expected_version.is_empty()
+        || expected_name.contains(['$', '%'])
+        || expected_version.contains(['$', '%'])
+    {
+        return;
+    }
+
+    if let Some(value) = values.get("PN")
+        && !value.contains('$')
+        && value != expected_name
+    {
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_RECIPE_NAME],
+            format!(
+                "target '{target}' resolves PN '{value}', which does not match recipe filename name '{expected_name}'"
+            ),
+        );
+    }
+    if let Some(value) = values.get("PV")
+        && !value.contains('$')
+        && value != expected_version
+    {
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_RECIPE_VERSION],
+            format!(
+                "target '{target}' resolves PV '{value}', which does not match recipe filename version '{expected_version}'"
+            ),
+        );
+    }
+}
+
+fn check_resolved_packageconfig(
+    values: &BTreeMap<String, String>,
+    target: &str,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    let enabled = values
+        .get("PACKAGECONFIG")
+        .into_iter()
+        .flat_map(|value| value.split_whitespace())
+        .filter(|feature| !feature.is_empty())
+        .collect::<BTreeSet<_>>();
+    let definitions = values
+        .keys()
+        .filter_map(|name| packageconfig_feature(name).map(str::to_owned))
+        .collect::<BTreeSet<_>>();
+
+    for feature in &enabled {
+        if definitions.contains(*feature) {
+            continue;
+        }
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_PACKAGECONFIG],
+            format!(
+                "target '{target}' enables PACKAGECONFIG feature '{feature}' without a resolved PACKAGECONFIG[{feature}] definition"
+            ),
+        );
+    }
+
+    for (name, value) in values {
+        let Some(feature) = packageconfig_feature(name) else {
+            continue;
+        };
+        let fields = value.split(',').collect::<Vec<_>>();
+        if !(3..=4).contains(&fields.len()) {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_PACKAGECONFIG_FORMAT],
+                format!(
+                    "target '{target}' resolves PACKAGECONFIG feature '{feature}' with {} fields; expected 3 or 4",
+                    fields.len()
+                ),
+            );
+        }
+    }
+}
+
+fn check_resolved_package_scope(
+    values: &BTreeMap<String, String>,
+    target: &str,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    let Some(packages_value) = values.get("PACKAGES") else {
+        return;
+    };
+    let mut packages = BTreeSet::new();
+    for package in packages_value.split_whitespace() {
+        if !packages.insert(package) {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_PACKAGE_LIST],
+                format!(
+                    "target '{target}' resolves package '{package}' more than once in PACKAGES"
+                ),
+            );
+        }
+    }
+    if packages.is_empty() {
+        return;
+    }
+
+    for name in values.keys() {
+        let Some(package) = package_scope(name) else {
+            continue;
+        };
+        if packages.contains(package) {
+            continue;
+        }
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_PACKAGE_SCOPE],
+            format!("target '{target}' resolves {name} for undeclared package '{package}'"),
+        );
+    }
+}
+
+fn check_resolved_layer_qa(
+    values: &BTreeMap<String, String>,
+    target: &str,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    let Some(collections_value) = values.get("BBFILE_COLLECTIONS") else {
+        return;
+    };
+    let collection_names = collections_value
+        .split_whitespace()
+        .filter(|collection| !collection.is_empty())
+        .collect::<Vec<_>>();
+    if collection_names.is_empty() {
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_LAYER_COLLECTIONS],
+            format!("target '{target}' resolves no BBFILE_COLLECTIONS entries"),
+        );
+        return;
+    }
+    let mut collections = BTreeSet::new();
+    for collection in collection_names {
+        if !collections.insert(collection) {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_LAYER_COLLECTIONS],
+                format!(
+                    "target '{target}' resolves layer collection '{collection}' more than once"
+                ),
+            );
+        }
+    }
+
+    for collection in &collections {
+        let pattern_name = format!("BBFILE_PATTERN_{collection}");
+        if values
+            .get(&pattern_name)
+            .is_none_or(|value| value.trim().is_empty())
+        {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_LAYER_PATTERN],
+                format!(
+                    "target '{target}' resolves layer collection '{collection}' without a non-empty {pattern_name}"
+                ),
+            );
+        }
+
+        let priority_name = format!("BBFILE_PRIORITY_{collection}");
+        if values
+            .get(&priority_name)
+            .and_then(|value| value.trim().parse::<i32>().ok())
+            .is_none()
+        {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_LAYER_PRIORITY],
+                format!("target '{target}' resolves {priority_name} to a non-integer value"),
+            );
+        }
+
+        let compat_name = format!("LAYERSERIES_COMPAT_{collection}");
+        if values
+            .get(&compat_name)
+            .is_none_or(|value| value.trim().is_empty())
+        {
+            add_semantic_finding(
+                findings,
+                label,
+                &LINT_RULES[RULE_LAYER_SERIES_COMPAT],
+                format!(
+                    "target '{target}' resolves layer collection '{collection}' without a non-empty {compat_name}"
+                ),
+            );
+        }
+
+        let depends_name = format!("LAYERDEPENDS_{collection}");
+        if let Some(depends) = values.get(&depends_name) {
+            for dependency in depends.split_whitespace() {
+                if dependency.starts_with('(')
+                    || dependency.ends_with(')')
+                    || collections.contains(dependency)
+                {
+                    continue;
+                }
+                add_semantic_finding(
+                    findings,
+                    label,
+                    &LINT_RULES[RULE_LAYER_DEPENDS],
+                    format!(
+                        "target '{target}' resolves {depends_name} with unknown layer collection '{dependency}'"
+                    ),
+                );
+            }
+        }
+    }
+}
+
+fn check_resolved_unknown_overrides(
+    values: &BTreeMap<String, String>,
+    target: &str,
+    label: &str,
+    findings: &mut Vec<ExternalLintDiagnostic>,
+) {
+    let Some(overrides_value) = values.get("OVERRIDES") else {
+        return;
+    };
+    let active = overrides_value
+        .split(':')
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>();
+    if active.is_empty() {
+        return;
+    }
+
+    for name in values.keys() {
+        if package_scope(name).is_some()
+            || packageconfig_feature(name).is_some()
+            || name.starts_with("BBFILE_PATTERN_")
+            || name.starts_with("BBFILE_PRIORITY_")
+            || name.starts_with("LAYERDEPENDS_")
+            || name.starts_with("LAYERSERIES_COMPAT_")
+        {
+            continue;
+        }
+        let Ok(key) = parse_override_key_with_overrides(name, &active) else {
+            continue;
+        };
+        if key.is_dynamic() || key.overrides().is_empty() {
+            continue;
+        }
+        let unknown = key
+            .overrides()
+            .iter()
+            .filter(|component| !active.contains(&component.as_str()))
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        if unknown.is_empty() {
+            continue;
+        }
+        add_semantic_finding(
+            findings,
+            label,
+            &LINT_RULES[RULE_UNKNOWN_OVERRIDE],
+            format!(
+                "target '{target}' resolves assignment '{name}' with override component(s) not present in OVERRIDES: {}",
+                unknown.join(", ")
+            ),
+        );
+    }
+}
+
+fn add_semantic_finding(
+    findings: &mut Vec<ExternalLintDiagnostic>,
+    label: &str,
+    rule: &'static LintRule,
+    message: String,
+) {
+    findings.push(ExternalLintDiagnostic {
+        label: label.to_owned(),
+        diagnostic: LintDiagnostic::external(rule, rule.severity(), None, None, message),
+    });
 }
 
 /// Runs BitBake and converts its semantic results into lint diagnostics.

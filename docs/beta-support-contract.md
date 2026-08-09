@@ -122,7 +122,10 @@ does not mean that the entire BitBake build is free of issues.
 requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
-metadata, source checksum, and source URI rules where applicable. Its optional
+broader recipe and layer QA rules for identity/version, checksums,
+`PACKAGECONFIG`, package declarations/scopes, `SRC_URI` parameters, effective
+layer collection metadata (`BBT020` through `BBT033`), and resolved override
+components (`BBT037`). Its optional
 full build analysis adds BitBake-produced dependency graphs, a non-executing
 dry-run task plan, recipe/provider inventory, and resolved package/image
 metadata. Static file-local linting remains the default and continues to avoid

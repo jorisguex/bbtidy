@@ -1240,6 +1240,66 @@ exit 0
 
 #[cfg(unix)]
 #[test]
+fn semantic_lint_reports_broader_resolved_qa_rules_in_machine_output() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = TemporaryDirectory::new("lint-bitbake-broader-qa");
+    directory.write("build/conf/local.conf", "MACHINE = \"qemux86-64\"\n");
+    directory.write("build/conf/bblayers.conf", "BBLAYERS = \"/layer\"\n");
+    let recipe = directory.write("recipes-demo/wrong_1.0.bb", "SUMMARY = \"demo\"\n");
+    let bitbake = directory.write(
+        "fake-bitbake",
+        r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf 'FILE="/layer/recipes-demo/wrong_1.0.bb"\nPN="other"\nPV="2.0"\nSUMMARY="demo"\nDESCRIPTION="demo"\nLICENSE="MIT"\nLIC_FILES_CHKSUM="file://LICENSE"\nSRC_URI="https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https"\nPACKAGECONFIG="defined missing"\nPACKAGECONFIG[defined]="--enable-defined"\nPACKAGES="demo demo"\nFILES:missing="/missing"\nOVERRIDES="machine"\nUNRESOLVED:unknown="bad"\nBBFILE_COLLECTIONS="core core other"\nBBFILE_PATTERN_core=""\nBBFILE_PRIORITY_core="not-an-integer"\nLAYERDEPENDS_core="missing"\nBBFILE_PATTERN_other="^/other/"\nBBFILE_PRIORITY_other="1"\nLAYERSERIES_COMPAT_other="test"\n'
+  exit 0
+fi
+exit 0
+"###,
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let output = run([
+        "lint",
+        "--semantic",
+        "--build-dir",
+        directory.path().join("build").to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--output",
+        "json",
+        recipe.to_str().unwrap(),
+    ]);
+
+    assert_eq!(output.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let ids = report["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|diagnostic| diagnostic["rule_id"].as_str())
+        .collect::<Vec<_>>();
+    for expected in [
+        "BBT020", "BBT021", "BBT022", "BBT023", "BBT024", "BBT025", "BBT026", "BBT027", "BBT028",
+        "BBT029", "BBT030", "BBT031", "BBT032", "BBT033", "BBT037",
+    ] {
+        assert!(ids.contains(&expected), "missing {expected} in {ids:?}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn semantic_lint_requires_the_semantic_flag_for_bitbake_options() {
     let directory = TemporaryDirectory::new("lint-bitbake-flag");
     let file = directory.write("example.bb", "SUMMARY = \"demo\"\n");

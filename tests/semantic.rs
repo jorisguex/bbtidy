@@ -130,6 +130,31 @@ fn semantic_lint_api_converts_bitbake_results_into_rule_diagnostics() {
 
 #[cfg(unix)]
 #[test]
+fn semantic_lint_applies_broader_resolved_recipe_and_layer_qa() {
+    let fixture = FakeBitBake::semantic_qa();
+    let options = SemanticOptions {
+        bitbake: fixture.bitbake.clone(),
+        build_dir: fixture.build_dir.clone(),
+        targets: vec!["demo".to_owned()],
+        ..SemanticOptions::default()
+    };
+
+    let (report, findings) = lint_with_bitbake(&options, &LintOptions::default()).unwrap();
+    assert!(report.analysis_succeeded());
+    let ids = findings
+        .iter()
+        .map(|finding| finding.diagnostic.rule_id())
+        .collect::<Vec<_>>();
+    for expected in [
+        "BBT020", "BBT021", "BBT022", "BBT023", "BBT024", "BBT025", "BBT026", "BBT027", "BBT028",
+        "BBT029", "BBT030", "BBT031", "BBT032", "BBT033", "BBT037",
+    ] {
+        assert!(ids.contains(&expected), "missing {expected} in {ids:?}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn parse_failures_include_bitbake_source_locations() {
     let fixture = FakeBitBake::new(true);
     let options = SemanticOptions {
@@ -276,18 +301,27 @@ struct FakeBitBake {
 #[cfg(unix)]
 impl FakeBitBake {
     fn new(parse_failure: bool) -> Self {
-        Self::create(parse_failure, false, false)
+        Self::create(parse_failure, false, false, false)
     }
 
     fn target_failure() -> Self {
-        Self::create(false, true, false)
+        Self::create(false, true, false, false)
     }
 
     fn full_analysis() -> Self {
-        Self::create(false, false, true)
+        Self::create(false, false, true, false)
     }
 
-    fn create(parse_failure: bool, target_failure: bool, full_analysis: bool) -> Self {
+    fn semantic_qa() -> Self {
+        Self::create(false, false, false, true)
+    }
+
+    fn create(
+        parse_failure: bool,
+        target_failure: bool,
+        full_analysis: bool,
+        semantic_qa: bool,
+    ) -> Self {
         use std::os::unix::fs::PermissionsExt;
 
         let root = loop {
@@ -316,7 +350,23 @@ impl FakeBitBake {
         .unwrap();
 
         let bitbake = root.join("bitbake");
-        let script = if full_analysis {
+        let script = if semantic_qa {
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  echo 'NOTE: Parsing recipes'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf 'FILE="/layer/recipes-demo/wrong_1.0.bb"\nPN="other"\nPV="2.0"\nSUMMARY="demo"\nDESCRIPTION="demo"\nLICENSE="MIT"\nLIC_FILES_CHKSUM="file://LICENSE"\nSRC_URI="https://example.invalid/source.tar.gz;branch=main git://example.invalid/source.git;protocol=https;protocol=https"\nPACKAGECONFIG="defined missing"\nPACKAGECONFIG[defined]="--enable-defined"\nPACKAGES="demo demo"\nFILES:missing="/missing"\nOVERRIDES="machine"\nUNRESOLVED:unknown="bad"\nBBFILE_COLLECTIONS="core core other"\nBBFILE_PATTERN_core=""\nBBFILE_PRIORITY_core="not-an-integer"\nLAYERDEPENDS_core="missing"\nBBFILE_PATTERN_other="^/other/"\nBBFILE_PRIORITY_other="1"\nLAYERSERIES_COMPAT_other="test"\n'
+  exit 0
+fi
+exit 0
+"###
+        } else if full_analysis {
             r###"#!/bin/sh
 if [ "$1" = "--version" ]; then
   echo 'BitBake Build Tool Core version 2.8.1'

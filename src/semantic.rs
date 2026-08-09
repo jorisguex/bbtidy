@@ -233,6 +233,16 @@ impl SemanticEnvironment {
     pub fn raw(&self) -> &str {
         &self.raw
     }
+
+    /// Returns all scalar values parsed from the complete BitBake environment.
+    ///
+    /// The regular [`Self::variables`] map remains intentionally selective for
+    /// compact reports. Semantic QA uses this crate-visible view so dynamic
+    /// flag and package-scoped variable names can be checked after BitBake has
+    /// expanded them.
+    pub(crate) fn resolved_values(&self) -> BTreeMap<String, String> {
+        parse_environment_values(&self.raw)
+    }
 }
 
 /// The outcome of querying one requested BitBake target.

@@ -108,10 +108,13 @@ bbtidy lint --semantic \
 
 This runs the BitBake parse and target environment queries in addition to the
 static lint rules. BitBake diagnostics are reported as `BBT019`, and resolved
-metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, license and
-source checksums, source revision, and `SRC_URI` values. It requires file inputs
-and an initialized build directory; standard input is not supported in semantic
-mode. Additional `--variable NAME` options are included in the machine-readable
+metadata checks cover dynamic `SUMMARY`, `DESCRIPTION`, `LICENSE`, recipe
+identity/version, license and source checksums, `PACKAGECONFIG`, package
+declarations/scopes, source revision, `SRC_URI` parameters, and effective layer
+collection metadata (`BBT020` through `BBT033`), and resolved override
+components (`BBT037`). It requires file inputs and an
+initialized build directory; standard input is not supported in semantic mode.
+Additional `--variable NAME` options are included in the machine-readable
 semantic report. JSON and SARIF preserve the parse/target-query phase, output
 stream, target result, diagnostics, and selected resolved environments.
 
@@ -129,11 +132,11 @@ control-flow pairing, Python delimiters/compound-statement syntax, and Python
 indentation. These checks do not execute code or external tools, and formatting
 continues to leave shell and Python body bytes unchanged.
 
-When `OVERRIDES` is statically known, lint also normalizes modern colon and
+When `OVERRIDES` is statically known, offline lint normalizes modern colon and
 unambiguous legacy underscore keys, resolves active precedence, and applies
 `append`, `prepend`, and `remove` operations. `BBT037` identifies literal
-override components missing from `OVERRIDES`; dynamic expansion remains a
-BitBake-semantic concern.
+override components missing from `OVERRIDES`; `lint --semantic` performs the
+same check against BitBake's expanded environment.
 
 ## CI integration
 
