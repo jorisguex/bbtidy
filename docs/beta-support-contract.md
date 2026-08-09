@@ -60,7 +60,7 @@ The beta contract does not promise compatibility for:
 
 - BitBake versions older than 2.8;
 - vendor-modified or otherwise unpinned BitBake forks;
-- dynamic file and class references that bbtidy cannot resolve statically;
+- dynamic file and class references in the offline static analysis model;
 - external classes or files not included in the indexed input set;
 - dynamically ambiguous legacy underscore overrides as semantic override
   operations; or
@@ -68,9 +68,9 @@ The beta contract does not promise compatibility for:
 
 Unsupported input is preserved where possible. Preservation does not mean that
 the input was fully understood or semantically validated. These static
-limitations apply to the formatter and offline lint/workspace model; the
-`semantic` command uses the installed BitBake engine when a build context is
-available.
+limitations apply to the formatter, file-local linting, and offline
+`WorkspaceIndex` API. The CLI `lint --workspace` mode and the `semantic`
+command use the installed BitBake engine when a build context is available.
 
 ## Command guarantees
 
@@ -101,28 +101,32 @@ bounded by configurable file-count and source-byte limits.
 Linting reports findings only within the selected analysis scope. File-local
 linting does not claim to resolve a complete layer. Layer-aware linting only
 uses files supplied in the indexed input set, while `--workspace` derives that
-set from the configured build and only resolves static references.
+set from BitBake's resolved build context.
 
-`lint --workspace BUILD_DIR` is the complete offline workspace mode. It reads
-static `BBLAYERS` assignments from `BUILD_DIR/conf/bblayers.conf`, indexes each
-listed layer and the build's `conf` metadata, and runs static rules across that
-whole scope. It expands `TOPDIR` and environment-backed path variables,
-rejects missing layers or dynamic `BBLAYERS` values, and never silently falls
-back to a partial workspace.
+`lint --workspace BUILD_DIR` is the BitBake-backed whole-build workspace mode.
+It invokes the selected BitBake executable, requires its complete parse to
+succeed, and obtains the expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
+per-recipe `BBINCLUDED` values from the engine. It therefore includes dynamic
+layers, classes, includes, overrides, and external metadata that BitBake
+actually resolves. A BitBake invocation or resolution failure is an
+operational error; bbtidy never silently falls back to a partial workspace.
 
-Dynamic values, dynamic class names, unavailable external providers, and
-embedded shell or Python behavior are not evaluated. A clean lint result means
-that no enabled rule found a diagnostic in the analyzed scope; it does not mean
-that the entire BitBake build is free of issues.
+The public offline `WorkspaceIndex::from_build_dir` API remains available for
+callers that explicitly need source-level static indexing. Dynamic values,
+dynamic class names, unavailable external providers, and embedded shell or
+Python behavior remain outside that offline model. A clean BitBake-backed lint
+result means that no enabled rule found a diagnostic in the resolved scope; it
+does not mean that the entire BitBake build is free of issues.
 
-`lint --semantic` is the opt-in authoritative path for closing this boundary.
-It requires an initialized BitBake build context, runs BitBake's parse, and can
+`lint --semantic` is the opt-in authoritative target-analysis overlay. It
+requires an initialized BitBake build context, runs BitBake's parse, and can
 query one or more explicit targets with `bitbake -e`. BitBake warnings and
 errors are reported as `BBT019`; resolved target values are checked by the
 metadata, source checksum, and source URI rules where applicable. Static
-linting remains the default and continues to avoid invoking BitBake. Machine
-readable lint output preserves the semantic diagnostics, selected resolved
-variables, and per-target query outcomes under its `semantic` report object.
+file-local linting remains the default and continues to avoid invoking
+BitBake. Machine-readable lint output preserves the semantic diagnostics,
+selected resolved variables, and per-target query outcomes under its
+`semantic` report object.
 
 The static catalog includes recipe and layer QA rules in `BBT020` through
 `BBT033`. Recipe QA validates explicit filename identity/version values,
@@ -205,8 +209,9 @@ it would not be discovered recursively.
 
 The offline workspace model remains intentionally conservative. It understands
 the static layer metadata and search behavior documented by bbtidy, but it does
-not execute BitBake variable expansion or Python expressions. Use `semantic`
-when full BitBake semantics are required.
+not execute BitBake variable expansion or Python expressions. The CLI's
+`lint --workspace` mode uses the BitBake-backed resolver; use
+`WorkspaceIndex::from_build_dir` only when an offline static index is desired.
 
 ## User acceptance checklist
 

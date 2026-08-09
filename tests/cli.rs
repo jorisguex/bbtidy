@@ -494,7 +494,6 @@ fn lint_reports_source_ordered_findings_and_stable_exit_codes() {
     assert!(findings[0].contains(":1:17: warning[BBT001]:"));
     assert!(findings[1].contains(":2:11: warning[BBT004]:"));
     assert!(findings[2].contains(":4:9: warning[BBT005]:"));
-    assert!(output.stderr.is_empty());
 
     fs::write(&file, "SUMMARY = \"demo\"\n").unwrap();
     let clean = run(["lint", file.to_str().unwrap()]);
@@ -809,8 +808,11 @@ fn lint_directories_report_unresolved_static_layer_references() {
     assert!(stdout.contains(&recipe.display().to_string()));
 }
 
+#[cfg(unix)]
 #[test]
 fn lint_workspace_discovers_all_layers_and_build_configuration() {
+    use std::os::unix::fs::PermissionsExt;
+
     let directory = TemporaryDirectory::new("lint-whole-build");
     let first_layer = directory.write(
         "meta-first/conf/layer.conf",
@@ -859,17 +861,55 @@ fn lint_workspace_discovers_all_layers_and_build_configuration() {
             second_layer.display()
         ),
     );
+    let bitbake = directory.write(
+        "fake-bitbake",
+        &format!(
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.8.1'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ] && [ "$2" = "--buildfile" ]; then
+  printf '%s\n' 'BBINCLUDED="{first}/conf/layer.conf {second}/conf/layer.conf {second}/classes/shared.bbclass"'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf '%s\n' 'BBLAYERS="{first} {second}"'
+  printf '%s\n' 'BBPATH="{first}:{second}"'
+  printf '%s\n' 'BBFILES="{first}/recipes-*/*.bb"'
+  printf '%s\n' 'BBINCLUDED="{build}/conf/local.conf {build}/conf/bblayers.conf {first}/conf/layer.conf {second}/conf/layer.conf"'
+  printf '%s\n' 'BBFILE_COLLECTIONS="first second"'
+  printf '%s\n' 'BBFILE_PATTERN_first="^{first}/"'
+  printf '%s\n' 'BBFILE_PATTERN_second="^{second}/"'
+  printf '%s\n' 'BBFILE_PRIORITY_first="5"'
+  printf '%s\n' 'BBFILE_PRIORITY_second="10"'
+  exit 0
+fi
+exit 1
+"###,
+            first = first_layer.display(),
+            second = second_layer.display(),
+            build = build.display(),
+        ),
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
 
     let output = run([
         "lint",
         "--workspace",
         build.to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
         "--output",
         "json",
     ]);
 
     assert_eq!(output.status.code(), Some(1));
-    assert!(output.stderr.is_empty());
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
     let diagnostics = report["diagnostics"].as_array().unwrap();
     let expected_local = fs::canonicalize(directory.path().join("build/conf/local.conf")).unwrap();

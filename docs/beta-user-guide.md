@@ -54,12 +54,15 @@ For a complete configured build, lint every listed layer and build
 configuration file together:
 
 ```bash
-bbtidy lint --workspace build
+bbtidy lint --workspace build --bitbake bitbake
 ```
 
-This reads static `BBLAYERS` entries from `build/conf/bblayers.conf`. Missing
-or dynamically computed layer paths are reported as an operational error so a
-successful run never represents only part of the configured build.
+This invokes BitBake and uses its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
+per-recipe `BBINCLUDED` values. Dynamically computed layers, includes, and
+classes are therefore resolved by the installed engine. A BitBake invocation
+or resolution failure is reported as an operational error, so a successful
+run never represents only part of the configured build. Use `--bitbake PATH` or
+`[semantic].bitbake` when BitBake is not on `PATH`.
 
 Review the diff and lint findings. Then run the repository's normal BitBake
 parse, build, and test validation. If the results are acceptable, apply the

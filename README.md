@@ -40,9 +40,9 @@ the [beta user guide](docs/beta-user-guide.md).
 - **Layer-wide operation**: Recursively discovers supported BitBake files in
   deterministic path order and indexes complete supplied layers for semantic
   checks.
-- **Whole-build workspace linting**: `lint --workspace` reads a configured
-  build's `BBLAYERS`, indexes every selected layer plus build configuration, and
-  resolves static references across the complete build scope.
+- **Whole-build workspace linting**: `lint --workspace` asks BitBake for the
+  expanded build scope, indexes every resolved layer plus build configuration,
+  and resolves dynamic includes/classes across the complete parsed workspace.
 - **Actionable linting**: Reports stable rule IDs, severity, source ranges, help,
   and safe edit suggestions, with transactional `lint --fix` support for
   whitespace and final-newline findings.
@@ -127,14 +127,16 @@ To lint every configured layer and build configuration file in a BitBake
 workspace:
 
 ```bash
-bbtidy lint --workspace build
+bbtidy lint --workspace build --bitbake bitbake
 ```
 
-Workspace mode reads static `BBLAYERS` assignments from
-`build/conf/bblayers.conf`, expands `TOPDIR` and environment-backed paths, and
-fails if a layer path is missing or dynamically computed. It includes the
-build's `conf` tree and all metadata under each listed layer, while still
-honoring configured path exclusions and safety limits.
+Workspace mode asks the selected BitBake engine to parse the build, then uses
+its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and per-recipe `BBINCLUDED`
+values. This means dynamically computed layers, classes, includes, overrides,
+and external metadata are resolved by BitBake rather than reconstructed from
+source-level assignments. A BitBake invocation failure is an operational
+error; bbtidy never falls back to a partial static workspace. Use
+`--bitbake PATH` or `[semantic].bitbake` when the engine is not on `PATH`.
 
 To combine static linting with authoritative BitBake semantics:
 
@@ -400,13 +402,18 @@ identity, license/source checksums, `PACKAGECONFIG` definitions, package
 declarations/scopes, and `SRC_URI` parameters. When `lint` receives a complete
 layer directory, it indexes the supplied metadata into a static dependency
 graph. `lint --workspace BUILD_DIR` instead loads every configured layer from
-`conf/bblayers.conf` and includes the build's `conf` metadata in the same graph.
+`conf/bblayers.conf` through BitBake, then includes the build's `conf`
+metadata and every file reported by BitBake's `BBINCLUDED` environments in the
+same graph.
 The graph follows
 the effective target of `include`, `require`, `inherit`, and `inherit_defer`,
 and every target of `include_all`; it reports cycles but skips dynamic and
-unresolved optional references. The workspace model reads `BBFILE_COLLECTIONS`,
-`BBFILE_PATTERN_*`, `BBFILE_PRIORITY_*`, and simple static `BBPATH` entries
-from each supplied `conf/layer.conf`. A relative `include` or `require` first
+unresolved optional references. The offline workspace model reads
+`BBFILE_COLLECTIONS`, `BBFILE_PATTERN_*`, `BBFILE_PRIORITY_*`, and static
+`BBPATH` entries from supplied `conf/layer.conf` files. The CLI's
+BitBake-backed workspace mode instead uses BitBake's expanded values, so
+dynamic layer and search-path expressions are resolved by the engine. A
+relative `include` or `require` first
 checks the directory containing the current file and then searches `BBPATH`;
 `include_all` searches only `BBPATH` and retains every match. Inherited classes
 use BitBake's context-specific namespaces: recipe parsing searches
@@ -422,9 +429,11 @@ and cycle diagnostics identify the selected target's layer, collection,
 priority, and search scope. The public `WorkspaceCandidate`,
 `WorkspaceClassContext`, and `WorkspaceDependency` APIs expose the corresponding
 resolution and graph information. Single-file and standard-input linting remain
-file-local, and dynamic references are skipped. Whole-build mode rejects
-unresolved dynamic `BBLAYERS` entries rather than analyzing only a partial
-workspace.
+file-local, and dynamic references are skipped. Whole-build mode reports
+BitBake resolution failures rather than analyzing only a partial workspace.
+The public `WorkspaceIndex::from_build_dir` API remains available for callers
+that explicitly need the offline static model; the CLI workspace mode uses
+`WorkspaceIndex::from_bitbake`.
 
 Layer QA rules `BBT029` through `BBT033` validate static collection names,
 patterns, priorities, collection dependencies, and series compatibility in

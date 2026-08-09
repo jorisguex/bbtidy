@@ -1,8 +1,10 @@
 use crate::{AssignmentOperator, DirectiveKeyword, SyntaxKind, SyntaxTree, comment_start, parse};
+use globset::Glob;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 
 const DEFAULT_LAYER_PRIORITY: i32 = 0;
 
@@ -148,8 +150,10 @@ impl<'a> WorkspaceCandidate<'a> {
 /// [`WorkspaceIndex::from_paths`] deliberately considers only files supplied
 /// by the caller, making single-file linting safe: semantic findings are
 /// emitted only when a complete layer, including its `conf/layer.conf`, is
-/// present in the input set. [`WorkspaceIndex::from_build_dir`] instead
-/// discovers the complete static scope declared by a build's `BBLAYERS`.
+/// present in the input set. [`WorkspaceIndex::from_build_dir`] discovers the
+/// complete static scope declared by a build's `BBLAYERS`, while
+/// [`WorkspaceIndex::from_bitbake`] obtains the authoritative resolved scope
+/// from the BitBake engine.
 /// Layer metadata is used to build a deterministic BBPATH search order; layer
 /// priority remains the fallback when the supplied metadata does not describe
 /// a more specific path order.
@@ -161,6 +165,7 @@ pub struct WorkspaceIndex {
     files: BTreeSet<PathBuf>,
     build_files: BTreeSet<PathBuf>,
     build_root: Option<PathBuf>,
+    authoritative: bool,
 }
 
 impl WorkspaceIndex {
@@ -213,6 +218,92 @@ impl WorkspaceIndex {
         Self::from_canonical_files(files, build_files, roots)
     }
 
+    /// Builds an index from BitBake's resolved metadata rather than
+    /// reconstructing the build context from source-level assignments.
+    ///
+    /// BitBake first parses the complete build, then exposes its expanded
+    /// `BBFILES`, `BBPATH`, and `BBINCLUDED` values through `-e`. The latter
+    /// is queried once for every discovered recipe using `--buildfile`, which
+    /// captures dynamic includes, inherited classes, anonymous-Python-driven
+    /// metadata, and external files that are not statically discoverable.
+    pub fn from_bitbake(path: impl AsRef<Path>, bitbake: impl AsRef<Path>) -> io::Result<Self> {
+        let build_dir = fs::canonicalize(path.as_ref())?;
+        validate_build_dir(&build_dir)?;
+        let bitbake = bitbake.as_ref();
+
+        let version = run_bitbake_command(&build_dir, bitbake, &["--version"])?;
+        if !version.status.success() {
+            return Err(bitbake_failure("version", &version));
+        }
+
+        let parse_output = run_bitbake_command(&build_dir, bitbake, &["--parse-only"])?;
+        if !parse_output.status.success() {
+            return Err(bitbake_failure("parse-only", &parse_output));
+        }
+
+        let global_output = run_bitbake_command(&build_dir, bitbake, &["--environment"])?;
+        if !global_output.status.success() {
+            return Err(bitbake_failure("global environment", &global_output));
+        }
+        let global = parse_bitbake_environment(&global_output.stdout);
+        for variable in ["BBLAYERS", "BBFILES", "BBPATH"] {
+            if !global.contains_key(variable) {
+                return Err(invalid_data(format!(
+                    "BitBake global environment did not expose {variable}"
+                )));
+            }
+        }
+        let layer_roots = bitbake_paths(&global, "BBLAYERS", &build_dir, ' ');
+        if layer_roots.is_empty() {
+            return Err(invalid_data("BitBake resolved an empty BBLAYERS value"));
+        }
+        for layer in &layer_roots {
+            if !layer.join("conf/layer.conf").is_file() {
+                return Err(invalid_data(format!(
+                    "BitBake resolved layer {} without conf/layer.conf",
+                    layer.display()
+                )));
+            }
+        }
+
+        let build_files = discover_metadata_files(&build_dir, MetadataTree::Build)?;
+        let mut files = build_files.clone();
+        add_resolved_files(&mut files, &global, "BBINCLUDED", &build_dir);
+        for layer in &layer_roots {
+            add_resolved_file(&mut files, layer.join("conf/layer.conf"));
+        }
+        add_bbfiles(&mut files, &global, &build_dir)?;
+
+        let recipes = files
+            .iter()
+            .filter(|path| path.extension().and_then(|extension| extension.to_str()) == Some("bb"))
+            .cloned()
+            .collect::<Vec<_>>();
+        for recipe in recipes {
+            let recipe = recipe.to_string_lossy().into_owned();
+            let output = run_bitbake_command(
+                &build_dir,
+                bitbake,
+                &["--environment", "--buildfile", recipe.as_str()],
+            )?;
+            if !output.status.success() {
+                return Err(bitbake_failure("recipe environment", &output));
+            }
+            let environment = parse_bitbake_environment(&output.stdout);
+            add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
+        }
+
+        let mut roots = layer_roots.iter().cloned().collect::<BTreeSet<_>>();
+        for path in bitbake_paths(&global, "BBPATH", &build_dir, ':') {
+            roots.insert(path);
+        }
+        let mut index = Self::from_canonical_files(files, build_files, roots)?;
+        index.authoritative = true;
+        index.apply_bitbake_context(&global, &build_dir);
+        index.dependencies = index.build_dependencies();
+        Ok(index)
+    }
+
     fn from_canonical_files(
         files: BTreeSet<PathBuf>,
         build_files: BTreeSet<PathBuf>,
@@ -238,10 +329,67 @@ impl WorkspaceIndex {
                 .iter()
                 .find_map(|path| path.parent()?.parent().map(Path::to_path_buf)),
             build_files,
+            authoritative: false,
         };
         index.search_paths = build_search_paths(&index.layers);
         index.dependencies = index.build_dependencies();
         Ok(index)
+    }
+
+    fn apply_bitbake_context(&mut self, environment: &BTreeMap<String, String>, build_dir: &Path) {
+        for layer in &mut self.layers {
+            layer.metadata.collections.clear();
+            layer.metadata.patterns.clear();
+            layer.metadata.priorities.clear();
+
+            for collection in split_bitbake_words(environment.get("BBFILE_COLLECTIONS")) {
+                let Some(pattern) = environment.get(&format!("BBFILE_PATTERN_{collection}")) else {
+                    continue;
+                };
+                if !pattern_matches_path(pattern, &layer.root, &layer.root) {
+                    continue;
+                }
+                layer.metadata.collections.push(collection.clone());
+                layer
+                    .metadata
+                    .patterns
+                    .insert(collection.clone(), pattern.clone());
+                if let Some(priority) = environment
+                    .get(&format!("BBFILE_PRIORITY_{collection}"))
+                    .and_then(|value| value.parse().ok())
+                {
+                    layer.metadata.priorities.insert(collection, priority);
+                }
+            }
+            layer.priority = layer.metadata.priority();
+        }
+
+        let mut search_paths = Vec::new();
+        for path in bitbake_paths(environment, "BBPATH", build_dir, ':') {
+            let owner = self
+                .layers
+                .iter()
+                .position(|layer| path.starts_with(&layer.root))
+                .or_else(|| {
+                    self.layers
+                        .iter()
+                        .position(|layer| layer.root.starts_with(&path))
+                })
+                .unwrap_or(0);
+            if !search_paths
+                .iter()
+                .any(|entry: &SearchPath| entry.path == path)
+            {
+                search_paths.push(SearchPath {
+                    path,
+                    layer_index: owner,
+                });
+            }
+        }
+        if search_paths.is_empty() {
+            search_paths = build_search_paths(&self.layers);
+        }
+        self.search_paths = search_paths;
     }
 
     /// Returns every metadata file included in this workspace in stable path
@@ -254,7 +402,9 @@ impl WorkspaceIndex {
     /// workspace-aware lint rules.
     pub fn is_workspace_file(&self, path: &Path) -> bool {
         let path = canonicalize_for_lookup(path);
-        self.build_files.contains(&path) || self.is_complete_for(&path)
+        (self.authoritative && self.files.contains(&path))
+            || self.build_files.contains(&path)
+            || self.is_complete_for(&path)
     }
 
     /// Returns whether path belongs to a complete indexed layer.
@@ -896,6 +1046,302 @@ fn validate_build_dir(build_dir: &Path) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+fn run_bitbake_command(build_dir: &Path, bitbake: &Path, arguments: &[&str]) -> io::Result<Output> {
+    Command::new(bitbake)
+        .current_dir(build_dir)
+        .args(arguments)
+        .output()
+        .map_err(|error| {
+            invalid_data(format!(
+                "could not invoke BitBake {}: {error}",
+                bitbake.display()
+            ))
+        })
+}
+
+fn bitbake_failure(phase: &str, output: &Output) -> io::Error {
+    let mut message = String::from_utf8_lossy(&output.stdout).into_owned();
+    if !output.stderr.is_empty() {
+        if !message.is_empty() && !message.ends_with('\n') {
+            message.push('\n');
+        }
+        message.push_str(&String::from_utf8_lossy(&output.stderr));
+    }
+    let message = message.trim();
+    let detail = if message.is_empty() {
+        format!("exit status {}", output.status)
+    } else {
+        message.to_owned()
+    };
+    invalid_data(format!("BitBake {phase} failed: {detail}"))
+}
+
+fn parse_bitbake_environment(bytes: &[u8]) -> BTreeMap<String, String> {
+    let raw = String::from_utf8_lossy(bytes);
+    let lines = raw.lines().collect::<Vec<_>>();
+    let mut values = BTreeMap::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let Some((name, first_value)) = parse_bitbake_assignment(lines[index]) else {
+            index += 1;
+            continue;
+        };
+        let mut encoded_value = first_value.to_owned();
+        let mut next = index + 1;
+        while has_unterminated_double_quote(&encoded_value) && next < lines.len() {
+            encoded_value.push('\n');
+            encoded_value.push_str(lines[next]);
+            next += 1;
+        }
+        values.insert(name.to_owned(), decode_bitbake_value(&encoded_value));
+        index = next.max(index + 1);
+    }
+    values
+}
+
+fn parse_bitbake_assignment(line: &str) -> Option<(&str, &str)> {
+    if line.starts_with('#') || line.starts_with(' ') || line.starts_with('\t') {
+        return None;
+    }
+    let equals = line.find('=')?;
+    let name = line[..equals].trim();
+    let name = name.strip_prefix("export ").unwrap_or(name);
+    if name.is_empty()
+        || !name.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric()
+                || matches!(byte, b'_' | b'-' | b'+' | b'.' | b':' | b'[' | b']')
+        })
+    {
+        return None;
+    }
+    Some((name, line[equals + 1..].trim()))
+}
+
+fn has_unterminated_double_quote(value: &str) -> bool {
+    if !value.starts_with('"') {
+        return false;
+    }
+    let mut escaped = false;
+    for character in value[1..].chars() {
+        if escaped {
+            escaped = false;
+        } else if character == '\\' {
+            escaped = true;
+        } else if character == '"' {
+            return false;
+        }
+    }
+    true
+}
+
+fn decode_bitbake_value(value: &str) -> String {
+    let Some(quoted) = value
+        .strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+    else {
+        return value.to_owned();
+    };
+    let mut decoded = String::with_capacity(quoted.len());
+    let mut escaped = false;
+    for character in quoted.chars() {
+        if escaped {
+            if character != '\n' {
+                decoded.push(match character {
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    other => other,
+                });
+            }
+            escaped = false;
+        } else if character == '\\' {
+            escaped = true;
+        } else {
+            decoded.push(character);
+        }
+    }
+    if escaped {
+        decoded.push('\\');
+    }
+    decoded
+}
+
+fn split_bitbake_words(value: Option<&String>) -> Vec<String> {
+    let Some(value) = value else {
+        return Vec::new();
+    };
+    let mut words = Vec::new();
+    let mut word = String::new();
+    let mut quote = None;
+    let mut escaped = false;
+    for character in value.chars() {
+        if escaped {
+            if character != '\n' {
+                word.push(character);
+            }
+            escaped = false;
+            continue;
+        }
+        match (quote, character) {
+            (_, '\\') => escaped = true,
+            (Some(active), value) if active == value => quote = None,
+            (None, '\'' | '"') => quote = Some(character),
+            (None, value) if value.is_ascii_whitespace() => {
+                if !word.is_empty() {
+                    words.push(std::mem::take(&mut word));
+                }
+            }
+            (_, value) => word.push(value),
+        }
+    }
+    if !word.is_empty() {
+        words.push(word);
+    }
+    words
+}
+
+fn bitbake_paths(
+    environment: &BTreeMap<String, String>,
+    variable: &str,
+    build_dir: &Path,
+    separator: char,
+) -> Vec<PathBuf> {
+    let Some(value) = environment.get(variable) else {
+        return Vec::new();
+    };
+    let entries = if separator == ' ' {
+        split_bitbake_words(Some(value))
+    } else {
+        value
+            .split(separator)
+            .map(str::trim)
+            .filter(|entry| !entry.is_empty())
+            .map(str::to_owned)
+            .collect()
+    };
+    entries
+        .into_iter()
+        .map(|entry| {
+            let path = PathBuf::from(entry);
+            let path = if path.is_absolute() {
+                path
+            } else {
+                build_dir.join(path)
+            };
+            fs::canonicalize(&path).unwrap_or(path)
+        })
+        .collect()
+}
+
+fn add_resolved_files(
+    files: &mut BTreeSet<PathBuf>,
+    environment: &BTreeMap<String, String>,
+    variable: &str,
+    build_dir: &Path,
+) {
+    for entry in split_bitbake_words(environment.get(variable)) {
+        let path = PathBuf::from(entry);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            build_dir.join(path)
+        };
+        let Ok(path) = fs::canonicalize(path) else {
+            continue;
+        };
+        if path.is_file() && is_supported_metadata_path(&path) {
+            files.insert(path);
+        }
+    }
+}
+
+fn add_bbfiles(
+    files: &mut BTreeSet<PathBuf>,
+    environment: &BTreeMap<String, String>,
+    build_dir: &Path,
+) -> io::Result<()> {
+    for entry in split_bitbake_words(environment.get("BBFILES")) {
+        let path = PathBuf::from(&entry);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            build_dir.join(path)
+        };
+        if path.is_file() {
+            add_resolved_file(files, path);
+            continue;
+        }
+        if !entry.contains(['*', '?', '[']) {
+            continue;
+        }
+
+        let pattern = path.to_string_lossy().replace('\\', "/");
+        let matcher = Glob::new(&pattern)
+            .map_err(|error| {
+                invalid_data(format!(
+                    "invalid BitBake BBFILES pattern '{entry}': {error}"
+                ))
+            })?
+            .compile_matcher();
+        let wildcard = pattern.find(['*', '?', '[']).unwrap_or(pattern.len());
+        let prefix = &pattern[..wildcard];
+        let root = PathBuf::from(prefix)
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| build_dir.to_path_buf());
+        walk_bitbake_files(&root, &matcher, files)?;
+    }
+    Ok(())
+}
+
+fn walk_bitbake_files(
+    root: &Path,
+    matcher: &globset::GlobMatcher,
+    files: &mut BTreeSet<PathBuf>,
+) -> io::Result<()> {
+    let metadata = match fs::symlink_metadata(root) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error),
+    };
+    if metadata.is_file() {
+        let path = fs::canonicalize(root)?;
+        let matched = matcher.is_match(root.to_string_lossy().replace('\\', "/"))
+            || matcher.is_match(path.to_string_lossy().replace('\\', "/"));
+        if is_supported_metadata_path(&path) && matched {
+            files.insert(path);
+        }
+        return Ok(());
+    }
+    if !metadata.is_dir() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        if entry.file_type()?.is_symlink() {
+            continue;
+        }
+        walk_bitbake_files(&entry.path(), matcher, files)?;
+    }
+    Ok(())
+}
+
+fn add_resolved_file(files: &mut BTreeSet<PathBuf>, path: PathBuf) {
+    if let Ok(path) = fs::canonicalize(path)
+        && path.is_file()
+        && is_supported_metadata_path(&path)
+    {
+        files.insert(path);
+    }
+}
+
+fn is_supported_metadata_path(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|extension| extension.to_str()),
+        Some("bb" | "bbappend" | "bbclass" | "conf" | "inc")
+    )
 }
 
 fn parse_build_layers(build_dir: &Path) -> io::Result<Vec<PathBuf>> {

@@ -127,7 +127,7 @@ struct SemanticLintArgs {
     #[arg(long, value_name = "PATH")]
     project_dir: Option<PathBuf>,
 
-    /// BitBake executable to invoke; defaults to project configuration or PATH.
+    /// BitBake executable for semantic analysis or --workspace; defaults to project configuration or PATH.
     #[arg(long, value_name = "PATH")]
     bitbake: Option<PathBuf>,
 
@@ -527,10 +527,19 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         return EXIT_ERROR;
     }
     let (inputs, workspace) = if let Some(build_dir) = args.workspace.as_deref() {
-        let workspace = match WorkspaceIndex::from_build_dir(build_dir) {
+        let bitbake = args
+            .semantic
+            .bitbake
+            .clone()
+            .or_else(|| config.semantic.bitbake.clone())
+            .unwrap_or_else(|| PathBuf::from("bitbake"));
+        let workspace = match WorkspaceIndex::from_bitbake(build_dir, &bitbake) {
             Ok(workspace) => workspace,
             Err(error) => {
-                eprintln!("error: could not index build workspace: {error}");
+                eprintln!(
+                    "error: could not resolve build workspace through BitBake {}: {error}",
+                    bitbake.display()
+                );
                 return EXIT_ERROR;
             }
         };
@@ -568,10 +577,13 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
     if !args.semantic.semantic
         && (args.semantic.build_dir.is_some()
             || args.semantic.project_dir.is_some()
-            || args.semantic.bitbake.is_some()
-            || !args.semantic.targets.is_empty())
+            || !args.semantic.targets.is_empty()
+            || !args.semantic.variables.is_empty()
+            || (args.semantic.bitbake.is_some() && args.workspace.is_none()))
     {
-        eprintln!("error: --build-dir, --project-dir, --bitbake, and --target require --semantic");
+        eprintln!(
+            "error: --build-dir, --project-dir, --target, and --variable require --semantic; --bitbake requires --semantic unless used with --workspace"
+        );
         return EXIT_ERROR;
     }
     if args.semantic.semantic && inputs.iter().any(|input| matches!(input, Input::Stdin)) {
@@ -582,9 +594,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         eprintln!("error: --fix cannot be used with standard input");
         return EXIT_ERROR;
     }
-    if args.fix
-        && let Err(error) = validate_input_limits(&inputs, config.safety)
-    {
+    if let Err(error) = validate_input_limits(&inputs, config.safety) {
         eprintln!("error: {error}");
         return EXIT_ERROR;
     }

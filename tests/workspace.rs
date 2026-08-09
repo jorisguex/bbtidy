@@ -7,6 +7,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 #[test]
 fn indexes_complete_layers_and_resolves_classes_and_files() {
     let layer = TemporaryLayer::new("workspace-index");
@@ -115,6 +118,112 @@ fn rejects_dynamic_or_missing_bblayers_entries() {
 
     let error = WorkspaceIndex::from_build_dir(&build).unwrap_err();
     assert!(error.to_string().contains("dynamic expansion"));
+}
+
+#[cfg(unix)]
+#[test]
+fn bitbake_index_uses_engine_resolved_dynamic_metadata() {
+    let project = TemporaryLayer::new("workspace-bitbake-resolved");
+    let layer = project.root.join("meta-dynamic");
+    let build = project.root.join("build");
+    let layer = fs::canonicalize(&layer).unwrap_or(layer);
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(build.join("conf/local.conf"), "MACHINE = \"qemux86-64\"\n").unwrap();
+    fs::write(
+        build.join("conf/bblayers.conf"),
+        "BBLAYERS = \"${@compute_layers(d)}\"\n",
+    )
+    .unwrap();
+    fs::create_dir_all(layer.join("conf")).unwrap();
+    fs::write(
+        layer.join("conf/layer.conf"),
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"dynamic\"\n",
+            "BBFILE_PATTERN_dynamic = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_dynamic = \"7\"\n",
+        ),
+    )
+    .unwrap();
+    let recipe = project.write(
+        "meta-dynamic/recipes-example/example.bb",
+        concat!(
+            "inherit ${@select_class(d)}\n",
+            "require ${@select_include(d)}\n",
+            "SUMMARY = \"example\"\n",
+        ),
+    );
+    let append = project.write(
+        "meta-dynamic/recipes-example/example.bbappend",
+        "SUMMARY:append = \" via append\"\n",
+    );
+    let dynamic_class = project.write(
+        "meta-dynamic/classes/dynamic.bbclass",
+        "DYNAMIC_CLASS = \"1\"\n",
+    );
+    let dynamic_include = project.write("meta-dynamic/dynamic.inc", "DYNAMIC_INCLUDE = \"1\"\n");
+    let build = fs::canonicalize(build).unwrap();
+    let layer = fs::canonicalize(layer).unwrap();
+    let recipe = fs::canonicalize(recipe).unwrap();
+    let append = fs::canonicalize(append).unwrap();
+    let dynamic_class = fs::canonicalize(dynamic_class).unwrap();
+    let dynamic_include = fs::canonicalize(dynamic_include).unwrap();
+
+    let bitbake = project.write(
+        "fake-bitbake",
+        &format!(
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.18.0'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ] && [ "$2" = "--buildfile" ]; then
+  printf '%s\n' 'BBINCLUDED="{layer}/conf/layer.conf {dynamic_class} {dynamic_include}"'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf '%s\n' 'BBLAYERS="{layer}"'
+  printf '%s\n' 'BBPATH="{layer}"'
+  printf '%s\n' 'BBFILES="{layer}/recipes-example/*.bb {layer}/recipes-example/*.bbappend"'
+  printf '%s\n' 'BBINCLUDED="{build}/conf/local.conf {build}/conf/bblayers.conf {layer}/conf/layer.conf"'
+  printf '%s\n' 'BBFILE_COLLECTIONS="dynamic"'
+  printf '%s\n' 'BBFILE_PATTERN_dynamic="^{layer}/"'
+  printf '%s\n' 'BBFILE_PRIORITY_dynamic="7"'
+  exit 0
+fi
+exit 1
+"###,
+            layer = layer.display(),
+            build = build.display(),
+            dynamic_class = dynamic_class.display(),
+            dynamic_include = dynamic_include.display(),
+        ),
+    );
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let index = WorkspaceIndex::from_bitbake(&build, &bitbake).unwrap();
+
+    assert!(index.is_workspace_file(&recipe));
+    assert!(index.is_workspace_file(&append));
+    assert!(index.is_workspace_file(&dynamic_class));
+    assert!(index.is_workspace_file(&dynamic_include));
+    assert_eq!(
+        index.resolve_class("dynamic"),
+        Some(dynamic_class.as_path())
+    );
+    let candidates = index.class_candidates("dynamic");
+    let candidate = candidates.first().unwrap();
+    assert_eq!(candidate.collection(), Some("dynamic"));
+    assert_eq!(candidate.priority(), 7);
+    assert_eq!(
+        index.resolve_file(&recipe, "dynamic.inc"),
+        Some(dynamic_include.as_path())
+    );
 }
 
 #[test]
