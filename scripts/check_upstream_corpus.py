@@ -45,6 +45,14 @@ def workflow_command_value(value):
     return str(value).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
+def format_idempotence_command(bbtidy, inputs):
+    return [bbtidy, "format", "--check"] + inputs
+
+
+def lint_command(bbtidy, inputs):
+    return [bbtidy, "check"] + inputs
+
+
 def report_error(error):
     message = "error: {}".format(error)
     print(message, file=sys.stderr)
@@ -885,7 +893,7 @@ def check_compatibility(arguments, workspace, evidence_dir):
     )
 
     run_recorded(
-        [arguments.bbtidy, "check"] + inputs,
+        format_idempotence_command(arguments.bbtidy, inputs),
         "format idempotence check",
         records,
         log_path=evidence_dir / "logs" / "idempotence.log",
@@ -905,7 +913,7 @@ def check_compatibility(arguments, workspace, evidence_dir):
         manifest.get("_baseline_metrics"),
     )
     linted = run_recorded(
-        [arguments.bbtidy, "lint"] + inputs,
+        lint_command(arguments.bbtidy, inputs),
         "lint metadata",
         records,
         accepted=(0, 1),

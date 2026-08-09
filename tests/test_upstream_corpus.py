@@ -6,7 +6,9 @@ from scripts.check_upstream_corpus import (
     CompatibilityError,
     compare_semantic_probes,
     discover_metadata_files,
+    format_idempotence_command,
     load_manifest,
+    lint_command,
     normalize_semantic_values,
     opaque_regions,
     parse_semantic_values,
@@ -278,6 +280,16 @@ class WorkflowCommandTests(unittest.TestCase):
             workflow_command_value("100%\r\nfailed"),
             "100%25%0D%0Afailed",
         )
+
+    def test_uses_current_cli_commands_for_formatting_and_linting(self):
+        bbtidy = Path("/tmp/bbtidy")
+        inputs = [Path("/tmp/layer")]
+
+        self.assertEqual(
+            format_idempotence_command(bbtidy, inputs),
+            [bbtidy, "format", "--check", *inputs],
+        )
+        self.assertEqual(lint_command(bbtidy, inputs), [bbtidy, "check", *inputs])
 
 
 if __name__ == "__main__":
