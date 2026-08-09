@@ -17,6 +17,7 @@ from pathlib import Path
 
 try:
     from scripts.lint_quality import (
+        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
         LintNormalizationError,
         NormalizationContext,
@@ -27,6 +28,7 @@ try:
     )
 except ModuleNotFoundError:  # Direct ``python3 scripts/check_upstream_corpus.py``.
     from lint_quality import (  # type: ignore[no-redef]
+        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
         LintNormalizationError,
         NormalizationContext,
@@ -193,6 +195,8 @@ def validate_lint_baseline(baseline, corpus_id):
         raise CompatibilityError("lint baseline must use schema 1")
     if baseline.get("corpus_id") != corpus_id:
         raise CompatibilityError("lint baseline corpus ID does not match manifest")
+    if baseline.get("fingerprint_version") != FINGERPRINT_VERSION:
+        raise CompatibilityError("lint baseline uses an unsupported fingerprint version")
     total = _lint_integer(baseline.get("total_findings"), "total_findings")
     digest = baseline.get("findings_sha256")
     if not isinstance(digest, str) or not SHA256.fullmatch(digest):
@@ -363,6 +367,7 @@ def build_lint_baseline(summary, previous=None):
         }
     return {
         "schema": LINT_BASELINE_SCHEMA,
+        "fingerprint_version": FINGERPRINT_VERSION,
         "corpus_id": summary["corpus_id"],
         "total_findings": summary["total_findings"],
         "findings_sha256": summary["findings_sha256"],

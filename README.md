@@ -587,6 +587,9 @@ grouping findings by diagnostic shape and source construct; surrounding source,
 includes/classes, and resolved BitBake semantics are inspected when needed.
 Changed fingerprints are unreviewed until a human reviews them. A corrected
 false-positive pattern must also receive a focused local regression fixture.
+An explicit fingerprint-format migration may carry forward existing review
+records only when the pinned finding counts are unchanged; it must not be used
+to bypass review of changed findings.
 
 Lint fingerprint semantics are defined independently of the baseline policy.
 The normalizer in `scripts/lint_quality.py` accepts the parsed version-1 JSON

@@ -31,6 +31,9 @@ packages, runtime behavior, or performance. Users must continue to run their
 normal BitBake build and test validation. Lint-quality baselines prove
 reproducible findings and documented sample review; they do not prove that every
 finding is a true positive or that a clean result is semantic or runtime proof.
+An explicit fingerprint-format migration may preserve existing review records
+only when the pinned finding counts are unchanged; ordinary finding changes
+remain subject to fresh review.
 
 ## Lint fingerprint contract
 
