@@ -4,6 +4,9 @@
   "tier": "supported",
   "yocto_version": "5.0",
   "bitbake_version": "2.8",
+  "lint_quality": {
+    "baseline": "lint-baselines/yocto-5.0-scarthgap.json"
+  },
   "snapshot": "Yocto Project 5.0 LTS (scarthgap), 2026-08-02",
   "repositories": [
     {

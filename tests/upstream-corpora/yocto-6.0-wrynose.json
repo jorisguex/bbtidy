@@ -4,6 +4,9 @@
   "tier": "supported",
   "yocto_version": "6.0",
   "bitbake_version": "2.18",
+  "lint_quality": {
+    "baseline": "lint-baselines/yocto-6.0-wrynose.json"
+  },
   "snapshot": "Yocto Project 6.0 LTS (wrynose), 2026-08-04",
   "repositories": [
     {

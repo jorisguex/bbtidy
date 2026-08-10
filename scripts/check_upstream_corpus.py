@@ -17,25 +17,33 @@ from pathlib import Path
 
 try:
     from scripts.lint_quality import (
-        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
+        LintBaselineError,
         LintNormalizationError,
         NormalizationContext,
+        baseline_from_summary,
+        canonical_baseline_bytes,
         canonical_json_bytes,
-        digest_rule_findings,
+        compare_lint_baseline as compare_lint_quality_baseline,
+        load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
         summarize_findings,
+        validate_lint_baseline as validate_lint_quality_baseline,
     )
 except ModuleNotFoundError:  # Direct ``python3 scripts/check_upstream_corpus.py``.
     from lint_quality import (  # type: ignore[no-redef]
-        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
+        LintBaselineError,
         LintNormalizationError,
         NormalizationContext,
+        baseline_from_summary,
+        canonical_baseline_bytes,
         canonical_json_bytes,
-        digest_rule_findings,
+        compare_lint_baseline as compare_lint_quality_baseline,
+        load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
         summarize_findings,
+        validate_lint_baseline as validate_lint_quality_baseline,
     )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -46,12 +54,6 @@ METADATA_EXTENSIONS = {".bb", ".bbappend", ".bbclass", ".conf", ".inc"}
 FUNCTION_START = re.compile(r"^[^ \t#\r\n].*\(\s*\)\s*\{\s*(?:#.*)?(?:\r?\n)?$")
 PYTHON_DEF_START = re.compile(r"^def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)\s*:")
 REVISION = re.compile(r"^[0-9a-f]{40}$")
-SHA256 = re.compile(r"^[0-9a-f]{64}$")
-LINT_REPORT_VERSION = 1
-LINT_BASELINE_SCHEMA = 1
-LINT_SEVERITIES = ("info", "warning", "error")
-LINT_RULE_IDS = tuple("BBT{:03d}".format(number) for number in range(1, 38))
-LINT_BASELINE_DIRECTORY = "lint-baselines"
 BASELINE_METRIC_FIELDS = (
     "files",
     "structured_nodes",
@@ -79,7 +81,7 @@ def format_idempotence_command(bbtidy, inputs):
 
 
 def lint_command(bbtidy, inputs):
-    return [bbtidy, "check", "--output", "json", "--fail-on", "never"] + inputs
+    return [bbtidy, "--no-config", "check", "--output", "json", "--fail-on", "never"] + inputs
 
 
 def report_error(error):
@@ -137,243 +139,68 @@ def lint_finding_digest(finding):
     return hashlib.sha256(canonical_json(finding)).hexdigest()
 
 
-def _default_lint_review(status="unreviewed"):
-    return {
-        "status": status,
-        "sample_size": 0,
-        "true_positive": 0,
-        "false_positive": 0,
-        "unclear": 0,
-        "notes": "",
-    }
-
-
 def summarize_lint_findings(corpus_id, findings, baseline=None):
-    # Baseline review policy remains a harness concern.  The summary itself is
-    # intentionally derived only from canonical findings.
+    """Compatibility wrapper around the pure summary implementation."""
+
     summary = summarize_findings(findings, KNOWN_RULE_IDS)
     summary["corpus_id"] = corpus_id
     return summary
 
 
-def validate_lint_review(review, count, rule_id):
-    if not isinstance(review, dict):
-        raise CompatibilityError("lint baseline rule {} has no review object".format(rule_id))
-    status = review.get("status")
-    if status not in {"reviewed", "unreviewed", "not-applicable"}:
-        raise CompatibilityError("lint baseline rule {} has an invalid review status".format(rule_id))
-    values = {}
-    for field in ("sample_size", "true_positive", "false_positive", "unclear"):
-        values[field] = _lint_integer(review.get(field), "review.{}".format(field))
-    if values["true_positive"] + values["false_positive"] + values["unclear"] != values["sample_size"]:
-        raise CompatibilityError("lint baseline rule {} has inconsistent review counts".format(rule_id))
-    if values["sample_size"] > count:
-        raise CompatibilityError("lint baseline rule {} samples more findings than it contains".format(rule_id))
-    if not isinstance(review.get("notes"), str):
-        raise CompatibilityError("lint baseline rule {} review notes must be a string".format(rule_id))
-    if values["false_positive"] and (
-        not isinstance(review.get("false_positive_decision"), str)
-        or not review.get("false_positive_decision")
-        or not review.get("notes")
-    ):
-        raise CompatibilityError(
-            "lint baseline rule {} false positives require an explicit remediation decision".format(
-                rule_id
-            )
-        )
-    if status == "not-applicable" and count:
-        raise CompatibilityError("lint baseline rule {} cannot be not-applicable with findings".format(rule_id))
-    return review
-
-
-def validate_lint_baseline(baseline, corpus_id):
-    if (
-        not isinstance(baseline, dict)
-        or isinstance(baseline.get("schema"), bool)
-        or baseline.get("schema") != LINT_BASELINE_SCHEMA
-    ):
-        raise CompatibilityError("lint baseline must use schema 1")
-    if baseline.get("corpus_id") != corpus_id:
-        raise CompatibilityError("lint baseline corpus ID does not match manifest")
-    if baseline.get("fingerprint_version") != FINGERPRINT_VERSION:
-        raise CompatibilityError("lint baseline uses an unsupported fingerprint version")
-    total = _lint_integer(baseline.get("total_findings"), "total_findings")
-    digest = baseline.get("findings_sha256")
-    if not isinstance(digest, str) or not SHA256.fullmatch(digest):
-        raise CompatibilityError("lint baseline has an invalid complete findings digest")
-    severity_counts = baseline.get("severity_counts")
-    if not isinstance(severity_counts, dict) or set(severity_counts) != set(LINT_SEVERITIES):
-        raise CompatibilityError("lint baseline has invalid severity counts")
-    if sum(_lint_integer(severity_counts.get(severity), "severity_counts.{}".format(severity)) for severity in LINT_SEVERITIES) != total:
-        raise CompatibilityError("lint baseline severity counts do not total the findings count")
-    rules = baseline.get("rules")
-    if not isinstance(rules, dict):
-        raise CompatibilityError("lint baseline rules must be an object")
-    total_rule_findings = 0
-    for rule_id, rule in rules.items():
-        if rule_id not in LINT_RULE_IDS or not isinstance(rule, dict):
-            raise CompatibilityError("lint baseline contains unknown rule ID: {}".format(rule_id))
-        count = _lint_integer(rule.get("count"), "rules.{}.count".format(rule_id))
-        rule_digest = rule.get("findings_sha256")
-        if not isinstance(rule_digest, str) or not SHA256.fullmatch(rule_digest):
-            raise CompatibilityError("lint baseline rule {} has an invalid digest".format(rule_id))
-        finding_digests = rule.get("finding_digests", [])
-        if not isinstance(finding_digests, list) or any(
-            not isinstance(item, str) or not SHA256.fullmatch(item) for item in finding_digests
-        ):
-            raise CompatibilityError("lint baseline rule {} has invalid finding digests".format(rule_id))
-        if len(finding_digests) != count:
-            raise CompatibilityError("lint baseline rule {} finding digest count differs".format(rule_id))
-        validate_lint_review(rule.get("review"), count, rule_id)
-        total_rule_findings += count
-    if total_rule_findings != total:
-        raise CompatibilityError("lint baseline rule counts do not total the findings count")
-    return baseline
-
-
 def lint_baseline_path(manifest_path, manifest):
-    return manifest_path.parent / LINT_BASELINE_DIRECTORY / (manifest["id"] + ".json")
+    lint_quality = manifest.get("lint_quality")
+    if not isinstance(lint_quality, dict):
+        return None
+    return manifest_path.parent / lint_quality["baseline"]
 
 
-def load_lint_baseline(path, corpus_id):
-    if not path.is_file():
+def load_lint_baseline(path, manifest):
+    if path is None:
         return None
     try:
-        baseline = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise CompatibilityError("could not read lint baseline {}: {}".format(path, error)) from error
-    return validate_lint_baseline(baseline, corpus_id)
+        return load_lint_quality_baseline(path, manifest)
+    except LintBaselineError as error:
+        raise CompatibilityError(str(error)) from error
 
 
-def compare_lint_baseline(summary, baseline, tier, corpus_id, baseline_path):
-    policy = "supported" if tier == "supported" else "pinned-community" if corpus_id == "community-master" else "moving-development"
-    comparison = {
-        "schema": 1,
-        "corpus_id": corpus_id,
-        "policy": policy,
-        "baseline_path": "{}/{}.json".format(
-            LINT_BASELINE_DIRECTORY, corpus_id
-        ),
-        "status": "missing" if baseline is None else "passed",
-        "baseline_present": baseline is not None,
-        "added_findings_by_rule": {},
-        "removed_findings_by_rule": {},
-        "count_changes": {},
-        "digest_changes": {},
-        "newly_active_rules": [],
-        "newly_clean_rules": [],
-        "review_status_failures": [],
-        "blocking_failures": [],
-    }
-    if baseline is None:
-        if tier == "supported" or corpus_id == "community-master":
-            comparison["blocking_failures"].append("lint baseline is missing")
-        return comparison
+def validate_lint_baseline(baseline, manifest=None):
+    try:
+        return validate_lint_quality_baseline(baseline, manifest if isinstance(manifest, dict) else None)
+    except LintBaselineError as error:
+        raise CompatibilityError(str(error)) from error
 
-    previous_rules = baseline.get("rules", {})
-    current_rules = summary["rules"]
-    for rule_id in sorted(set(previous_rules) | set(current_rules)):
-        empty_rule = digest_rule_findings(rule_id, [])
-        previous = previous_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": empty_rule})
-        current = current_rules.get(rule_id, {"count": 0, "finding_digests": [], "findings_sha256": empty_rule})
-        if previous["count"] != current["count"]:
-            comparison["count_changes"][rule_id] = {
-                "baseline": previous["count"],
-                "current": current["count"],
-            }
-        if previous["findings_sha256"] != current["findings_sha256"]:
-            comparison["digest_changes"][rule_id] = {
-                "baseline": previous["findings_sha256"],
-                "current": current["findings_sha256"],
-            }
-        if previous["count"] == 0 and current["count"] > 0:
-            comparison["newly_active_rules"].append(rule_id)
-        if previous["count"] > 0 and current["count"] == 0:
-            comparison["newly_clean_rules"].append(rule_id)
-        previous_digests = previous.get("finding_digests")
-        current_digests = current.get("finding_digests", [])
-        if previous_digests:
-            added = sorted(set(current_digests) - set(previous_digests))
-            removed = sorted(set(previous_digests) - set(current_digests))
-            if added:
-                comparison["added_findings_by_rule"][rule_id] = added
-            if removed:
-                comparison["removed_findings_by_rule"][rule_id] = removed
-        elif previous["findings_sha256"] != current["findings_sha256"]:
-            comparison["added_findings_by_rule"][rule_id] = None
-            comparison["removed_findings_by_rule"][rule_id] = None
 
-    for rule_id, current in sorted(current_rules.items()):
-        if current.get("count", 0) == 0:
-            continue
-        previous = previous_rules.get(rule_id)
-        if previous is None:
-            comparison["review_status_failures"].append(
-                {"rule_id": rule_id, "reason": "active rule is absent from baseline"}
-            )
-            continue
-        if previous.get("count") != current["count"] or previous.get("findings_sha256") != current["findings_sha256"]:
-            comparison["review_status_failures"].append(
-                {"rule_id": rule_id, "reason": "digest changed; explicit review is required"}
-            )
-            continue
-        review = previous.get("review", {})
-        if review.get("status") != "reviewed":
-            comparison["review_status_failures"].append(
-                {"rule_id": rule_id, "reason": "active rule is not reviewed"}
-            )
-        if review.get("false_positive", 0) and not review.get("false_positive_decision"):
-            comparison["review_status_failures"].append(
-                {"rule_id": rule_id, "reason": "false positives have no remediation decision"}
-            )
-
-    changed = any(
-        (
-            summary["total_findings"] != baseline["total_findings"],
-            summary["findings_sha256"] != baseline["findings_sha256"],
-            summary["severity_counts"] != baseline["severity_counts"],
-            comparison["count_changes"],
-            comparison["digest_changes"],
-            comparison["review_status_failures"],
-        )
-    )
-    if changed:
-        comparison["status"] = "failed"
-        comparison["blocking_failures"].append("lint findings differ from the checked-in baseline")
+def compare_lint_baseline(summary, baseline, manifest, baseline_path=None):
+    if manifest is not None and manifest.get("lint_quality") is None:
+        return {
+            "status": "report-only",
+            "corpus_id": manifest["id"],
+            "baseline_present": False,
+            "blocking_failures": [],
+        }
+    comparison = compare_lint_quality_baseline(baseline, summary, manifest)
+    comparison["baseline_present"] = baseline is not None
+    comparison["baseline_path"] = str(baseline_path) if baseline_path is not None else None
+    comparison["blocking_failures"] = []
+    if comparison["status"] in {"invalid", "changed"}:
+        if comparison.get("errors"):
+            comparison["blocking_failures"].extend(comparison["errors"])
+        elif comparison["status"] == "changed":
+            comparison["blocking_failures"].append("lint-quality baseline changed")
+        else:
+            comparison["blocking_failures"].append("lint-quality baseline is invalid")
     return comparison
 
 
-def build_lint_baseline(summary, previous=None):
-    rules = {}
-    for rule_id in LINT_RULE_IDS:
-        current = summary["rules"].get(
-            rule_id,
-            {
-                "count": 0,
-                "findings_sha256": digest_rule_findings(rule_id, []),
-                "finding_digests": [],
-            },
-        )
-        old = (previous or {}).get("rules", {}).get(rule_id)
-        if old and old.get("count") == current["count"] and old.get("findings_sha256") == current["findings_sha256"]:
-            review = dict(old.get("review", _default_lint_review("not-applicable")))
-        else:
-            review = _default_lint_review("not-applicable" if current["count"] == 0 else "unreviewed")
-        rules[rule_id] = {
-            "count": current["count"],
-            "findings_sha256": current["findings_sha256"],
-            "finding_digests": list(current.get("finding_digests", [])),
-            "review": review,
+def build_lint_baseline(summary, manifest=None, previous=None):
+    del previous  # Review metadata is human-owned and is never inferred.
+    if manifest is None:
+        manifest = {
+            "id": summary["corpus_id"],
+            "repositories": [{"name": "synthetic", "revision": "0" * 40}],
+            "layers": [{"name": "synthetic", "repository": "synthetic", "path": "."}],
         }
-    return {
-        "schema": LINT_BASELINE_SCHEMA,
-        "fingerprint_version": FINGERPRINT_VERSION,
-        "corpus_id": summary["corpus_id"],
-        "total_findings": summary["total_findings"],
-        "findings_sha256": summary["findings_sha256"],
-        "severity_counts": dict(summary["severity_counts"]),
-        "rules": rules,
-    }
+    return baseline_from_summary(manifest, summary)
 
 
 def write_lint_evidence(evidence_dir, findings, summary, comparison):
@@ -385,7 +212,7 @@ def write_lint_evidence(evidence_dir, findings, summary, comparison):
     write_json(evidence_dir / "lint" / "baseline-comparison.json", comparison)
 
 
-def load_manifest(path):
+def load_manifest(path, enforce_lint_baseline=True):
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest.get("schema") != 1:
         raise CompatibilityError("upstream corpus manifest must use schema 1")
@@ -533,6 +360,53 @@ def load_manifest(path):
                     "upstream corpus {} baseline metrics are invalid".format(label)
                 )
         manifest["_baseline_metrics"] = baseline
+
+    manifest_directory = path.resolve().parent
+    pinned_corpus = all(
+        REVISION.fullmatch(repository.get("revision", ""))
+        and not repository.get("ref")
+        for repository in repositories
+    )
+    lint_quality = manifest.get("lint_quality")
+    if pinned_corpus:
+        if not isinstance(lint_quality, dict) or set(lint_quality) != {"baseline"}:
+            raise CompatibilityError(
+                "pinned corpus must explicitly reference a lint-quality baseline"
+            )
+        reference = lint_quality.get("baseline")
+        normalized_reference = (
+            reference.replace("\\", "/") if isinstance(reference, str) else reference
+        )
+        if (
+            not isinstance(reference, str)
+            or not reference
+            or normalized_reference.startswith("/")
+            or re.match(r"^[A-Za-z]:/", normalized_reference)
+            or any(part in ("", ".", "..") for part in normalized_reference.split("/"))
+        ):
+            raise CompatibilityError(
+                "lint-quality baseline must be a safe relative path"
+            )
+        lint_path = (manifest_directory / reference).resolve()
+        try:
+            lint_path.relative_to(manifest_directory)
+        except ValueError as error:
+            raise CompatibilityError(
+                "lint-quality baseline must be inside tests/upstream-corpora"
+            ) from error
+        if enforce_lint_baseline and not lint_path.is_file():
+            raise CompatibilityError(
+                "referenced lint-quality baseline does not exist: {}".format(lint_path)
+            )
+        if enforce_lint_baseline and lint_path.is_file():
+            try:
+                load_lint_quality_baseline(lint_path, manifest)
+            except LintBaselineError as error:
+                raise CompatibilityError(str(error)) from error
+    elif lint_quality is not None:
+        raise CompatibilityError(
+            "moving development corpora must remain report-only without a lint baseline"
+        )
 
     return manifest
 
@@ -1169,7 +1043,9 @@ def baseline_update_allowed(arguments):
 
 def check_compatibility(arguments, workspace, evidence_dir):
     baseline_update_allowed(arguments)
-    manifest = load_manifest(arguments.manifest)
+    manifest = load_manifest(
+        arguments.manifest, enforce_lint_baseline=not arguments.update_lint_baseline
+    )
     repositories = manifest["repositories"]
     layers = manifest["layers"]
     records = []
@@ -1261,7 +1137,16 @@ def check_compatibility(arguments, workspace, evidence_dir):
         log_path=evidence_dir / "logs" / "lint.log",
     )
     baseline_path = lint_baseline_path(arguments.manifest, manifest)
-    lint_baseline = load_lint_baseline(baseline_path, manifest["id"])
+    if arguments.update_lint_baseline and baseline_path is None:
+        raise CompatibilityError(
+            "moving development corpora are report-only and cannot have lint baselines"
+        )
+    try:
+        lint_baseline = load_lint_baseline(baseline_path, manifest)
+    except CompatibilityError:
+        if not arguments.update_lint_baseline:
+            raise
+        lint_baseline = None
     lint_findings = normalize_lint_report(
         linted.stdout,
         manifest["id"],
@@ -1273,12 +1158,9 @@ def check_compatibility(arguments, workspace, evidence_dir):
     lint_comparison = compare_lint_baseline(
         lint_summary,
         lint_baseline,
-        manifest["tier"],
-        manifest["id"],
+        manifest,
         baseline_path,
     )
-    if arguments.update_lint_baseline:
-        lint_comparison["status"] = "update-pending"
     write_lint_evidence(evidence_dir, lint_findings, lint_summary, lint_comparison)
     if (
         lint_comparison["blocking_failures"]
@@ -1307,9 +1189,9 @@ def check_compatibility(arguments, workspace, evidence_dir):
             sum(rule["count"] > 0 for rule in lint_summary["rules"].values()),
             sum(
                 rule.get("count", 0) > 0
-                and isinstance(rule.get("review"), dict)
-                and rule["review"].get("status") == "reviewed"
-                for rule in (lint_baseline or {}).get("rules", {}).values()
+                and isinstance((lint_baseline or {}).get("review"), dict)
+                and (lint_baseline or {})["review"].get("rules", {}).get(rule_id, {}).get("status") == "reviewed"
+                for rule_id, rule in lint_summary["rules"].items()
             ),
         )
     )
@@ -1379,7 +1261,10 @@ def check_compatibility(arguments, workspace, evidence_dir):
         parsed = True
 
     if arguments.update_lint_baseline:
-        write_json(baseline_path, build_lint_baseline(lint_summary, lint_baseline))
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_bytes(
+            canonical_baseline_bytes(baseline_from_summary(manifest, lint_summary))
+        )
         print(
             "WARNING: wrote lint baseline {}; active rules remain unreviewed".format(
                 baseline_path

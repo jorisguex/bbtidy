@@ -4,6 +4,9 @@
   "tier": "development",
   "yocto_version": "master",
   "bitbake_version": "master",
+  "lint_quality": {
+    "baseline": "lint-baselines/community-master.json"
+  },
   "snapshot": "Pinned community layer sample, 2026-08-06",
   "repositories": [
     {

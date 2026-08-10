@@ -552,8 +552,10 @@ thresholds, and both the original and formatted layers pass a real
 `bitbake --parse-only core-image-minimal` run. Supported manifests also define
 semantic probes: selected `bitbake -e` variables must match before and after
 formatting after corpus-local paths are normalized. Supported manifests also
-have a reviewed, rule-level lint-quality baseline: findings come from versioned
-JSON and are fingerprinted after corpus-path normalization.
+have a versioned, rule-level lint-quality baseline: findings come from
+versioned JSON and are fingerprinted after corpus-path normalization.
+Generated measurements and human review metadata are stored separately; newly
+generated active rules start as `unreviewed`.
 
 | Support tier | Yocto release | BitBake | CI policy |
 | --- | --- | --- | --- |
@@ -577,19 +579,13 @@ baseline is separate, at
 `tests/upstream-corpora/lint-baselines/community-master.json`.
 
 Lint-quality baselines prove that a pinned corpus produces the same structured
-findings grouped by rule and severity, and that sampled findings have an
-explicit review status. They do not prove that every finding is a true
-positive, that BitBake builds successfully, or that runtime behavior and build
-outputs are unchanged. Review entries record sampled true positives, false
-positives, unclear cases, and any explicit false-positive remediation decision.
-Review samples are stratified across repositories and metadata file types after
-grouping findings by diagnostic shape and source construct; surrounding source,
-includes/classes, and resolved BitBake semantics are inspected when needed.
-Changed fingerprints are unreviewed until a human reviews them. A corrected
-false-positive pattern must also receive a focused local regression fixture.
-An explicit fingerprint-format migration may carry forward existing review
-records only when the pinned finding counts are unchanged; it must not be used
-to bypass review of changed findings.
+findings grouped by rule, severity, and fingerprint. They do not prove that
+every finding is a true positive, that BitBake builds successfully, or that
+runtime behavior and build outputs are unchanged. Review entries are
+human-owned classifications of sampled true positives, false positives, and
+unclear cases; mechanical baseline generation never marks findings reviewed.
+Changed fingerprints are reported even when totals are unchanged and require
+explicit review before a baseline is relied on for a release decision.
 
 Lint fingerprint semantics are defined independently of the baseline policy.
 The normalizer in `scripts/lint_quality.py` accepts the parsed version-1 JSON
@@ -643,10 +639,11 @@ resolved repository commits, bbtidy revision, runner details, tree changes,
 preservation counts, parse result, and semantic probe values. A pre-existing
 evidence directory is rejected so an artifact cannot silently mix results from
 multiple runs. The `lint/` subdirectory contains `findings.json` with every
-normalized finding, `summary.json` with deterministic counts, digests, files,
-and rules derived solely from those findings, plus
-`baseline-comparison.json` with count and digest changes, added/removed finding
-fingerprints, newly active/clean rules, and review failures.
+normalized finding, `summary.json` with deterministic measurements derived
+solely from those findings, and `baseline-comparison.json` with one of
+`matched`, `changed`, or `invalid` plus deterministic total, severity, rule, and
+contract differences. Temporary paths, timestamps, and runner metadata are not
+part of checked-in baselines.
 
 ## Development
 

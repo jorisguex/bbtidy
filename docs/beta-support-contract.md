@@ -20,8 +20,8 @@ its supported formatting operations are:
 - deterministic, with stable file ordering, diagnostics, and machine-readable
   output; and
 - lint-quality evidenced, because every supported corpus finding is collected
-  from versioned JSON, compared by rule and fingerprint, and explicitly
-  reviewed at the active-rule level; and
+  from versioned JSON and compared by rule and fingerprint with explicit
+  human-owned review metadata; and
 - fail-safe, refusing incomplete input, bounding repository-wide work, and
   avoiding partial batch writes.
 
@@ -29,11 +29,10 @@ These guarantees apply to bbtidy's formatting and static analysis behavior.
 They do not prove that a complete BitBake build produces identical task hashes,
 packages, runtime behavior, or performance. Users must continue to run their
 normal BitBake build and test validation. Lint-quality baselines prove
-reproducible findings and documented sample review; they do not prove that every
-finding is a true positive or that a clean result is semantic or runtime proof.
-An explicit fingerprint-format migration may preserve existing review records
-only when the pinned finding counts are unchanged; ordinary finding changes
-remain subject to fresh review.
+reproducible findings and preserve documented sample-review metadata; they do
+not prove that every finding is a true positive or that a clean result is
+semantic or runtime proof. Generated baselines begin unreviewed and require
+human sampling before they support a release decision.
 
 ## Lint fingerprint contract
 
@@ -73,7 +72,7 @@ The beta release gate initially covers:
 Supported means that the corresponding commit-pinned compatibility manifest
 passes the complete release gate described in [Evidence required for a
 release](#evidence-required-for-a-release), including a rule-level lint-quality
-baseline in which every active rule has an explicit review status. A supported
+baseline in which every active rule has explicit review metadata. A supported
 release remains in the beta contract until it is explicitly deprecated in a
 release note.
 
@@ -291,7 +290,7 @@ formatted versions of each supported manifest:
 10. Where configured, selected `bitbake -e` semantic probe values are equal
     before and after formatting after temporary corpus paths are normalized.
 11. Structured lint output is deterministic, matches the checked-in total and
-    per-rule fingerprints, and every active rule has an explicit review status.
+    per-rule fingerprints, and every active rule has explicit review metadata.
 12. Lint samples are classified as true positive, false positive, or unclear;
     false positives have an explicit remediation decision.
 13. No operational error causes a partial batch rewrite.
@@ -312,12 +311,13 @@ evidence bundle must contain `manifest.json`, `summary.json`, `commands.json`,
 
 Lint findings are sampled across repositories and metadata file types, grouped
 by diagnostic shape and source construct, and classified as true positive,
-false positive, or unclear. A baseline update is an explicit local operation;
-it never marks findings reviewed automatically. Digest changes require a new
+false positive, or unclear. Measurement data and review metadata are separate
+parts of each baseline. A baseline update is an explicit local operation; it
+never marks findings reviewed automatically. Digest changes require a new
 review even when the total finding count is unchanged. Supported and pinned
 community corpora compare deterministically against checked-in baselines;
 moving development corpora upload the same report but keep regressions
-non-blocking.
+non-blocking and have no checked-in lint baseline.
 
 Parseability is a required compatibility signal, not a complete semantic
 equivalence proof. Release notes must not describe the parse gate as proving

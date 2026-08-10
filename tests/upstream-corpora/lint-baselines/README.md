@@ -3,8 +3,16 @@
 The JSON files in this directory are generated explicitly with
 `scripts/check_upstream_corpus.py --update-lint-baseline` after running the
 corresponding pinned corpus. They are intentionally not bootstrapped from
-diagnostic counts: each active rule must be sampled and reviewed before a
-baseline is suitable for a supported-corpus gate.
+diagnostic counts: every measurement is derived from normalized structured
+findings, while review metadata remains human-owned and starts as
+`unreviewed`.
+
+Schema version 1 separates stable corpus identity, lint contract, generated
+measurements, and review records. Whole-corpus and per-rule SHA-256 digests
+cover normalized findings, so a count-neutral finding change is detected. The
+files contain no checkout paths, timestamps, CI IDs, or other execution
+metadata. The three pinned manifests explicitly reference these files;
+`yocto-master.json` is moving and remains report-only.
 
 Required files are:
 

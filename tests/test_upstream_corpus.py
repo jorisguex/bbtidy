@@ -58,14 +58,26 @@ class ManifestTests(unittest.TestCase):
         )
         self.assertEqual(community["tier"], "development")
         self.assertEqual(len(community["layers"]), 3)
+        self.assertEqual(
+            community["lint_quality"]["baseline"],
+            "lint-baselines/community-master.json",
+        )
         self.assertIn("_baseline_metrics", community)
         self.assertEqual(community["_baseline_metrics"]["source"]["files"], 667)
         for manifest in loaded:
             if manifest["tier"] == "supported":
                 self.assertEqual(
+                    manifest["lint_quality"]["baseline"],
+                    "lint-baselines/{}.json".format(manifest["id"]),
+                )
+                self.assertEqual(
                     [probe["name"] for probe in manifest["bitbake"]["semantic_probes"]],
                     ["core-image-minimal-metadata"],
                 )
+        self.assertNotIn(
+            "lint_quality",
+            next(manifest for manifest in loaded if manifest["id"] == "yocto-master"),
+        )
 
     def test_manifest_rejects_floating_revisions(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -302,7 +314,7 @@ class WorkflowCommandTests(unittest.TestCase):
         )
         self.assertEqual(
             lint_command(bbtidy, inputs),
-            [bbtidy, "check", "--output", "json", "--fail-on", "never", *inputs],
+            [bbtidy, "--no-config", "check", "--output", "json", "--fail-on", "never", *inputs],
         )
 
 
@@ -334,7 +346,7 @@ def lint_diagnostic(path, rule_id="BBT001", message="trailing whitespace", line=
     }
 
 
-class LintQualityTests(unittest.TestCase):
+class LintQualityHarnessTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
@@ -406,117 +418,6 @@ class LintQualityTests(unittest.TestCase):
             expected = self.parse([lint_diagnostic(self.metadata)])
             self.assertEqual(expected, other)
 
-    def test_baseline_comparison_detects_counts_fingerprints_and_rule_transitions(self):
-        original = self.parse([lint_diagnostic(self.metadata)])
-        original_summary = summarize_lint_findings("example", original)
-        baseline = build_lint_baseline(original_summary)
-        baseline["rules"]["BBT001"]["review"] = {
-            "status": "reviewed",
-            "sample_size": 1,
-            "true_positive": 1,
-            "false_positive": 0,
-            "unclear": 0,
-            "notes": "Reviewed the whitespace finding.",
-        }
-        unchanged = compare_lint_baseline(
-            original_summary, baseline, "supported", "example", self.root / "baseline.json"
-        )
-        self.assertEqual(unchanged["status"], "passed")
-
-        changed = self.parse([lint_diagnostic(self.metadata, message="changed finding")])
-        changed_summary = summarize_lint_findings("example", changed, baseline)
-        changed_comparison = compare_lint_baseline(
-            changed_summary, baseline, "supported", "example", self.root / "baseline.json"
-        )
-        self.assertIn("BBT001", changed_comparison["digest_changes"])
-        self.assertTrue(changed_comparison["review_status_failures"])
-
-        counted = self.parse([lint_diagnostic(self.metadata), lint_diagnostic(self.metadata, line=2)])
-        counted_summary = summarize_lint_findings("example", counted, baseline)
-        counted_comparison = compare_lint_baseline(
-            counted_summary, baseline, "supported", "example", self.root / "baseline.json"
-        )
-        self.assertEqual(counted_comparison["count_changes"]["BBT001"]["current"], 2)
-
-        old_with_two = build_lint_baseline(
-            summarize_lint_findings(
-                "example",
-                self.parse(
-                    [
-                        lint_diagnostic(self.metadata),
-                        lint_diagnostic(self.metadata, rule_id="BBT002"),
-                    ]
-                ),
-            )
-        )
-        clean_summary = summarize_lint_findings("example", original)
-        transitions = compare_lint_baseline(
-            clean_summary, old_with_two, "supported", "example", self.root / "baseline.json"
-        )
-        self.assertIn("BBT002", transitions["newly_clean_rules"])
-
-    def test_unreviewed_findings_fail_review_and_updates_reset_changed_rules(self):
-        findings = self.parse([lint_diagnostic(self.metadata)])
-        summary = summarize_lint_findings("example", findings)
-        baseline = build_lint_baseline(summary)
-        comparison = compare_lint_baseline(
-            summary, baseline, "supported", "example", self.root / "baseline.json"
-        )
-        self.assertTrue(comparison["review_status_failures"])
-
-        baseline["rules"]["BBT001"]["review"] = {
-            "status": "reviewed",
-            "sample_size": 1,
-            "true_positive": 1,
-            "false_positive": 0,
-            "unclear": 0,
-            "notes": "Reviewed.",
-        }
-        updated = build_lint_baseline(
-            summarize_lint_findings(
-                "example", self.parse([lint_diagnostic(self.metadata, message="new")])
-            ),
-            baseline,
-        )
-        self.assertEqual(updated["rules"]["BBT001"]["review"]["status"], "unreviewed")
-
-    def test_missing_baseline_is_nonblocking_only_for_moving_development(self):
-        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
-        supported = compare_lint_baseline(
-            summary, None, "supported", "example", self.root / "baseline.json"
-        )
-        community = compare_lint_baseline(
-            summary, None, "development", "community-master", self.root / "baseline.json"
-        )
-        development = compare_lint_baseline(
-            summary, None, "development", "yocto-master", self.root / "baseline.json"
-        )
-        self.assertTrue(supported["blocking_failures"])
-        self.assertTrue(community["blocking_failures"])
-        self.assertFalse(development["blocking_failures"])
-
-    def test_generated_baseline_has_explicit_review_records_for_all_rules(self):
-        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
-        baseline = build_lint_baseline(summary)
-        validate_lint_baseline(baseline, "example")
-        self.assertEqual(len(baseline["rules"]), 37)
-        self.assertEqual(baseline["rules"]["BBT001"]["review"]["status"], "unreviewed")
-        self.assertEqual(baseline["rules"]["BBT002"]["review"]["status"], "not-applicable")
-
-    def test_false_positive_samples_require_a_remediation_decision(self):
-        summary = summarize_lint_findings("example", self.parse([lint_diagnostic(self.metadata)]))
-        baseline = build_lint_baseline(summary)
-        baseline["rules"]["BBT001"]["review"] = {
-            "status": "reviewed",
-            "sample_size": 1,
-            "true_positive": 0,
-            "false_positive": 1,
-            "unclear": 0,
-            "notes": "Known false positive.",
-        }
-        with self.assertRaisesRegex(CompatibilityError, "remediation decision"):
-            validate_lint_baseline(baseline, "example")
-
     def test_ci_baseline_updates_require_an_intentionally_named_override(self):
         arguments = argparse.Namespace(
             update_lint_baseline=True,
@@ -532,8 +433,12 @@ class LintQualityTests(unittest.TestCase):
     def test_evidence_bundle_contains_machine_readable_lint_files(self):
         findings = self.parse([lint_diagnostic(self.metadata)])
         summary = summarize_lint_findings("example", findings)
+        manifest = {
+            "id": "example",
+            "tier": "development",
+        }
         comparison = compare_lint_baseline(
-            summary, None, "development", "example", self.root / "baseline.json"
+            summary, None, manifest, self.root / "baseline.json"
         )
         evidence = self.root / "evidence"
         write_lint_evidence(evidence, findings, summary, comparison)
@@ -557,8 +462,9 @@ class LintQualityTests(unittest.TestCase):
         second_evidence = self.root / "second-evidence"
         for evidence, findings in ((first_evidence, first), (second_evidence, second)):
             summary = summarize_lint_findings("example", findings)
+            manifest = {"id": "example", "tier": "development"}
             comparison = compare_lint_baseline(
-                summary, None, "development", "example", self.root / "baseline.json"
+                summary, None, manifest, self.root / "baseline.json"
             )
             write_lint_evidence(evidence, findings, summary, comparison)
         for name in ("findings.json", "summary.json"):
