@@ -294,6 +294,59 @@ fn next_line_end(text: &str, start: usize) -> usize {
         .unwrap_or(text.len())
 }
 
+/// Advances a byte offset by exactly one UTF-8 scalar value.
+///
+/// All scanners use this helper after inspecting ASCII punctuation, so a
+/// computed offset never slices through a multibyte source character.
+fn next_char_boundary(source: &str, index: usize) -> usize {
+    source[index..]
+        .chars()
+        .next()
+        .map_or(source.len(), |character| index + character.len_utf8())
+}
+
+fn bitbake_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
+    if !bytes.get(start..)?.starts_with(b"${") {
+        return None;
+    }
+    let mut depth = 1usize;
+    let mut quote = None;
+    let mut escaped = false;
+    let mut index = start + 2;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if escaped {
+            escaped = false;
+            index += 1;
+            continue;
+        }
+        if byte == b'\\' {
+            escaped = true;
+            index += 1;
+            continue;
+        }
+        if let Some(delimiter) = quote {
+            if byte == delimiter {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            quote = Some(byte);
+        } else if byte == b'{' {
+            depth += 1;
+        } else if byte == b'}' {
+            depth = depth.checked_sub(1)?;
+            if depth == 0 {
+                return Some(index + 1);
+            }
+        }
+        index += 1;
+    }
+    None
+}
+
 fn split_line_ending(line: &str) -> (&str, &str) {
     if let Some(content) = line.strip_suffix("\r\n") {
         (content, "\r\n")
@@ -489,6 +542,13 @@ fn find_brace_block_end(
         {
             quote = Some(FunctionQuote::Triple(byte));
             index += 3;
+            continue;
+        }
+
+        if matches!(function_kind, ScannerFunctionKind::Shell)
+            && let Some(end) = bitbake_expression_end(bytes, index)
+        {
+            index = end;
             continue;
         }
 
@@ -738,27 +798,185 @@ fn is_comment_start_in_function(
         )
 }
 
-fn is_python_def_start(line: &str) -> bool {
-    let (content, _) = split_line_ending(line);
-    if content.starts_with(char::is_whitespace) {
-        return false;
-    }
-    let code = &content[..comment_start(content).unwrap_or(content.len())];
-    let code = code.trim_end();
-    code.starts_with("def ") && code.ends_with(':')
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PythonDefHeader {
+    def_start: usize,
+    header_end: usize,
 }
 
-fn find_python_def_end(text: &str, mut offset: usize) -> usize {
+fn python_def_header(text: &str, start: usize) -> Option<PythonDefHeader> {
+    let mut def_start = start;
+    let first_line_end = next_line_end(text, start);
+    let first_line = &text[start..first_line_end];
+    let (first_content, _) = split_line_ending(first_line);
+    if !first_content.starts_with("def ") {
+        if !first_content.starts_with('@') || has_line_continuation(first_line) {
+            return None;
+        }
+        def_start = first_line_end;
+        let def_line_end = next_line_end(text, def_start);
+        let def_line = &text[def_start..def_line_end];
+        let (def_content, _) = split_line_ending(def_line);
+        if !def_content.starts_with("def ") {
+            return None;
+        }
+    }
+
+    let mut offset = def_start;
+    let mut depth = 0usize;
+    let mut quote: Option<(u8, bool)> = None;
+    let mut escaped = false;
+    let mut saw_header_token = false;
     while offset < text.len() {
         let line_end = next_line_end(text, offset);
         let line = &text[offset..line_end];
         let (content, _) = split_line_ending(line);
-        if !content.trim().is_empty() && !content.starts_with(char::is_whitespace) {
-            break;
+        let bytes = content.as_bytes();
+        let mut index = 0;
+        while index < bytes.len() {
+            let byte = bytes[index];
+            if escaped {
+                escaped = false;
+                index = next_char_boundary(content, index);
+                continue;
+            }
+            if let Some((delimiter, triple)) = quote {
+                if triple && bytes[index..].starts_with(&[delimiter, delimiter, delimiter]) {
+                    quote = None;
+                    index += 3;
+                } else if !triple && byte == delimiter {
+                    quote = None;
+                    index += 1;
+                } else {
+                    if byte == b'\\' && delimiter != b'\'' {
+                        escaped = true;
+                    }
+                    index = next_char_boundary(content, index);
+                }
+                continue;
+            }
+            if byte == b'#' {
+                break;
+            }
+            if matches!(byte, b'\'' | b'"') {
+                let triple = bytes[index..].starts_with(&[byte, byte, byte]);
+                quote = Some((byte, triple));
+                index += if triple { 3 } else { 1 };
+                saw_header_token = true;
+                continue;
+            }
+            match byte {
+                b'(' | b'[' | b'{' => {
+                    depth += 1;
+                    saw_header_token = true;
+                }
+                b')' | b']' | b'}' => {
+                    depth = depth.checked_sub(1)?;
+                    saw_header_token = true;
+                }
+                b':' if depth == 0 => {
+                    let trailing = content[index + 1..].trim();
+                    if !trailing.is_empty() && !trailing.starts_with('#') {
+                        return None;
+                    }
+                    return Some(PythonDefHeader {
+                        def_start,
+                        header_end: line_end,
+                    });
+                }
+                byte if !byte.is_ascii_whitespace() => saw_header_token = true,
+                _ => {}
+            }
+            index = next_char_boundary(content, index);
+        }
+
+        if depth == 0 && !has_line_continuation(line) && !saw_header_token {
+            return None;
+        }
+        if depth == 0 && !has_line_continuation(line) && offset != def_start {
+            return None;
         }
         offset = line_end;
     }
+    None
+}
+
+fn find_python_def_end(text: &str, mut offset: usize) -> usize {
+    let mut saw_body = false;
+    let mut quote: Option<(u8, bool)> = None;
+    let mut escaped = false;
+    let mut delimiter_depth = 0usize;
+
+    while offset < text.len() {
+        let line_end = next_line_end(text, offset);
+        let line = &text[offset..line_end];
+        let (content, _) = split_line_ending(line);
+        let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
+        let trimmed = content[leading..].trim();
+        let in_continuation = quote.is_some() || delimiter_depth > 0;
+        if saw_body && !in_continuation && leading == 0 && !trimmed.is_empty() {
+            break;
+        }
+        if !trimmed.is_empty() && !trimmed.starts_with('#') {
+            saw_body = true;
+        }
+
+        scan_python_line(content, &mut quote, &mut escaped, &mut delimiter_depth);
+        offset = line_end;
+    }
     offset
+}
+
+fn scan_python_line(
+    content: &str,
+    quote: &mut Option<(u8, bool)>,
+    escaped: &mut bool,
+    delimiter_depth: &mut usize,
+) {
+    let bytes = content.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if *escaped {
+            *escaped = false;
+            index = next_char_boundary(content, index);
+            continue;
+        }
+        if let Some((delimiter, triple)) = *quote {
+            if triple && bytes[index..].starts_with(&[delimiter, delimiter, delimiter]) {
+                *quote = None;
+                index += 3;
+            } else if !triple && byte == delimiter {
+                *quote = None;
+                index += 1;
+            } else {
+                if byte == b'\\' && delimiter != b'\'' {
+                    *escaped = true;
+                }
+                index = next_char_boundary(content, index);
+            }
+            continue;
+        }
+        if byte == b'#' {
+            break;
+        }
+        if matches!(byte, b'\'' | b'"') {
+            let triple = bytes[index..].starts_with(&[byte, byte, byte]);
+            *quote = Some((byte, triple));
+            index += if triple { 3 } else { 1 };
+            continue;
+        }
+        match byte {
+            b'(' | b'[' | b'{' => *delimiter_depth += 1,
+            b')' | b']' | b'}' => {
+                if *delimiter_depth > 0 {
+                    *delimiter_depth -= 1;
+                }
+            }
+            _ => {}
+        }
+        index = next_char_boundary(content, index);
+    }
 }
 
 fn has_line_continuation(line: &str) -> bool {
@@ -848,6 +1066,18 @@ fn is_assignment_left_hand_side(left: &str) -> bool {
 }
 
 fn is_variable_name(name: &str) -> bool {
+    // Slash-bearing names are valid in reviewed provider/version namespaces
+    // and in override-scoped names such as LICENSE:modules/linux. Keep an
+    // otherwise path-like name opaque until corpus evidence justifies it.
+    let slash_is_reviewed = !name.contains('/')
+        || name.starts_with("PREFERRED_PROVIDER_")
+        || name.starts_with("PREFERRED_VERSION_")
+        || name
+            .find('/')
+            .is_some_and(|slash| name[..slash].contains(':'));
+    if !slash_is_reviewed {
+        return false;
+    }
     let bytes = name.as_bytes();
     let Some(first) = bytes.first() else {
         return false;
@@ -861,7 +1091,9 @@ fn is_variable_name(name: &str) -> bool {
 
     while index < bytes.len() {
         match bytes[index] {
-            byte if byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'+' | b'.') => {
+            byte if byte.is_ascii_alphanumeric()
+                || matches!(byte, b'_' | b'-' | b'+' | b'.' | b'/') =>
+            {
                 component_has_content = true;
                 index += 1;
             }

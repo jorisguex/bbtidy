@@ -1,5 +1,5 @@
 use bbtidy::{SyntaxKind, format, lint, parse};
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -57,9 +57,27 @@ fn focused_syntax_corpus_matches_golden_output_and_invariants() {
         let expected_diagnostic_list = expected_diagnostics["diagnostics"][file_name]
             .as_array()
             .unwrap();
+        let actual = diagnostics
+            .iter()
+            .map(|diagnostic| {
+                json!({
+                    "rule_id": diagnostic.rule_id(),
+                    "severity": diagnostic.severity().to_string(),
+                    "line": diagnostic.line(),
+                    "column": diagnostic.column(),
+                    "end_line": diagnostic.end_line(),
+                    "end_column": diagnostic.end_column(),
+                    "range": {
+                        "start_byte": diagnostic.range().start(),
+                        "end_byte": diagnostic.range().end(),
+                    },
+                    "message": diagnostic.message(),
+                })
+            })
+            .collect::<Vec<_>>();
         assert_eq!(
-            diagnostics.len(),
-            expected_diagnostic_list.len(),
+            Value::Array(actual),
+            Value::Array(expected_diagnostic_list.clone()),
             "{} diagnostics changed",
             input_path.display()
         );

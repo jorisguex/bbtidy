@@ -74,8 +74,8 @@
     }
   ],
   "syntax_metrics": {
-    "minimum_structured_nodes": 22271,
-    "maximum_unknown_nodes": 30,
+    "minimum_structured_nodes": 22301,
+    "maximum_unknown_nodes": 0,
     "baseline_metrics": "baselines/community-master.json"
   },
   "bitbake": {

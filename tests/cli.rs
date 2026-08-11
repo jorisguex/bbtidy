@@ -30,6 +30,26 @@ fn syntax_stats_reports_machine_readable_cst_coverage() {
 }
 
 #[test]
+fn syntax_stats_details_report_unknown_ranges_before_and_after_formatting() {
+    let directory = TemporaryDirectory::new("syntax-stats-details");
+    let file = directory.write("example.bb", "SUMMARY=\"demo\"\nunsupported statement\n");
+
+    let output = run(["syntax-stats", "--details", file.to_str().unwrap()]);
+
+    assert_success(&output);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let details = report["details"].as_array().unwrap();
+    assert_eq!(details.len(), 1);
+    assert_eq!(details[0]["path"], file.to_str().unwrap());
+    assert_eq!(details[0]["before"][0]["start_byte"], 15);
+    assert_eq!(details[0]["before"][0]["length"], 22);
+    assert_eq!(details[0]["after"][0]["start_byte"], 17);
+    assert_eq!(details[0]["after"][0]["length"], 22);
+    assert_eq!(details[0]["before"][0]["previous_kind"], "assignment");
+    assert_eq!(details[0]["before"][0]["next_kind"], Value::Null);
+}
+
+#[test]
 fn format_prints_to_stdout_without_modifying_the_file() {
     let directory = TemporaryDirectory::new("format-stdout");
     let file = directory.write("example.bb", UNFORMATTED);

@@ -1,0 +1,1551 @@
+{
+  "corpus_id": "yocto-5.0-prechange",
+  "groups": [
+    {
+      "classification": "valid_bitbake_syntax",
+      "count": 68,
+      "signature": "LICENSE:<scope>/<component> = \"STRING\""
+    },
+    {
+      "classification": "valid_bitbake_syntax",
+      "count": 1,
+      "signature": "PREFERRED_VERSION_virtual/<provider> ?= \"STRING\""
+    }
+  ],
+  "records": [
+    {
+      "after": [
+        {
+          "end_byte": 962,
+          "first_line": "LICENSE:modules/freebsd/vmblock = \"BSD-2-Clause\"",
+          "length": 49,
+          "next_kind": "unknown",
+          "previous_kind": "assignment",
+          "start_byte": 913
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 962,
+      "first_line": "LICENSE:modules/freebsd/vmblock = \"BSD-2-Clause\"",
+      "length": 49,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-networking/recipes-support/open-vm-tools/open-vm-tools_12.3.5.bb",
+      "previous_kind": "assignment",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 913
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1012,
+          "first_line": "LICENSE:modules/freebsd/vmmemctl = \"GPL-2.0-only\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 962
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1012,
+      "first_line": "LICENSE:modules/freebsd/vmmemctl = \"GPL-2.0-only\"",
+      "length": 50,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-networking/recipes-support/open-vm-tools/open-vm-tools_12.3.5.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 962
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1060,
+          "first_line": "LICENSE:modules/freebsd/vmxnet = \"GPL-2.0-only\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1012
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1060,
+      "first_line": "LICENSE:modules/freebsd/vmxnet = \"GPL-2.0-only\"",
+      "length": 48,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-networking/recipes-support/open-vm-tools/open-vm-tools_12.3.5.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1012
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1099,
+          "first_line": "LICENSE:modules/linux = \"GPL-2.0-only\"",
+          "length": 39,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1060
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1099,
+      "first_line": "LICENSE:modules/linux = \"GPL-2.0-only\"",
+      "length": 39,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-networking/recipes-support/open-vm-tools/open-vm-tools_12.3.5.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1060
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1136,
+          "first_line": "LICENSE:modules/solaris = \"CDDL-1.0\"",
+          "length": 37,
+          "next_kind": "blank",
+          "previous_kind": "unknown",
+          "start_byte": 1099
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1136,
+      "first_line": "LICENSE:modules/solaris = \"CDDL-1.0\"",
+      "length": 37,
+      "next_kind": "blank",
+      "path": "meta-openembedded/meta-networking/recipes-support/open-vm-tools/open-vm-tools_12.3.5.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1099
+    },
+    {
+      "after": [
+        {
+          "end_byte": 178,
+          "first_line": "LICENSE:dictionaries/bg = \"LGPL 2.1\"",
+          "length": 37,
+          "next_kind": "unknown",
+          "previous_kind": "assignment",
+          "start_byte": 141
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 178,
+      "first_line": "LICENSE:dictionaries/bg = \"LGPL 2.1\"",
+      "length": 37,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "assignment",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 141
+    },
+    {
+      "after": [
+        {
+          "end_byte": 214,
+          "first_line": "LICENSE:dictionaries/br = \"GPL 3.0\"",
+          "length": 36,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 178
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 214,
+      "first_line": "LICENSE:dictionaries/br = \"GPL 3.0\"",
+      "length": 36,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 178
+    },
+    {
+      "after": [
+        {
+          "end_byte": 275,
+          "first_line": "LICENSE:dictionaries/ca-valencia = \"GPL 2.0 & LGPL-2.1-only\"",
+          "length": 61,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 214
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 275,
+      "first_line": "LICENSE:dictionaries/ca-valencia = \"GPL 2.0 & LGPL-2.1-only\"",
+      "length": 61,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 214
+    },
+    {
+      "after": [
+        {
+          "end_byte": 327,
+          "first_line": "LICENSE:dictionaries/ca = \"GPL 2.0 & LGPL-2.1-only\"",
+          "length": 52,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 275
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 327,
+      "first_line": "LICENSE:dictionaries/ca = \"GPL 2.0 & LGPL-2.1-only\"",
+      "length": 52,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 275
+    },
+    {
+      "after": [
+        {
+          "end_byte": 368,
+          "first_line": "LICENSE:dictionaries/cs = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 327
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 368,
+      "first_line": "LICENSE:dictionaries/cs = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 327
+    },
+    {
+      "after": [
+        {
+          "end_byte": 409,
+          "first_line": "LICENSE:dictionaries/da = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 368
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 409,
+      "first_line": "LICENSE:dictionaries/da = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 368
+    },
+    {
+      "after": [
+        {
+          "end_byte": 453,
+          "first_line": "LICENSE:dictionaries/de-AT = \"GPL-3.0-only\"",
+          "length": 44,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 409
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 453,
+      "first_line": "LICENSE:dictionaries/de-AT = \"GPL-3.0-only\"",
+      "length": 44,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 409
+    },
+    {
+      "after": [
+        {
+          "end_byte": 497,
+          "first_line": "LICENSE:dictionaries/de-CH = \"GPL-3.0-only\"",
+          "length": 44,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 453
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 497,
+      "first_line": "LICENSE:dictionaries/de-CH = \"GPL-3.0-only\"",
+      "length": 44,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 453
+    },
+    {
+      "after": [
+        {
+          "end_byte": 538,
+          "first_line": "LICENSE:dictionaries/de = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 497
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 538,
+      "first_line": "LICENSE:dictionaries/de = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 497
+    },
+    {
+      "after": [
+        {
+          "end_byte": 587,
+          "first_line": "LICENSE:dictionaries/el-polyton = \"GPL-2.0-only\"",
+          "length": 49,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 538
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 587,
+      "first_line": "LICENSE:dictionaries/el-polyton = \"GPL-2.0-only\"",
+      "length": 49,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 538
+    },
+    {
+      "after": [
+        {
+          "end_byte": 628,
+          "first_line": "LICENSE:dictionaries/el = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 587
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 628,
+      "first_line": "LICENSE:dictionaries/el = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 587
+    },
+    {
+      "after": [
+        {
+          "end_byte": 673,
+          "first_line": "LICENSE:dictionaries/en-AU = \"LGPL-2.0-only\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 628
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 673,
+      "first_line": "LICENSE:dictionaries/en-AU = \"LGPL-2.0-only\"",
+      "length": 45,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 628
+    },
+    {
+      "after": [
+        {
+          "end_byte": 714,
+          "first_line": "LICENSE:dictionaries/en-CA = \"MIT & BSD\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 673
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 714,
+      "first_line": "LICENSE:dictionaries/en-CA = \"MIT & BSD\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 673
+    },
+    {
+      "after": [
+        {
+          "end_byte": 759,
+          "first_line": "LICENSE:dictionaries/en-GB = \"LGPL-2.0-only\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 714
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 759,
+      "first_line": "LICENSE:dictionaries/en-GB = \"LGPL-2.0-only\"",
+      "length": 45,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 714
+    },
+    {
+      "after": [
+        {
+          "end_byte": 800,
+          "first_line": "LICENSE:dictionaries/en-US = \"MIT & BSD\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 759
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 800,
+      "first_line": "LICENSE:dictionaries/en-US = \"MIT & BSD\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 759
+    },
+    {
+      "after": [
+        {
+          "end_byte": 840,
+          "first_line": "LICENSE:dictionaries/en-ZA = \"LGPL 2.1\"",
+          "length": 40,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 800
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 840,
+      "first_line": "LICENSE:dictionaries/en-ZA = \"LGPL 2.1\"",
+      "length": 40,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 800
+    },
+    {
+      "after": [
+        {
+          "end_byte": 881,
+          "first_line": "LICENSE:dictionaries/eo = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 840
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 881,
+      "first_line": "LICENSE:dictionaries/eo = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 840
+    },
+    {
+      "after": [
+        {
+          "end_byte": 922,
+          "first_line": "LICENSE:dictionaries/es = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 881
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 922,
+      "first_line": "LICENSE:dictionaries/es = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 881
+    },
+    {
+      "after": [
+        {
+          "end_byte": 964,
+          "first_line": "LICENSE:dictionaries/et = \"LGPL-2.1-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 922
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 964,
+      "first_line": "LICENSE:dictionaries/et = \"LGPL-2.1-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 922
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1005,
+          "first_line": "LICENSE:dictionaries/eu = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 964
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1005,
+      "first_line": "LICENSE:dictionaries/eu = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 964
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1046,
+          "first_line": "LICENSE:dictionaries/fo = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1005
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1046,
+      "first_line": "LICENSE:dictionaries/fo = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1005
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1082,
+          "first_line": "LICENSE:dictionaries/fr = \"MPL-2.0\"",
+          "length": 36,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1046
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1082,
+      "first_line": "LICENSE:dictionaries/fr = \"MPL-2.0\"",
+      "length": 36,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1046
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1124,
+          "first_line": "LICENSE:dictionaries/fur = \"GPL-2.0-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1082
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1124,
+      "first_line": "LICENSE:dictionaries/fur = \"GPL-2.0-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1082
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1165,
+          "first_line": "LICENSE:dictionaries/fy = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1124
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1165,
+      "first_line": "LICENSE:dictionaries/fy = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1124
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1206,
+          "first_line": "LICENSE:dictionaries/ga = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1165
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1206,
+      "first_line": "LICENSE:dictionaries/ga = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1165
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1247,
+          "first_line": "LICENSE:dictionaries/gd = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1206
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1247,
+      "first_line": "LICENSE:dictionaries/gd = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1206
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1288,
+          "first_line": "LICENSE:dictionaries/gl = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1247
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1288,
+      "first_line": "LICENSE:dictionaries/gl = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1247
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1330,
+          "first_line": "LICENSE:dictionaries/he = \"AGPL-3.0-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1288
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1330,
+      "first_line": "LICENSE:dictionaries/he = \"AGPL-3.0-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1288
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1371,
+          "first_line": "LICENSE:dictionaries/hr = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1330
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1371,
+      "first_line": "LICENSE:dictionaries/hr = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1330
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1412,
+          "first_line": "LICENSE:dictionaries/hu = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1371
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1412,
+      "first_line": "LICENSE:dictionaries/hu = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1371
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1461,
+          "first_line": "LICENSE:dictionaries/hy-arevela = \"GPL-2.0-only\"",
+          "length": 49,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1412
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1461,
+      "first_line": "LICENSE:dictionaries/hy-arevela = \"GPL-2.0-only\"",
+      "length": 49,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1412
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1510,
+          "first_line": "LICENSE:dictionaries/hy-arevmda = \"GPL-2.0-only\"",
+          "length": 49,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1461
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1510,
+      "first_line": "LICENSE:dictionaries/hy-arevmda = \"GPL-2.0-only\"",
+      "length": 49,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1461
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1551,
+          "first_line": "LICENSE:dictionaries/ia = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1510
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1551,
+      "first_line": "LICENSE:dictionaries/ia = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1510
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1590,
+          "first_line": "LICENSE:dictionaries/ie = \"Apache-2.0\"",
+          "length": 39,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1551
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1590,
+      "first_line": "LICENSE:dictionaries/ie = \"Apache-2.0\"",
+      "length": 39,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1551
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1643,
+          "first_line": "LICENSE:dictionaries/is = \"CC BY-SA 3.0 & CC BY 4.0\"",
+          "length": 53,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1590
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1643,
+      "first_line": "LICENSE:dictionaries/is = \"CC BY-SA 3.0 & CC BY 4.0\"",
+      "length": 53,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1590
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1684,
+          "first_line": "LICENSE:dictionaries/it = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1643
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1684,
+      "first_line": "LICENSE:dictionaries/it = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1643
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1751,
+          "first_line": "LICENSE:dictionaries/ko = \"MPL-1.1 & GPL-2.0-only & LGPL-2.1-only\"",
+          "length": 67,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1684
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1751,
+      "first_line": "LICENSE:dictionaries/ko = \"MPL-1.1 & GPL-2.0-only & LGPL-2.1-only\"",
+      "length": 67,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1684
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1792,
+          "first_line": "LICENSE:dictionaries/la = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1751
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1792,
+      "first_line": "LICENSE:dictionaries/la = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1751
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1829,
+          "first_line": "LICENSE:dictionaries/lb = \"EUPL-1.1\"",
+          "length": 37,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1792
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1829,
+      "first_line": "LICENSE:dictionaries/lb = \"EUPL-1.1\"",
+      "length": 37,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1792
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1863,
+          "first_line": "LICENSE:dictionaries/lt = \"Other\"",
+          "length": 34,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1829
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1863,
+      "first_line": "LICENSE:dictionaries/lt = \"Other\"",
+      "length": 34,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1829
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1906,
+          "first_line": "LICENSE:dictionaries/ltg = \"LGPL-2.1-only\"",
+          "length": 43,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1863
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1906,
+      "first_line": "LICENSE:dictionaries/ltg = \"LGPL-2.1-only\"",
+      "length": 43,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1863
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1948,
+          "first_line": "LICENSE:dictionaries/lv = \"LGPL-2.1-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1906
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1948,
+      "first_line": "LICENSE:dictionaries/lv = \"LGPL-2.1-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1906
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1989,
+          "first_line": "LICENSE:dictionaries/mk = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1948
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1989,
+      "first_line": "LICENSE:dictionaries/mk = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1948
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2030,
+          "first_line": "LICENSE:dictionaries/mn = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1989
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2030,
+      "first_line": "LICENSE:dictionaries/mn = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 1989
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2071,
+          "first_line": "LICENSE:dictionaries/nb = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2030
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2071,
+      "first_line": "LICENSE:dictionaries/nb = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2030
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2113,
+          "first_line": "LICENSE:dictionaries/nds = \"GPL-2.0-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2071
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2113,
+      "first_line": "LICENSE:dictionaries/nds = \"GPL-2.0-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2071
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2155,
+          "first_line": "LICENSE:dictionaries/ne = \"LGPL-2.1-only\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2113
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2155,
+      "first_line": "LICENSE:dictionaries/ne = \"LGPL-2.1-only\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2113
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2187,
+          "first_line": "LICENSE:dictionaries/nl = \"BSD\"",
+          "length": 32,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2155
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2187,
+      "first_line": "LICENSE:dictionaries/nl = \"BSD\"",
+      "length": 32,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2155
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2228,
+          "first_line": "LICENSE:dictionaries/nn = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2187
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2228,
+      "first_line": "LICENSE:dictionaries/nn = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2187
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2269,
+          "first_line": "LICENSE:dictionaries/pl = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2228
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2269,
+      "first_line": "LICENSE:dictionaries/pl = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2228
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2309,
+          "first_line": "LICENSE:dictionaries/pt-BR = \"LGPL 2.1\"",
+          "length": 40,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2269
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2309,
+      "first_line": "LICENSE:dictionaries/pt-BR = \"LGPL 2.1\"",
+      "length": 40,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2269
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2350,
+          "first_line": "LICENSE:dictionaries/pt = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2309
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2350,
+      "first_line": "LICENSE:dictionaries/pt = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2309
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2391,
+          "first_line": "LICENSE:dictionaries/ro = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2350
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2391,
+      "first_line": "LICENSE:dictionaries/ro = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2350
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2423,
+          "first_line": "LICENSE:dictionaries/ru = \"BSD\"",
+          "length": 32,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2391
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2423,
+      "first_line": "LICENSE:dictionaries/ru = \"BSD\"",
+      "length": 32,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2391
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2464,
+          "first_line": "LICENSE:dictionaries/rw = \"GPL-3.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2423
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2464,
+      "first_line": "LICENSE:dictionaries/rw = \"GPL-3.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2423
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2505,
+          "first_line": "LICENSE:dictionaries/sk = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2464
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2505,
+      "first_line": "LICENSE:dictionaries/sk = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2464
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2546,
+          "first_line": "LICENSE:dictionaries/sl = \"GPL-2.0-only\"",
+          "length": 41,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2505
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2546,
+      "first_line": "LICENSE:dictionaries/sl = \"GPL-2.0-only\"",
+      "length": 41,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2505
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2588,
+          "first_line": "LICENSE:dictionaries/sr-Latn = \"LGPL 3.0\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2546
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2588,
+      "first_line": "LICENSE:dictionaries/sr-Latn = \"LGPL 3.0\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2546
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2625,
+          "first_line": "LICENSE:dictionaries/sr = \"LGPL 3.0\"",
+          "length": 37,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2588
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2625,
+      "first_line": "LICENSE:dictionaries/sr = \"LGPL 3.0\"",
+      "length": 37,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2588
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2662,
+          "first_line": "LICENSE:dictionaries/sv = \"LGPL 3.0\"",
+          "length": 37,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2625
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2662,
+      "first_line": "LICENSE:dictionaries/sv = \"LGPL 3.0\"",
+      "length": 37,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2625
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2694,
+          "first_line": "LICENSE:dictionaries/tr = \"MIT\"",
+          "length": 32,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2662
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2694,
+      "first_line": "LICENSE:dictionaries/tr = \"MIT\"",
+      "length": 32,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2662
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2730,
+          "first_line": "LICENSE:dictionaries/uk = \"GPL 2.0\"",
+          "length": 36,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 2694
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2730,
+      "first_line": "LICENSE:dictionaries/uk = \"GPL 2.0\"",
+      "length": 36,
+      "next_kind": "unknown",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2694
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2766,
+          "first_line": "LICENSE:dictionaries/vi = \"GPL 3.0\"",
+          "length": 36,
+          "next_kind": "assignment",
+          "previous_kind": "unknown",
+          "start_byte": 2730
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2766,
+      "first_line": "LICENSE:dictionaries/vi = \"GPL 3.0\"",
+      "length": 36,
+      "next_kind": "assignment",
+      "path": "meta-openembedded/meta-oe/recipes-support/hunspell/hunspell-dictionaries.bb",
+      "previous_kind": "unknown",
+      "signature": "LICENSE:<scope>/<component> = \"STRING\"",
+      "start_byte": 2730
+    },
+    {
+      "after": [
+        {
+          "end_byte": 3176,
+          "first_line": "PREFERRED_VERSION_virtual/${TARGET_PREFIX}go ?= \"${GOVERSION}\"",
+          "length": 63,
+          "next_kind": "assignment",
+          "previous_kind": "assignment",
+          "start_byte": 3113
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 3241,
+      "first_line": "PREFERRED_VERSION_virtual/${TARGET_PREFIX}go ?= \"${GOVERSION}\"",
+      "length": 63,
+      "next_kind": "assignment",
+      "path": "poky/meta/conf/distro/include/tcmode-default.inc",
+      "previous_kind": "assignment",
+      "signature": "PREFERRED_VERSION_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 3178
+    }
+  ],
+  "schema": 1,
+  "source_metrics": {
+    "files": 3359,
+    "structured_nodes": 71266,
+    "total_nodes": 122293,
+    "trivia_nodes": 50958,
+    "unknown_bytes": 2911,
+    "unknown_nodes": 69
+  },
+  "summary": {
+    "all_groups_classified": true,
+    "groups": 2,
+    "unknown_nodes_after_formatting": 69,
+    "unknown_nodes_before_formatting": 69
+  }
+}
+

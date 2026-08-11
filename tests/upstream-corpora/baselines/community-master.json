@@ -4,20 +4,20 @@
   "generated_at": "2026-08-06",
   "source": {
     "files": 667,
-    "structured_nodes": 22271,
+    "structured_nodes": 22301,
     "total_nodes": 32301,
     "trivia_nodes": 10000,
-    "unknown_bytes": 1753,
-    "unknown_nodes": 30,
+    "unknown_bytes": 0,
+    "unknown_nodes": 0,
     "version": 1
   },
   "formatted": {
     "files": 667,
-    "structured_nodes": 22271,
+    "structured_nodes": 22301,
     "total_nodes": 32269,
     "trivia_nodes": 9968,
-    "unknown_bytes": 1753,
-    "unknown_nodes": 30,
+    "unknown_bytes": 0,
+    "unknown_nodes": 0,
     "version": 1
   },
   "observations": {

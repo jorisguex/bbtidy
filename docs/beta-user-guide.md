@@ -142,6 +142,9 @@ Lint also analyzes embedded bodies with `BBT034` through `BBT036`: shell
 control-flow pairing, Python delimiters/compound-statement syntax, and Python
 indentation. These checks do not execute code or external tools, and formatting
 continues to leave shell and Python body bytes unchanged.
+Parser-boundary and embedded-language compatibility measurements are tracked in
+the [parser precision evidence](parser-precision.md), including exact source
+ranges and reviewed unknown-node classifications.
 
 When `OVERRIDES` is statically known, offline lint normalizes modern colon and
 unambiguous legacy underscore keys, resolves active precedence, and applies

@@ -560,6 +560,11 @@ The `0.1.0-alpha.4` lexer recognizes:
 Legacy underscore overrides are interpreted when their suffix is unambiguous
 against the active `OVERRIDES` list; ambiguous or dynamic forms remain
 lossless and are left to BitBake.
+Evidence-backed slash-bearing provider/version and override-scoped assignment
+forms, including `PREFERRED_PROVIDER_virtual/<provider>`, are recognized
+structurally while remaining formatter-verbatim. Detailed unknown-node,
+boundary, and embedded-language evidence is recorded in
+[`docs/parser-precision.md`](docs/parser-precision.md).
 The formatter remains deliberately conservative: outside the opt-in static-list
 layout above, it does not wrap values, reindent continuation lines, or format
 embedded shell or Python code.

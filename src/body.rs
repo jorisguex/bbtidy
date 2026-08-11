@@ -1,4 +1,6 @@
-use crate::TextRange;
+use crate::{
+    TextRange, bitbake_expression_end, next_char_boundary, skip_shell_command_substitution,
+};
 
 /// The class of a diagnostic produced while inspecting an embedded body.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -53,9 +55,29 @@ enum ShellBlockKind {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ShellBlockPhase {
+    IfCondition,
+    IfBody,
+    IfElse,
+    LoopHeader,
+    LoopBody,
+    CaseHeader,
+    CasePatterns,
+    CaseCommands,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ShellBlock {
     kind: ShellBlockKind,
     offset: usize,
+    phase: ShellBlockPhase,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ShellBoundary {
+    None,
+    CasePatternEnd,
+    CaseArmEnd,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -63,6 +85,7 @@ struct ShellToken<'a> {
     text: &'a str,
     range: TextRange,
     command_position: bool,
+    boundary: ShellBoundary,
 }
 
 /// Performs conservative syntax analysis on a shell function body.
@@ -74,116 +97,202 @@ struct ShellToken<'a> {
 pub fn analyze_shell_body(source: &str) -> Vec<BodyDiagnostic> {
     let tokens = shell_tokens(source);
     let mut diagnostics = Vec::new();
-    let mut blocks = Vec::new();
+    let mut blocks: Vec<ShellBlock> = Vec::new();
+    let mut uncertain = false;
 
     for token in tokens {
+        if uncertain {
+            continue;
+        }
+        if let Some(block) = blocks.last_mut()
+            && block.kind == ShellBlockKind::Case
+        {
+            match token.boundary {
+                ShellBoundary::CasePatternEnd if block.phase == ShellBlockPhase::CasePatterns => {
+                    block.phase = ShellBlockPhase::CaseCommands;
+                    continue;
+                }
+                ShellBoundary::CaseArmEnd if block.phase == ShellBlockPhase::CaseCommands => {
+                    block.phase = ShellBlockPhase::CasePatterns;
+                    continue;
+                }
+                _ => {}
+            }
+            if block.phase == ShellBlockPhase::CasePatterns {
+                if token.text == "in" && !token.command_position {
+                    continue;
+                }
+                if token.text != "esac" {
+                    continue;
+                }
+            }
+        }
         if !token.command_position {
+            if token.text == "in"
+                && blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::Case && block.phase == ShellBlockPhase::CaseHeader
+                })
+            {
+                if let Some(block) = blocks.last_mut() {
+                    block.phase = ShellBlockPhase::CasePatterns;
+                }
+            }
             continue;
         }
         match token.text {
             "if" => blocks.push(ShellBlock {
                 kind: ShellBlockKind::If,
                 offset: token.range.start(),
+                phase: ShellBlockPhase::IfCondition,
             }),
             "for" | "while" | "until" | "select" => blocks.push(ShellBlock {
                 kind: ShellBlockKind::Loop,
                 offset: token.range.start(),
+                phase: ShellBlockPhase::LoopHeader,
             }),
             "case" => blocks.push(ShellBlock {
                 kind: ShellBlockKind::Case,
                 offset: token.range.start(),
+                phase: ShellBlockPhase::CaseHeader,
             }),
             "then" => {
-                if blocks
-                    .last()
-                    .is_none_or(|block| block.kind != ShellBlockKind::If)
-                {
-                    diagnostics.push(BodyDiagnostic::new(
-                        BodyDiagnosticKind::ShellSyntax,
-                        token.range,
-                        "shell 'then' has no matching 'if'",
-                    ));
+                let valid = blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::If && block.phase == ShellBlockPhase::IfCondition
+                });
+                if valid {
+                    blocks.last_mut().unwrap().phase = ShellBlockPhase::IfBody;
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'then' is not valid in the current if phase",
+                    );
+                    uncertain = true;
                 }
             }
-            "elif" | "else" => {
-                if blocks
-                    .last()
-                    .is_none_or(|block| block.kind != ShellBlockKind::If)
-                {
-                    diagnostics.push(BodyDiagnostic::new(
-                        BodyDiagnosticKind::ShellSyntax,
-                        token.range,
-                        format!("shell '{}' has no matching 'if'", token.text),
-                    ));
+            "elif" => {
+                if blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::If && block.phase == ShellBlockPhase::IfBody
+                }) {
+                    blocks.last_mut().unwrap().phase = ShellBlockPhase::IfCondition;
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'elif' is not valid in the current if phase",
+                    );
+                    uncertain = true;
                 }
             }
-            "fi" => close_shell_block(
-                &mut blocks,
-                ShellBlockKind::If,
-                token,
-                "fi",
-                &mut diagnostics,
-            ),
+            "else" => {
+                if blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::If && block.phase == ShellBlockPhase::IfBody
+                }) {
+                    blocks.last_mut().unwrap().phase = ShellBlockPhase::IfElse;
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'else' is not valid in the current if phase",
+                    );
+                    uncertain = true;
+                }
+            }
+            "fi" => {
+                let valid = blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::If
+                        && matches!(
+                            block.phase,
+                            ShellBlockPhase::IfBody | ShellBlockPhase::IfElse
+                        )
+                });
+                if valid {
+                    blocks.pop();
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'fi' does not match the open if block",
+                    );
+                    uncertain = true;
+                }
+            }
             "do" => {
-                if blocks
-                    .last()
-                    .is_none_or(|block| block.kind != ShellBlockKind::Loop)
-                {
-                    diagnostics.push(BodyDiagnostic::new(
-                        BodyDiagnosticKind::ShellSyntax,
-                        token.range,
-                        "shell 'do' has no matching loop",
-                    ));
+                let valid = blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::Loop && block.phase == ShellBlockPhase::LoopHeader
+                });
+                if valid {
+                    blocks.last_mut().unwrap().phase = ShellBlockPhase::LoopBody;
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'do' is not valid in the current loop phase",
+                    );
+                    uncertain = true;
                 }
             }
-            "done" => close_shell_block(
-                &mut blocks,
-                ShellBlockKind::Loop,
-                token,
-                "done",
-                &mut diagnostics,
-            ),
-            "esac" => close_shell_block(
-                &mut blocks,
-                ShellBlockKind::Case,
-                token,
-                "esac",
-                &mut diagnostics,
-            ),
+            "done" => {
+                let valid = blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::Loop && block.phase == ShellBlockPhase::LoopBody
+                });
+                if valid {
+                    blocks.pop();
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'done' does not match the open loop block",
+                    );
+                    uncertain = true;
+                }
+            }
+            "esac" => {
+                let valid = blocks.last().is_some_and(|block| {
+                    block.kind == ShellBlockKind::Case
+                        && matches!(
+                            block.phase,
+                            ShellBlockPhase::CasePatterns | ShellBlockPhase::CaseCommands
+                        )
+                });
+                if valid {
+                    blocks.pop();
+                } else {
+                    push_shell_error(
+                        &mut diagnostics,
+                        token,
+                        "shell 'esac' does not match the open case block",
+                    );
+                    uncertain = true;
+                }
+            }
             _ => {}
         }
     }
 
-    for block in blocks.into_iter().rev() {
-        let closing = match block.kind {
-            ShellBlockKind::If => "fi",
-            ShellBlockKind::Loop => "done",
-            ShellBlockKind::Case => "esac",
-        };
-        diagnostics.push(BodyDiagnostic::new(
-            BodyDiagnosticKind::ShellSyntax,
-            TextRange::new(block.offset, block.offset + 1),
-            format!("shell block is missing closing '{closing}'"),
-        ));
+    if !uncertain {
+        for block in blocks.into_iter().rev() {
+            let closing = match block.kind {
+                ShellBlockKind::If => "fi",
+                ShellBlockKind::Loop => "done",
+                ShellBlockKind::Case => "esac",
+            };
+            diagnostics.push(BodyDiagnostic::new(
+                BodyDiagnosticKind::ShellSyntax,
+                TextRange::new(block.offset, block.offset + 1),
+                format!("shell block is missing closing '{closing}'"),
+            ));
+        }
     }
+    sort_body_diagnostics(&mut diagnostics);
     diagnostics
 }
 
-fn close_shell_block(
-    blocks: &mut Vec<ShellBlock>,
-    expected: ShellBlockKind,
-    token: ShellToken<'_>,
-    closing: &str,
-    diagnostics: &mut Vec<BodyDiagnostic>,
-) {
-    if blocks.last().is_some_and(|block| block.kind == expected) {
-        blocks.pop();
-        return;
-    }
+fn push_shell_error(diagnostics: &mut Vec<BodyDiagnostic>, token: ShellToken<'_>, message: &str) {
     diagnostics.push(BodyDiagnostic::new(
         BodyDiagnosticKind::ShellSyntax,
         token.range,
-        format!("shell '{closing}' does not match the open control-flow block"),
+        message,
     ));
 }
 
@@ -201,6 +310,15 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
     let mut line_start = 0;
 
     while index < bytes.len() {
+        if index == line_start
+            && word_start.is_none()
+            && let Some(end) = skip_embedded_python_definition(source, index)
+        {
+            index = end;
+            line_start = end;
+            command_position = true;
+            continue;
+        }
         if index == line_start && !active_here_docs.is_empty() {
             let line_end = bytes[index..]
                 .iter()
@@ -258,6 +376,18 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
             continue;
         }
         if let Some(delimiter) = quote {
+            if delimiter == b'"' && bytes[index..].starts_with(b"$(") {
+                if let Some(end) = skip_shell_command_substitution(bytes, index + 2) {
+                    index = end;
+                    continue;
+                }
+            }
+            if delimiter == b'"' && byte == b'`' {
+                if let Some(end) = skip_shell_backtick_substitution(bytes, index + 1) {
+                    index = end;
+                    continue;
+                }
+            }
             if byte == delimiter {
                 quote = None;
                 index += 1;
@@ -270,6 +400,28 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
         if let Some(end) = bitbake_expression_end(bytes, index) {
             index = end;
             continue;
+        }
+
+        if bytes[index..].starts_with(b"$(")
+            || bytes[index..].starts_with(b"<(")
+            || bytes[index..].starts_with(b">(")
+        {
+            if word_start.is_none() {
+                word_start = Some(index);
+            }
+            if let Some(end) = skip_shell_command_substitution(bytes, index + 2) {
+                index = end;
+                continue;
+            }
+        }
+        if byte == b'`' {
+            if word_start.is_none() {
+                word_start = Some(index);
+            }
+            if let Some(end) = skip_shell_backtick_substitution(bytes, index + 1) {
+                index = end;
+                continue;
+            }
         }
 
         if byte == b'\n' {
@@ -334,7 +486,43 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
             index += 2;
             continue;
         }
-        if matches!(byte, b';' | b'|' | b'&' | b'(' | b')') {
+        if byte == b';' && bytes.get(index + 1) == Some(&b';') {
+            emit_shell_word(
+                source,
+                &mut word_start,
+                index,
+                command_position,
+                &mut tokens,
+            );
+            tokens.push(ShellToken {
+                text: &source[index..index + 2],
+                range: TextRange::new(index, index + 2),
+                command_position: true,
+                boundary: ShellBoundary::CaseArmEnd,
+            });
+            command_position = true;
+            index += 2;
+            continue;
+        }
+        if byte == b')' {
+            emit_shell_word(
+                source,
+                &mut word_start,
+                index,
+                command_position,
+                &mut tokens,
+            );
+            tokens.push(ShellToken {
+                text: &source[index..index + 1],
+                range: TextRange::new(index, index + 1),
+                command_position: true,
+                boundary: ShellBoundary::CasePatternEnd,
+            });
+            command_position = true;
+            index += 1;
+            continue;
+        }
+        if matches!(byte, b';' | b'|' | b'&' | b'(') {
             emit_shell_word(
                 source,
                 &mut word_start,
@@ -361,53 +549,46 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
     tokens
 }
 
-fn bitbake_expression_end(bytes: &[u8], start: usize) -> Option<usize> {
-    if !bytes.get(start..)?.starts_with(b"${") {
+fn skip_embedded_python_definition(source: &str, start: usize) -> Option<usize> {
+    let first_end = source[start..]
+        .find('\n')
+        .map(|relative| start + relative + 1)
+        .unwrap_or(source.len());
+    let first_line = &source[start..first_end];
+    let (content, _) = first_line
+        .strip_suffix("\r\n")
+        .map_or((first_line, ""), |line| (line, "\r\n"));
+    let leading = content.len() - content.trim_start_matches([' ', '\t']).len();
+    let trimmed = content[leading..].trim();
+    if leading == 0 || !trimmed.starts_with("def ") || !trimmed.contains(':') {
         return None;
     }
-    let mut depth = 1usize;
-    let mut quote = None;
-    let mut escaped = false;
-    let mut index = start + 2;
-    while index < bytes.len() {
-        let byte = bytes[index];
-        if escaped {
-            escaped = false;
-            index += 1;
-            continue;
-        }
-        if byte == b'\\' {
-            escaped = true;
-            index += 1;
-            continue;
-        }
-        if let Some(delimiter) = quote {
-            if byte == delimiter {
-                quote = None;
-            }
-            index += 1;
-            continue;
-        }
-        if matches!(byte, b'\'' | b'"') {
-            quote = Some(byte);
-        } else if byte == b'{' {
-            depth += 1;
-        } else if byte == b'}' {
-            depth -= 1;
-            if depth == 0 {
-                return Some(index + 1);
-            }
-        }
-        index += 1;
-    }
-    None
-}
 
-fn next_char_boundary(source: &str, index: usize) -> usize {
-    source[index..]
-        .chars()
-        .next()
-        .map_or(source.len(), |character| index + character.len_utf8())
+    let mut offset = first_end;
+    let mut saw_body = false;
+    let mut triple_quote = None;
+    while offset < source.len() {
+        let line_end = source[offset..]
+            .find('\n')
+            .map(|relative| offset + relative + 1)
+            .unwrap_or(source.len());
+        let line = &source[offset..line_end];
+        let (line_content, _) = line
+            .strip_suffix("\r\n")
+            .map_or((line, ""), |value| (value, "\r\n"));
+        let line_leading = line_content.len() - line_content.trim_start_matches([' ', '\t']).len();
+        let line_trimmed = line_content[line_leading..].trim();
+        if saw_body && triple_quote.is_none() && !line_trimmed.is_empty() && line_leading <= leading
+        {
+            break;
+        }
+        if !line_trimmed.is_empty() && line_leading > leading {
+            saw_body = true;
+        }
+        python_line_triple_state(line_content, &mut triple_quote);
+        offset = line_end;
+    }
+    saw_body.then_some(offset)
 }
 
 fn emit_shell_word<'a>(
@@ -425,8 +606,25 @@ fn emit_shell_word<'a>(
         text,
         range: TextRange::new(start, end),
         command_position,
+        boundary: ShellBoundary::None,
     });
     true
+}
+
+fn skip_shell_backtick_substitution(bytes: &[u8], mut index: usize) -> Option<usize> {
+    let mut escaped = false;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if escaped {
+            escaped = false;
+        } else if byte == b'\\' {
+            escaped = true;
+        } else if byte == b'`' {
+            return Some(index + 1);
+        }
+        index += 1;
+    }
+    None
 }
 
 fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<(Vec<u8>, bool)> {
@@ -460,9 +658,45 @@ fn here_document_delimiter(bytes: &[u8], mut index: usize) -> Option<(Vec<u8>, b
 /// Performs conservative syntax and indentation analysis on a Python body.
 pub fn analyze_python_body(source: &str) -> Vec<BodyDiagnostic> {
     let mut diagnostics = analyze_python_tokens(source);
-    diagnostics.extend(analyze_python_indentation(source));
-    diagnostics.extend(analyze_python_compound_statements(source));
+    let lexical_error = diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.kind() == BodyDiagnosticKind::PythonSyntax);
+    if !lexical_error {
+        diagnostics.extend(analyze_python_indentation(source));
+        diagnostics.extend(analyze_python_compound_statements(source));
+    }
+    sort_body_diagnostics(&mut diagnostics);
     diagnostics
+}
+
+fn sort_body_diagnostics(diagnostics: &mut Vec<BodyDiagnostic>) {
+    diagnostics.sort_by(|left, right| {
+        (
+            left.range().start(),
+            left.range().end(),
+            body_diagnostic_kind_order(left.kind()),
+            left.message(),
+        )
+            .cmp(&(
+                right.range().start(),
+                right.range().end(),
+                body_diagnostic_kind_order(right.kind()),
+                right.message(),
+            ))
+    });
+    diagnostics.dedup_by(|left, right| {
+        left.kind() == right.kind()
+            && left.range() == right.range()
+            && left.message() == right.message()
+    });
+}
+
+const fn body_diagnostic_kind_order(kind: BodyDiagnosticKind) -> u8 {
+    match kind {
+        BodyDiagnosticKind::ShellSyntax => 0,
+        BodyDiagnosticKind::PythonSyntax => 1,
+        BodyDiagnosticKind::PythonIndentation => 2,
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -473,10 +707,17 @@ enum PythonQuote {
     TripleDouble,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PythonDelimiter {
+    opening: u8,
+    offset: usize,
+}
+
 fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
     let bytes = source.as_bytes();
     let mut diagnostics = Vec::new();
-    let mut delimiters = Vec::<(u8, usize)>::new();
+    let mut delimiters = Vec::<PythonDelimiter>::new();
+    let mut delimiter_uncertain = false;
     let mut quote = None;
     let mut quote_start = 0;
     let mut escaped = false;
@@ -541,7 +782,12 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
             continue;
         }
         if matches!(byte, b'(' | b'[' | b'{') {
-            delimiters.push((byte, index));
+            if !delimiter_uncertain {
+                delimiters.push(PythonDelimiter {
+                    opening: byte,
+                    offset: index,
+                });
+            }
         } else if matches!(byte, b')' | b']' | b'}') {
             let expected = match byte {
                 b')' => b'(',
@@ -549,7 +795,15 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
                 b'}' => b'{',
                 _ => unreachable!(),
             };
-            if delimiters.last().is_some_and(|(open, _)| *open == expected) {
+            if delimiter_uncertain {
+                // Once a delimiter mismatch is observed, later delimiter
+                // structure is not reliable enough to diagnose without a
+                // cascade. Continue lexing strings/comments, but suppress
+                // dependent delimiter findings below.
+            } else if delimiters
+                .last()
+                .is_some_and(|delimiter| delimiter.opening == expected)
+            {
                 delimiters.pop();
             } else {
                 diagnostics.push(BodyDiagnostic::new(
@@ -560,6 +814,7 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
                         byte as char
                     ),
                 ));
+                delimiter_uncertain = true;
             }
         }
         index = next_char_boundary(source, index);
@@ -581,7 +836,12 @@ fn analyze_python_tokens(source: &str) -> Vec<BodyDiagnostic> {
             format!("Python string is missing closing delimiter {delimiter}"),
         ));
     }
-    for (open, offset) in delimiters.into_iter().rev() {
+    if delimiter_uncertain {
+        return diagnostics;
+    }
+    for delimiter in delimiters.into_iter().rev() {
+        let open = delimiter.opening;
+        let offset = delimiter.offset;
         let closing = match open {
             b'(' => ')',
             b'[' => ']',
@@ -606,6 +866,7 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
     let mut base = None;
     let mut previous_opens_block = false;
     let mut line_continuation = false;
+    let mut previous_uncertain = false;
     let mut offset = 0;
     let mut triple_quote = None;
     let delimiter_depths = python_delimiter_depths(source);
@@ -640,13 +901,6 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
             offset += line.len();
             continue;
         }
-        if prefix.contains(' ') && prefix.contains('\t') {
-            diagnostics.push(BodyDiagnostic::new(
-                BodyDiagnosticKind::PythonIndentation,
-                TextRange::new(offset, offset + prefix_len),
-                "Python indentation mixes tabs and spaces",
-            ));
-        }
         if delimiter_depths
             .get(line_index)
             .copied()
@@ -664,13 +918,20 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
             offset += line.len();
             continue;
         }
+        if prefix.contains(' ') && prefix.contains('\t') {
+            diagnostics.push(BodyDiagnostic::new(
+                BodyDiagnosticKind::PythonIndentation,
+                TextRange::new(offset, offset + prefix_len),
+                "Python indentation mixes tabs and spaces",
+            ));
+        }
         let indent = python_indent_width(prefix);
         let base_indent = *base.get_or_insert(indent);
         if levels.is_empty() {
             levels.push(base_indent);
         }
         if indent > *levels.last().unwrap() {
-            if !previous_opens_block {
+            if !previous_opens_block && !previous_uncertain {
                 diagnostics.push(BodyDiagnostic::new(
                     BodyDiagnosticKind::PythonIndentation,
                     TextRange::new(offset, offset + prefix_len),
@@ -697,6 +958,7 @@ fn analyze_python_indentation(source: &str) -> Vec<BodyDiagnostic> {
                 .copied()
                 .unwrap_or_default()
                 == 0;
+        previous_uncertain = is_python_compound_start(code) && !has_python_top_level_colon(code);
         line_continuation = code.ends_with('\\');
         offset += line.len();
     }
@@ -808,13 +1070,18 @@ fn analyze_python_compound_statements(source: &str) -> Vec<BodyDiagnostic> {
 
 fn python_delimiter_depths(source: &str) -> Vec<usize> {
     let mut depths = Vec::new();
-    let mut depth: usize = 0;
+    let mut delimiters = Vec::<u8>::new();
+    let mut uncertain = false;
     let mut triple_quote: Option<[u8; 3]> = None;
     let mut quote: Option<u8> = None;
     let mut escaped = false;
 
     for line in source.split_inclusive('\n') {
-        depths.push(depth);
+        depths.push(if uncertain {
+            usize::MAX
+        } else {
+            delimiters.len()
+        });
         let bytes = line.as_bytes();
         let mut index = 0;
         while index < bytes.len() {
@@ -853,8 +1120,20 @@ fn python_delimiter_depths(source: &str) -> Vec<usize> {
                 continue;
             }
             match byte {
-                b'(' | b'[' | b'{' => depth += 1,
-                b')' | b']' | b'}' => depth = depth.saturating_sub(1),
+                b'(' | b'[' | b'{' if !uncertain => delimiters.push(byte),
+                b')' | b']' | b'}' if !uncertain => {
+                    let expected = match byte {
+                        b')' => b'(',
+                        b']' => b'[',
+                        b'}' => b'{',
+                        _ => unreachable!(),
+                    };
+                    if delimiters.last().copied() == Some(expected) {
+                        delimiters.pop();
+                    } else {
+                        uncertain = true;
+                    }
+                }
                 _ => {}
             }
             index = next_char_boundary(line, index);
@@ -927,7 +1206,7 @@ fn has_python_top_level_colon(code: &str) -> bool {
     let bytes = code.as_bytes();
     let mut quote = None;
     let mut escaped = false;
-    let mut depth = 0usize;
+    let mut stack = Vec::new();
     for byte in bytes.iter().copied() {
         if escaped {
             escaped = false;
@@ -946,10 +1225,19 @@ fn has_python_top_level_colon(code: &str) -> bool {
         if matches!(byte, b'\'' | b'"') {
             quote = Some(byte);
         } else if matches!(byte, b'(' | b'[' | b'{') {
-            depth += 1;
+            stack.push(byte);
         } else if matches!(byte, b')' | b']' | b'}') {
-            depth = depth.saturating_sub(1);
-        } else if byte == b':' && depth == 0 {
+            let expected = match byte {
+                b')' => b'(',
+                b']' => b'[',
+                b'}' => b'{',
+                _ => unreachable!(),
+            };
+            if stack.last().copied() != Some(expected) {
+                return false;
+            }
+            stack.pop();
+        } else if byte == b':' && stack.is_empty() {
             return true;
         }
     }
@@ -978,8 +1266,62 @@ mod tests {
     }
 
     #[test]
+    fn shell_analysis_keeps_case_patterns_and_substitutions_opaque() {
+        let source = concat!(
+            "case \"$value\" in\n",
+            "    if) echo pattern ;;\n",
+            "    *) echo \"$(if true; then echo nested)\" ;;\n",
+            "esac\n",
+            "echo `if true; then echo nested`\n",
+        );
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
+    fn shell_analysis_allows_control_flow_inside_case_commands() {
+        let source = concat!(
+            "case \"$value\" in\n",
+            "    one) if true; then echo one; fi ;;\n",
+            "    *) echo other ;;\n",
+            "esac\n",
+        );
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
+    fn shell_analysis_reports_only_the_primary_phase_error() {
+        let source = "if true; then echo one; else echo two; else echo three; fi\n";
+        let diagnostics = analyze_shell_body(source);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].range(), TextRange::new(39, 43));
+    }
+
+    #[test]
     fn shell_analysis_ignores_bitbake_python_expansions() {
         let source = "${@' '.join(['%s=%s' % (key, value) for key in keys for value in values])}\nfor name in one; do\n\techo $name\ndone\n";
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
+    fn shell_analysis_keeps_nested_quotes_in_command_substitutions_opaque() {
+        let source = concat!(
+            "if [ -d ${BAREBOX_ENV_DIR} ]; then\n",
+            "    value=\"$(grep CONFIG .config | tr -d '\"')\"\n",
+            "else\n",
+            "    value=empty\n",
+            "fi\n",
+        );
+        assert!(analyze_shell_body(source).is_empty());
+    }
+
+    #[test]
+    fn shell_analysis_ignores_embedded_python_definitions() {
+        let source = concat!(
+            "    def helper(d):\n",
+            "        if value:\n",
+            "            return d\n",
+            "    helper(d)\n",
+        );
         assert!(analyze_shell_body(source).is_empty());
     }
 
@@ -988,18 +1330,30 @@ mod tests {
         let valid = "    if value:\n        return {\"value\": value}\n\t    \n    values = (\n        one\n        two\n    )\n    continued = one + \\\n        two\n    try_value = 1\n    elsewhere = 2\n";
         assert!(analyze_python_body(valid).is_empty());
 
-        let invalid = "    if value\n\treturn (value\n";
+        let invalid = "    if value\n\treturn value\n";
         let diagnostics = analyze_python_body(invalid);
-        assert!(
-            diagnostics
-                .iter()
-                .any(|diagnostic| diagnostic.kind() == BodyDiagnosticKind::PythonSyntax)
-        );
-        assert!(
-            diagnostics
-                .iter()
-                .any(|diagnostic| { diagnostic.kind() == BodyDiagnosticKind::PythonIndentation })
-        );
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].kind(), BodyDiagnosticKind::PythonSyntax);
+        assert_eq!(diagnostics[0].range(), TextRange::new(4, 12));
+    }
+
+    #[test]
+    fn python_analysis_suppresses_cascades_after_delimiter_mismatch() {
+        let source = "    value = (one]\n    if value:\n        return value\n";
+        let diagnostics = analyze_python_body(source);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].kind(), BodyDiagnosticKind::PythonSyntax);
+        assert_eq!(diagnostics[0].range(), TextRange::new(16, 17));
+    }
+
+    #[test]
+    fn python_diagnostics_are_sorted_by_exact_source_range() {
+        let source = "    if value\n\t return value\n";
+        let diagnostics = analyze_python_body(source);
+        assert_eq!(diagnostics.len(), 2);
+        assert!(diagnostics[0].range().start() < diagnostics[1].range().start());
+        assert_eq!(diagnostics[0].range(), TextRange::new(4, 12));
+        assert_eq!(diagnostics[1].range(), TextRange::new(13, 15));
     }
 
     #[test]
@@ -1021,5 +1375,27 @@ mod tests {
             assert!(source.is_char_boundary(diagnostic.range().start()));
             assert!(source.is_char_boundary(diagnostic.range().end()));
         }
+    }
+
+    #[test]
+    fn body_diagnostics_preserve_crlf_tabs_and_exact_ranges() {
+        let shell = "if true; then\r\n\telse\r\n\telse\r\nfi\r\n";
+        let second_else = shell.rfind("else").unwrap();
+        let shell_diagnostics = analyze_shell_body(shell);
+        assert_eq!(shell_diagnostics.len(), 1);
+        assert_eq!(
+            shell_diagnostics[0].range(),
+            TextRange::new(second_else, second_else + "else".len())
+        );
+
+        let python = "    if value\r\n\treturn value\r\n";
+        let python_diagnostics = analyze_python_body(python);
+        assert_eq!(python_diagnostics.len(), 1);
+        assert_eq!(
+            python_diagnostics[0].kind(),
+            BodyDiagnosticKind::PythonSyntax
+        );
+        assert_eq!(python_diagnostics[0].range(), TextRange::new(4, 12));
+        assert!(python.is_char_boundary(python_diagnostics[0].range().end()));
     }
 }

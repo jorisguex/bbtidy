@@ -3,7 +3,16 @@
   "diagnostics": {
     "directives.inc": [],
     "legacy-overrides.bb": [
-      {"rule_id": "BBT015"}
+      {
+        "column": 10,
+        "end_column": 55,
+        "end_line": 3,
+        "line": 3,
+        "message": "Git URI 'git://example.invalid/example.git;branch=main' does not declare a protocol",
+        "range": {"end_byte": 111, "start_byte": 66},
+        "rule_id": "BBT015",
+        "severity": "warning"
+      }
     ],
     "modern.bb": [],
     "opaque-and-dynamic.bb": [],

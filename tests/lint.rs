@@ -158,8 +158,25 @@ fn body_lint_analyzes_shell_control_flow_and_python_syntax() {
         "missing Python syntax finding in {ids:?}"
     );
     assert!(
-        ids.contains(&"BBT036"),
-        "missing Python indentation finding in {ids:?}"
+        !ids.contains(&"BBT036"),
+        "syntax cascade leaked into {ids:?}"
+    );
+
+    let indentation_source = concat!(
+        "python do_check() {\n",
+        "    if value:\n",
+        "        return value\n",
+        " \treturn value\n",
+        "}\n",
+    );
+    let indentation_ids = lint(indentation_source)
+        .unwrap()
+        .iter()
+        .map(|diagnostic| diagnostic.rule_id())
+        .collect::<Vec<_>>();
+    assert!(
+        indentation_ids.contains(&"BBT036"),
+        "missing Python indentation finding in {indentation_ids:?}"
     );
     assert!(diagnostics.iter().all(|diagnostic| diagnostic.line() > 1));
 }

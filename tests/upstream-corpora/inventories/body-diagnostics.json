@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "review_policy": "Each observed finding is classified as a reviewed true positive, a removed false positive, or unclear; no unclear findings remain in the pinned corpus snapshots.",
+  "corpus_summary": [
+    {
+      "corpus_id": "community-master",
+      "files": 667,
+      "function_kind": "shell-or-python",
+      "BBT034": 0,
+      "BBT035": 0,
+      "BBT036": 0,
+      "review": "no findings"
+    },
+    {
+      "corpus_id": "yocto-5.0-scarthgap",
+      "files": 3359,
+      "function_kind": "shell-or-python",
+      "BBT034": 0,
+      "BBT035": 0,
+      "BBT036": 0,
+      "review": "no findings after false-positive boundary fix"
+    },
+    {
+      "corpus_id": "yocto-6.0-wrynose",
+      "files": 3643,
+      "function_kind": "shell-or-python",
+      "BBT034": 0,
+      "BBT035": 0,
+      "BBT036": 0,
+      "review": "no findings after false-positive boundary fix"
+    }
+  ],
+  "reviewed_true_positives": [
+    {
+      "id": "shell-missing-fi",
+      "rule_id": "BBT034",
+      "message": "shell block is missing closing 'fi'",
+      "construct": "if condition without fi",
+      "function_kind": "shell",
+      "classification": "true_positive",
+      "coverage": "src/body.rs shell_analysis_matches_control_flow_and_ignores_quoted_text"
+    },
+    {
+      "id": "shell-phase-mismatch",
+      "rule_id": "BBT034",
+      "message": "shell 'else' is not valid in the current if phase",
+      "construct": "duplicate else phase",
+      "function_kind": "shell",
+      "classification": "true_positive",
+      "coverage": "src/body.rs shell_analysis_reports_only_the_primary_phase_error"
+    },
+    {
+      "id": "python-delimiter-mismatch",
+      "rule_id": "BBT035",
+      "message": "Python closing delimiter ']' does not match opener '('",
+      "construct": "typed delimiter mismatch",
+      "function_kind": "python",
+      "classification": "true_positive",
+      "coverage": "src/body.rs python_analysis_suppresses_cascades_after_delimiter_mismatch"
+    },
+    {
+      "id": "python-missing-colon",
+      "rule_id": "BBT035",
+      "message": "Python compound statement is missing a top-level ':'",
+      "construct": "if compound header without colon",
+      "function_kind": "python",
+      "classification": "true_positive",
+      "coverage": "src/body.rs python_analysis_reports_delimiters_compound_colons_and_indentation"
+    },
+    {
+      "id": "python-mixed-indentation",
+      "rule_id": "BBT036",
+      "message": "Python indentation mixes tabs and spaces",
+      "construct": "mixed indentation prefix",
+      "function_kind": "python",
+      "classification": "true_positive",
+      "coverage": "tests/lint.rs body_lint_analyzes_shell_control_flow_and_python_syntax"
+    }
+  ],
+  "reviewed_removed_false_positives": [
+    {
+      "rule_id": "BBT034",
+      "message_patterns": [
+        "shell block is missing closing 'fi'",
+        "shell block is missing closing 'done'"
+      ],
+      "construct": "embedded Python def and nested quote in a shell function body",
+      "function_kind": "shell",
+      "classification": "false_positive_removed",
+      "yocto_5_count": 7,
+      "yocto_5_files": ["meta/classes-recipe/kernel.bbclass"],
+      "yocto_6_count": 8,
+      "yocto_6_files": [
+        "meta/classes-recipe/kernel.bbclass",
+        "meta/classes-recipe/barebox.bbclass"
+      ],
+      "fix": "skip nested command/process substitutions and embedded Python definitions conservatively"
+    }
+  ],
+  "unclear_count": 0
+}

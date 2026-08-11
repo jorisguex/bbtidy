@@ -1,0 +1,1205 @@
+{
+  "corpus_id": "community-master",
+  "groups": [
+    {
+      "classification": "valid_bitbake_syntax",
+      "count": 2,
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> = \"STRING\""
+    },
+    {
+      "classification": "valid_bitbake_syntax",
+      "count": 28,
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\""
+    }
+  ],
+  "records": [
+    {
+      "after": [
+        {
+          "end_byte": 350,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+          "length": 69,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 281
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 350,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+      "length": 69,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am57xx.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 281
+    },
+    {
+      "after": [
+        {
+          "end_byte": 253,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 182
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 253,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am62pxx.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 182
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am62xx.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 262,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+          "length": 69,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 193
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 262,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+      "length": 69,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am65xx.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 193
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am68.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/am69.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 251,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 180
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 251,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/j721e.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 180
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/j721s2.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 251,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 180
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 251,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/j722s.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 180
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/j742s2.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 252,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+          "length": 71,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 181
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 252,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_ROGUE_DRIVER_PROVIDER}\"",
+      "length": 71,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/j784s4.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 181
+    },
+    {
+      "after": [
+        {
+          "end_byte": 605,
+          "first_line": "PREFERRED_PROVIDER_virtual/kernel = \"linux-dummy\"",
+          "length": 50,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 555
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 605,
+      "first_line": "PREFERRED_PROVIDER_virtual/kernel = \"linux-dummy\"",
+      "length": 50,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/k3r5.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> = \"STRING\"",
+      "start_byte": 555
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 46,
+      "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+      "length": 46,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": null,
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 0
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 91,
+      "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+      "length": 45,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 46
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 141,
+      "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+      "length": 50,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 91
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 191,
+      "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+      "length": 50,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 141
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 241,
+      "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+      "length": 50,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 191
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 289,
+      "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+      "length": 48,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 241
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 337,
+      "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+      "length": 48,
+      "next_kind": "unknown",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 289
+    },
+    {
+      "after": [
+        {
+          "end_byte": 46,
+          "first_line": "PREFERRED_PROVIDER_virtual/mesa ?= \"mesa-pvr\"",
+          "length": 46,
+          "next_kind": "unknown",
+          "previous_kind": null,
+          "start_byte": 0
+        },
+        {
+          "end_byte": 91,
+          "first_line": "PREFERRED_PROVIDER_virtual/egl ?= \"mesa-pvr\"",
+          "length": 45,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 46
+        },
+        {
+          "end_byte": 141,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles1 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 91
+        },
+        {
+          "end_byte": 191,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles2 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 141
+        },
+        {
+          "end_byte": 241,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgles3 ?= \"mesa-pvr\"",
+          "length": 50,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 191
+        },
+        {
+          "end_byte": 289,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgbm ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 241
+        },
+        {
+          "end_byte": 337,
+          "first_line": "PREFERRED_PROVIDER_virtual/libglx ?= \"mesa-pvr\"",
+          "length": 48,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 289
+        },
+        {
+          "end_byte": 384,
+          "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+          "length": 47,
+          "next_kind": null,
+          "previous_kind": "unknown",
+          "start_byte": 337
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 384,
+      "first_line": "PREFERRED_PROVIDER_virtual/libgl ?= \"mesa-pvr\"",
+      "length": 47,
+      "next_kind": null,
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/mesa-pvr.inc",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 337
+    },
+    {
+      "after": [
+        {
+          "end_byte": 3312,
+          "first_line": "PREFERRED_PROVIDER_virtual/kernel ?= \"${BSP_KERNEL_PROVIDER}\"",
+          "length": 62,
+          "next_kind": "assignment",
+          "previous_kind": "comment",
+          "start_byte": 3250
+        },
+        {
+          "end_byte": 3521,
+          "first_line": "PREFERRED_PROVIDER_virtual/bootloader ?= \"${BSP_BOOTLOADER_PROVIDER}\"",
+          "length": 70,
+          "next_kind": "assignment",
+          "previous_kind": "assignment",
+          "start_byte": 3451
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 3312,
+      "first_line": "PREFERRED_PROVIDER_virtual/kernel ?= \"${BSP_KERNEL_PROVIDER}\"",
+      "length": 62,
+      "next_kind": "assignment",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/ti-bsp.inc",
+      "previous_kind": "comment",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 3250
+    },
+    {
+      "after": [
+        {
+          "end_byte": 3312,
+          "first_line": "PREFERRED_PROVIDER_virtual/kernel ?= \"${BSP_KERNEL_PROVIDER}\"",
+          "length": 62,
+          "next_kind": "assignment",
+          "previous_kind": "comment",
+          "start_byte": 3250
+        },
+        {
+          "end_byte": 3521,
+          "first_line": "PREFERRED_PROVIDER_virtual/bootloader ?= \"${BSP_BOOTLOADER_PROVIDER}\"",
+          "length": 70,
+          "next_kind": "assignment",
+          "previous_kind": "assignment",
+          "start_byte": 3451
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 3521,
+      "first_line": "PREFERRED_PROVIDER_virtual/bootloader ?= \"${BSP_BOOTLOADER_PROVIDER}\"",
+      "length": 70,
+      "next_kind": "assignment",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/ti-bsp.inc",
+      "previous_kind": "assignment",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 3451
+    },
+    {
+      "after": [
+        {
+          "end_byte": 348,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+          "length": 69,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 279
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 348,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+      "length": 69,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/ti33x.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 279
+    },
+    {
+      "after": [
+        {
+          "end_byte": 348,
+          "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+          "length": 69,
+          "next_kind": "blank",
+          "previous_kind": "directive",
+          "start_byte": 279
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 348,
+      "first_line": "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_SGX_DRIVER_PROVIDER}\"",
+      "length": 69,
+      "next_kind": "blank",
+      "path": "meta-ti/meta-ti-bsp/conf/machine/include/ti43x.inc",
+      "previous_kind": "directive",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 279
+    },
+    {
+      "after": [
+        {
+          "end_byte": 597,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+          "length": 42,
+          "next_kind": "blank",
+          "previous_kind": "comment",
+          "start_byte": 555
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 597,
+      "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+      "length": 42,
+      "next_kind": "blank",
+      "path": "meta-virtualization/conf/distro/include/meta-virt-host.conf",
+      "previous_kind": "comment",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 555
+    },
+    {
+      "after": [
+        {
+          "end_byte": 2721,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc = \"runc\"",
+          "length": 41,
+          "next_kind": null,
+          "previous_kind": "comment",
+          "start_byte": 2680
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 2721,
+      "first_line": "PREFERRED_PROVIDER_virtual/runc = \"runc\"",
+      "length": 41,
+      "next_kind": null,
+      "path": "meta-virtualization/conf/distro/vruntime.conf",
+      "previous_kind": "comment",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> = \"STRING\"",
+      "start_byte": 2680
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1403,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "blank",
+          "start_byte": 1361
+        },
+        {
+          "end_byte": 1457,
+          "first_line": "PREFERRED_PROVIDER_virtual/containerd ?= \"containerd\"",
+          "length": 54,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1403
+        },
+        {
+          "end_byte": 1508,
+          "first_line": "PREFERRED_PROVIDER_virtual/docker ?= \"docker-moby\"",
+          "length": 51,
+          "next_kind": "blank",
+          "previous_kind": "unknown",
+          "start_byte": 1457
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1403,
+      "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+      "length": 42,
+      "next_kind": "unknown",
+      "path": "meta-virtualization/conf/layer.conf",
+      "previous_kind": "blank",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 1361
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1403,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "blank",
+          "start_byte": 1361
+        },
+        {
+          "end_byte": 1457,
+          "first_line": "PREFERRED_PROVIDER_virtual/containerd ?= \"containerd\"",
+          "length": 54,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1403
+        },
+        {
+          "end_byte": 1508,
+          "first_line": "PREFERRED_PROVIDER_virtual/docker ?= \"docker-moby\"",
+          "length": 51,
+          "next_kind": "blank",
+          "previous_kind": "unknown",
+          "start_byte": 1457
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1457,
+      "first_line": "PREFERRED_PROVIDER_virtual/containerd ?= \"containerd\"",
+      "length": 54,
+      "next_kind": "unknown",
+      "path": "meta-virtualization/conf/layer.conf",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 1403
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1403,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+          "length": 42,
+          "next_kind": "unknown",
+          "previous_kind": "blank",
+          "start_byte": 1361
+        },
+        {
+          "end_byte": 1457,
+          "first_line": "PREFERRED_PROVIDER_virtual/containerd ?= \"containerd\"",
+          "length": 54,
+          "next_kind": "unknown",
+          "previous_kind": "unknown",
+          "start_byte": 1403
+        },
+        {
+          "end_byte": 1508,
+          "first_line": "PREFERRED_PROVIDER_virtual/docker ?= \"docker-moby\"",
+          "length": 51,
+          "next_kind": "blank",
+          "previous_kind": "unknown",
+          "start_byte": 1457
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1508,
+      "first_line": "PREFERRED_PROVIDER_virtual/docker ?= \"docker-moby\"",
+      "length": 51,
+      "next_kind": "blank",
+      "path": "meta-virtualization/conf/layer.conf",
+      "previous_kind": "unknown",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 1457
+    },
+    {
+      "after": [
+        {
+          "end_byte": 1191,
+          "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+          "length": 42,
+          "next_kind": "blank",
+          "previous_kind": "assignment",
+          "start_byte": 1149
+        }
+      ],
+      "appears_after_formatting": true,
+      "classification": "valid_bitbake_syntax",
+      "end_byte": 1191,
+      "first_line": "PREFERRED_PROVIDER_virtual/runc ?= \"runc\"",
+      "length": 42,
+      "next_kind": "blank",
+      "path": "meta-virtualization/conf/multiconfig/vxn-x86-64.conf",
+      "previous_kind": "assignment",
+      "signature": "PREFERRED_PROVIDER_virtual/<provider> ?= \"STRING\"",
+      "start_byte": 1149
+    }
+  ],
+  "schema": 1,
+  "source_metrics": {
+    "files": 667,
+    "structured_nodes": 22271,
+    "total_nodes": 32301,
+    "trivia_nodes": 10000,
+    "unknown_bytes": 1753,
+    "unknown_nodes": 30
+  },
+  "summary": {
+    "all_groups_classified": true,
+    "groups": 2,
+    "unknown_nodes_after_formatting": 30,
+    "unknown_nodes_before_formatting": 30
+  }
+}
+

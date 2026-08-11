@@ -49,6 +49,9 @@ All notable changes to this project will be documented in this file.
 - Conservative shell and Python body analysis for shell control-flow pairing,
   Python syntax/delimiters, and Python indentation, with source ranges and
   byte-preserving body boundaries.
+- Evidence-backed parser precision for slash-bearing provider assignments,
+  formatter-verbatim CST recognition, typed shell/Python boundary scanning,
+  cascade-suppressed body diagnostics, and checked-in corpus inventories.
 - Full static override modeling for modern and legacy keys, active precedence,
   key expansion, and `append`/`prepend`/`remove` operations, with public
   resolver APIs and unknown-component diagnostics.

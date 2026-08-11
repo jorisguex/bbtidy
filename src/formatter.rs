@@ -54,7 +54,11 @@ pub fn format_syntax_with_options(tree: &SyntaxTree<'_>, options: &FormatOptions
         match node.kind() {
             SyntaxKind::Blank => append_normalized_blank_line(&mut output, node.text(), options),
             SyntaxKind::Assignment(assignment) => {
-                format_assignment(&mut output, node, assignment, options)
+                if is_format_safe_assignment(assignment) {
+                    format_assignment(&mut output, node, assignment, options);
+                } else {
+                    output.push_str(node.text());
+                }
             }
             SyntaxKind::Directive(directive) => {
                 format_directive(&mut output, node, directive, options)
@@ -64,6 +68,13 @@ pub fn format_syntax_with_options(tree: &SyntaxTree<'_>, options: &FormatOptions
     }
 
     output
+}
+
+/// Recognition and formatting are intentionally separate. Provider variables
+/// containing `/` are now structured for analysis, but their unusual names
+/// are preserved verbatim until a dedicated formatting policy is approved.
+fn is_format_safe_assignment(assignment: &AssignmentSyntax<'_>) -> bool {
+    !assignment.name().contains('/')
 }
 
 fn format_assignment(

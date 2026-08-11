@@ -46,8 +46,8 @@
     "source_state": "formatted"
   },
   "measurement": {
-    "files_with_findings": 1876,
-    "findings_sha256": "454c326e456f9399873e293cd589ce5d5a31bcc40855eb8634719f71273b6f8d",
+    "files_with_findings": 1874,
+    "findings_sha256": "a99391554985a0896fb2cfcc4af6ab390bc3d0c1f3b67886d88e07573bc2fbaf",
     "rules": {
       "BBT001": {
         "count": 280,
@@ -380,13 +380,13 @@
         }
       },
       "BBT034": {
-        "count": 8,
-        "files": 2,
-        "findings_sha256": "7aed2bc86414ed072d1b6651c08bef22d2c970e5d8d676b4e20b511f4f98a193",
+        "count": 0,
+        "files": 0,
+        "findings_sha256": "b2bc3ba6cffd624538098147ac46e81b147e2648fe240ed23c834320b97a78dd",
         "severity_counts": {
           "error": 0,
           "info": 0,
-          "warning": 8
+          "warning": 0
         }
       },
       "BBT035": {
@@ -423,9 +423,9 @@
     "severity_counts": {
       "error": 0,
       "info": 0,
-      "warning": 2753
+      "warning": 2745
     },
-    "total_findings": 2753
+    "total_findings": 2745
   },
   "review": {
     "rules": {

@@ -195,6 +195,12 @@ lexical and conservative: it does not execute shell/Python, resolve commands or
 imports, or inspect runtime behavior. Formatting continues to preserve every
 body byte.
 
+Parser-boundary evidence, unknown-node inventories, exact-range fixtures, and
+the pinned Yocto/community measurements are maintained in
+[`docs/parser-precision.md`](parser-precision.md). A syntax recognition change
+requires reviewed corpus evidence; recognition alone does not authorize new
+formatter behavior.
+
 Override handling is static when the source provides literal `OVERRIDES` and
 assignment values. Modern colon syntax and unambiguous legacy underscore
 syntax are normalized, active override precedence is applied, and

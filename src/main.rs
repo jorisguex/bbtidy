@@ -3,8 +3,8 @@ use bbtidy::{
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
     LintSeverity, SafetyOptions, SemanticAnalysisOptions, SemanticOptions, SemanticReport,
     SyntaxKind, Token, WorkspaceIndex, analyze_bitbake_with_limits, analyze_bitbake_with_runner,
-    apply_lint_fixes, discover_build_context_with_options, format_with_options, get_line_col,
-    lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
+    apply_lint_fixes, discover_build_context_with_options, format, format_with_options,
+    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
     semantic_lint_diagnostics,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -60,7 +60,7 @@ enum Command {
 
     /// Report CST coverage metrics for the compatibility harness
     #[command(hide = true)]
-    SyntaxStats(InputArgs),
+    SyntaxStats(SyntaxStatsArgs),
 }
 
 #[derive(Args)]
@@ -301,6 +301,16 @@ struct InputArgs {
     /// Files or directories to process; use '-' to read standard input
     #[arg(value_name = "PATH")]
     paths: Vec<PathBuf>,
+}
+
+#[derive(Args)]
+struct SyntaxStatsArgs {
+    /// Include per-file unknown-node records and before/after formatting data.
+    #[arg(long)]
+    details: bool,
+
+    #[command(flatten)]
+    inputs: InputArgs,
 }
 
 #[derive(Debug)]
@@ -1408,8 +1418,8 @@ fn run_lex(args: InputArgs, config: &Config) -> i32 {
     if had_error { EXIT_ERROR } else { 0 }
 }
 
-fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
-    let inputs = match resolve_inputs(&args.paths, config) {
+fn run_syntax_stats(args: SyntaxStatsArgs, config: &Config) -> i32 {
+    let inputs = match resolve_inputs(&args.inputs.paths, config) {
         Ok(inputs) => inputs,
         Err(error) => {
             eprintln!("error: {error}");
@@ -1422,6 +1432,7 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
     let mut unknown_nodes = 0_u64;
     let mut unknown_bytes = 0_u64;
 
+    let mut details = Vec::new();
     for input in &inputs {
         let (label, text) = match read_input(input) {
             Ok(source) => source,
@@ -1437,6 +1448,22 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
                 return EXIT_ERROR;
             }
         };
+        let before_unknowns = if args.details {
+            unknown_node_details(&text, tree.nodes())
+        } else {
+            Vec::new()
+        };
+        let after_unknowns = if args.details {
+            match format(&text) {
+                Ok(formatted) => match parse(&formatted) {
+                    Ok(formatted_tree) => unknown_node_details(&formatted, formatted_tree.nodes()),
+                    Err(_) => Vec::new(),
+                },
+                Err(_) => Vec::new(),
+            }
+        } else {
+            Vec::new()
+        };
         for node in tree.nodes() {
             total_nodes += 1;
             match node.kind() {
@@ -1451,9 +1478,16 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
                 | SyntaxKind::PythonDefinition(_) => structured_nodes += 1,
             }
         }
+        if args.details {
+            details.push(json!({
+                "path": label,
+                "before": before_unknowns,
+                "after": after_unknowns,
+            }));
+        }
     }
 
-    let report = json!({
+    let mut report = json!({
         "version": 1,
         "files": inputs.len(),
         "total_nodes": total_nodes,
@@ -1462,6 +1496,9 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
         "unknown_nodes": unknown_nodes,
         "unknown_bytes": unknown_bytes,
     });
+    if args.details {
+        report["details"] = Value::Array(details);
+    }
     match serde_json::to_string_pretty(&report) {
         Ok(report) => {
             println!("{report}");
@@ -1471,6 +1508,47 @@ fn run_syntax_stats(args: InputArgs, config: &Config) -> i32 {
             eprintln!("error: could not serialize syntax statistics: {error}");
             EXIT_ERROR
         }
+    }
+}
+
+fn unknown_node_details(source: &str, nodes: &[bbtidy::SyntaxNode<'_>]) -> Vec<Value> {
+    nodes
+        .iter()
+        .enumerate()
+        .filter_map(|(index, node)| {
+            if !matches!(node.kind(), SyntaxKind::Unknown) {
+                return None;
+            }
+            let start = node.range().start();
+            let end = node.range().end();
+            let excerpt = source[start..end]
+                .lines()
+                .next()
+                .unwrap_or_default()
+                .chars()
+                .take(160)
+                .collect::<String>();
+            Some(json!({
+                "start_byte": start,
+                "end_byte": end,
+                "length": node.range().len(),
+                "excerpt": excerpt,
+                "previous_kind": index.checked_sub(1).map(|i| syntax_kind_name(nodes[i].kind())),
+                "next_kind": nodes.get(index + 1).map(|next| syntax_kind_name(next.kind())),
+            }))
+        })
+        .collect()
+}
+
+fn syntax_kind_name(kind: &SyntaxKind<'_>) -> &'static str {
+    match kind {
+        SyntaxKind::Blank => "blank",
+        SyntaxKind::Comment => "comment",
+        SyntaxKind::Assignment(_) => "assignment",
+        SyntaxKind::Directive(_) => "directive",
+        SyntaxKind::Function(_) => "function",
+        SyntaxKind::PythonDefinition(_) => "python_definition",
+        SyntaxKind::Unknown => "unknown",
     }
 }
 

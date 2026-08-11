@@ -2,7 +2,7 @@ use crate::{
     AssignmentOperator, FormatError, ScannerFunctionKind, SyntaxError, comment_start,
     find_assignment_operator, find_brace_block_end, find_continuation_end, find_python_def_end,
     function_opening_brace, has_balanced_quotes, has_line_continuation,
-    is_assignment_left_hand_side, is_blank_line, is_python_def_start, next_line_end,
+    is_assignment_left_hand_side, is_blank_line, next_line_end, python_def_header,
     split_line_ending,
 };
 
@@ -83,10 +83,15 @@ pub enum SyntaxKind<'a> {
     Directive(DirectiveSyntax<'a>),
     Function(FunctionSyntax<'a>),
     PythonDefinition(PythonDefinitionSyntax<'a>),
+    /// Lossless syntax outside the currently reviewed structured grammar.
     Unknown,
 }
 
 /// Structured information retained for a top-level assignment.
+///
+/// Reviewed slash-bearing provider/version and override-scoped names are
+/// included when recognized from the BitBake corpora. The formatter still
+/// preserves those assignment nodes verbatim.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AssignmentSyntax<'a> {
     name: &'a str,
@@ -133,6 +138,7 @@ impl<'a> AssignmentSyntax<'a> {
     }
 }
 
+/// A recognized BitBake top-level directive keyword.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum DirectiveKeyword {
     Include,
@@ -294,15 +300,15 @@ pub fn parse(source: &str) -> Result<SyntaxTree<'_>, SyntaxError> {
                     TextRange::new(offset + opening_brace + 1, closing_brace),
                 )),
             )
-        } else if is_python_def_start(line) {
-            let end = find_python_def_end(source, line_end);
+        } else if let Some(header) = python_def_header(source, offset) {
+            let end = find_python_def_end(source, header.header_end);
             (
                 end,
                 SyntaxKind::PythonDefinition(parse_python_definition(
                     source,
-                    offset,
-                    line,
-                    TextRange::new(line_end, end),
+                    header.def_start,
+                    header.header_end,
+                    TextRange::new(header.header_end, end),
                 )),
             )
         } else {
@@ -525,11 +531,11 @@ fn parse_function<'a>(
 
 fn parse_python_definition<'a>(
     source: &'a str,
-    start: usize,
-    line: &'a str,
+    def_start: usize,
+    header_end: usize,
     body_range: TextRange,
 ) -> PythonDefinitionSyntax<'a> {
-    let (content, _) = split_line_ending(line);
+    let content = &source[def_start..header_end];
     let name_start = "def ".len();
     let name_end = content[name_start..]
         .find('(')
@@ -541,7 +547,7 @@ fn parse_python_definition<'a>(
                 .expect("Python definition scanner requires a colon")
         });
     let name = content[name_start..name_end].trim_end();
-    let range = TextRange::new(start + name_start, start + name_start + name.len());
+    let range = TextRange::new(def_start + name_start, def_start + name_start + name.len());
     PythonDefinitionSyntax {
         name: &source[range.start()..range.end()],
         name_range: range,
@@ -661,6 +667,35 @@ mod tests {
     }
 
     #[test]
+    fn recognizes_provider_variable_names_with_virtual_slashes() {
+        let tree =
+            parse("PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_DRIVER_PROVIDER}\"\n").unwrap();
+        let SyntaxKind::Assignment(assignment) = tree.nodes()[0].kind() else {
+            panic!("expected provider assignment");
+        };
+        assert_eq!(assignment.name(), "PREFERRED_PROVIDER_virtual/gpudriver");
+        assert_eq!(assignment.operator(), AssignmentOperator::Default);
+    }
+
+    #[test]
+    fn keeps_unreviewed_path_like_assignment_names_opaque() {
+        let tree = parse("UNREVIEWED/path = \"value\"\n").unwrap();
+        assert!(matches!(tree.nodes()[0].kind(), SyntaxKind::Unknown));
+    }
+
+    #[test]
+    fn recognizes_reviewed_override_scoped_path_names() {
+        let tree = parse("LICENSE:modules/linux = \"GPL-2.0-only\"\n").unwrap();
+        assert!(matches!(tree.nodes()[0].kind(), SyntaxKind::Assignment(_)));
+    }
+
+    #[test]
+    fn newly_recognized_provider_assignments_remain_formatter_verbatim() {
+        let source = "PREFERRED_PROVIDER_virtual/gpudriver ?= \"${BSP_DRIVER_PROVIDER}\"   \n";
+        assert_eq!(crate::format(source).unwrap(), source);
+    }
+
+    #[test]
     fn reports_incomplete_structures() {
         let error = parse("do_build() {\n").unwrap_err();
         assert_eq!(error.line(), 1);
@@ -672,5 +707,59 @@ mod tests {
             error.message(),
             "top-level assignment contains an unclosed quote"
         );
+    }
+
+    #[test]
+    fn keeps_multiline_python_definitions_and_triple_strings_in_one_node() {
+        let source = concat!(
+            "def helper(\n",
+            "    value: str = \"x\",\n",
+            "):\n",
+            "    \"\"\"documentation\n",
+            "unindented text that is still inside the string\n",
+            "\"\"\"\n",
+            "    return value\n",
+            "NEXT = 1\n",
+        );
+        let tree = parse(source).unwrap();
+        assert_eq!(tree.nodes().len(), 2);
+        let SyntaxKind::PythonDefinition(definition) = tree.nodes()[0].kind() else {
+            panic!("expected multiline Python definition");
+        };
+        assert_eq!(definition.name(), "helper");
+        assert_eq!(
+            &source[definition.body_range().start()..definition.body_range().start() + 4],
+            "    "
+        );
+        assert_eq!(tree.nodes()[1].text(), "NEXT = 1\n");
+        assert_eq!(
+            tree.nodes()
+                .iter()
+                .map(SyntaxNode::text)
+                .collect::<String>(),
+            source
+        );
+        assert_eq!(crate::format(source).unwrap(), source);
+    }
+
+    #[test]
+    fn shell_function_boundary_ignores_parameter_expansion_braces() {
+        let source = "do_install() {\n    echo ${D}/usr/bin\n}\nVALUE = \"ok\"\n";
+        let tree = parse(source).unwrap();
+        assert_eq!(tree.nodes().len(), 2);
+        assert!(matches!(tree.nodes()[0].kind(), SyntaxKind::Function(_)));
+        assert!(matches!(tree.nodes()[1].kind(), SyntaxKind::Assignment(_)));
+    }
+
+    #[test]
+    fn recognizes_simple_top_level_python_decorators_without_formatting_them() {
+        let source = "@register\ndef helper(d):\n    return d\nVALUE = 1\n";
+        let tree = parse(source).unwrap();
+        assert_eq!(tree.nodes().len(), 2);
+        let SyntaxKind::PythonDefinition(definition) = tree.nodes()[0].kind() else {
+            panic!("expected decorated Python definition");
+        };
+        assert_eq!(definition.name(), "helper");
+        assert_eq!(crate::format(source).unwrap(), source);
     }
 }
