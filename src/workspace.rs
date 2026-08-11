@@ -1,13 +1,13 @@
 use crate::{
-    AssignmentOperator, DirectiveKeyword, SafetyOptions, SyntaxKind, SyntaxTree, comment_start,
-    parse,
+    AssignmentOperator, BitBakeError, BitBakeExecutionLimits, BitBakeInvocation, BitBakeOutput,
+    BitBakePhase, BitBakeRunner, DirectiveKeyword, SafetyOptions, SyntaxKind, SyntaxTree,
+    comment_start, parse,
 };
 use globset::Glob;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
 
 const DEFAULT_LAYER_PRIORITY: i32 = 0;
 
@@ -249,25 +249,52 @@ impl WorkspaceIndex {
     where
         F: Fn(&Path) -> bool,
     {
+        let mut runner = BitBakeRunner::new(BitBakeExecutionLimits::default())
+            .map_err(|error| invalid_data(format!("invalid BitBake execution limits: {error}")))?;
+        Self::from_bitbake_with_runner(path, bitbake, keep, limits, &mut runner)
+    }
+
+    /// Builds an authoritative workspace using a caller-owned operation
+    /// runner. Sharing this runner lets `check --workspace --semantic` reuse
+    /// version and parse results without carrying state across CLI runs.
+    pub fn from_bitbake_with_runner<F>(
+        path: impl AsRef<Path>,
+        bitbake: impl AsRef<Path>,
+        keep: F,
+        limits: Option<SafetyOptions>,
+        runner: &mut BitBakeRunner,
+    ) -> io::Result<Self>
+    where
+        F: Fn(&Path) -> bool,
+    {
         let build_dir = canonicalize_build_dir(path.as_ref())?;
         validate_build_dir(&build_dir)?;
         let bitbake = bitbake.as_ref();
 
-        let version = run_bitbake_command(&build_dir, bitbake, &["--version"])?;
-        if !version.status.success() {
-            return Err(bitbake_failure("version", &version));
-        }
+        let _version = run_bitbake_command(
+            runner,
+            &build_dir,
+            bitbake,
+            BitBakePhase::Version,
+            ["--version"],
+        )?;
 
-        let parse_output = run_bitbake_command(&build_dir, bitbake, &["--parse-only"])?;
-        if !parse_output.status.success() {
-            return Err(bitbake_failure("parse-only", &parse_output));
-        }
+        let _parse_output = run_bitbake_command(
+            runner,
+            &build_dir,
+            bitbake,
+            BitBakePhase::Parse,
+            ["--parse-only"],
+        )?;
 
-        let global_output = run_bitbake_command(&build_dir, bitbake, &["--environment"])?;
-        if !global_output.status.success() {
-            return Err(bitbake_failure("global environment", &global_output));
-        }
-        let global = parse_bitbake_environment(&global_output.stdout);
+        let global_output = run_bitbake_command(
+            runner,
+            &build_dir,
+            bitbake,
+            BitBakePhase::GlobalEnvironment,
+            ["--environment"],
+        )?;
+        let global = parse_workspace_environment(&global_output.stdout);
         for variable in ["BBLAYERS", "BBFILES", "BBPATH"] {
             if !global.contains_key(variable) {
                 return Err(invalid_data(format!(
@@ -309,20 +336,57 @@ impl WorkspaceIndex {
             .filter(|path| path.extension().and_then(|extension| extension.to_str()) == Some("bb"))
             .cloned()
             .collect::<Vec<_>>();
-        for recipe in recipes {
-            let recipe = recipe.to_string_lossy().into_owned();
-            let output = run_bitbake_command(
-                &build_dir,
-                bitbake,
-                &["--environment", "--buildfile", recipe.as_str()],
-            )?;
-            if !output.status.success() {
-                return Err(bitbake_failure("recipe environment", &output));
+        if !recipes.is_empty() {
+            if let Some(batch) =
+                query_recipe_includes_with_tinfoil(runner, &build_dir, bitbake, &recipes)?
+            {
+                let strategy = if batch.missing_recipes.is_empty() {
+                    "tinfoil-batch"
+                } else {
+                    "tinfoil-batch+bounded-buildfile-fallback"
+                };
+                runner.stats_mut().set_strategy(strategy);
+                for path in batch.included_files {
+                    if keep(&path) {
+                        files.insert(path);
+                    }
+                }
+                limit_tracker.check(&files)?;
+                for recipe in batch.missing_recipes {
+                    let recipe = recipe.to_string_lossy().into_owned();
+                    let output = run_recipe_bitbake_command(
+                        runner,
+                        &build_dir,
+                        bitbake,
+                        BitBakePhase::RecipeEnvironment,
+                        &recipe,
+                        ["--environment", "--buildfile", recipe.as_str()],
+                    )?;
+                    let environment = parse_workspace_environment(&output.stdout);
+                    add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
+                    files.retain(|path| keep(path));
+                    limit_tracker.check(&files)?;
+                }
+            } else {
+                runner
+                    .stats_mut()
+                    .set_strategy("bounded-buildfile-fallback");
+                for recipe in recipes {
+                    let recipe = recipe.to_string_lossy().into_owned();
+                    let output = run_recipe_bitbake_command(
+                        runner,
+                        &build_dir,
+                        bitbake,
+                        BitBakePhase::RecipeEnvironment,
+                        &recipe,
+                        ["--environment", "--buildfile", recipe.as_str()],
+                    )?;
+                    let environment = parse_workspace_environment(&output.stdout);
+                    add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
+                    files.retain(|path| keep(path));
+                    limit_tracker.check(&files)?;
+                }
             }
-            let environment = parse_bitbake_environment(&output.stdout);
-            add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
-            files.retain(|path| keep(path));
-            limit_tracker.check(&files)?;
         }
 
         let mut roots = layer_roots.iter().cloned().collect::<BTreeSet<_>>();
@@ -1174,36 +1238,179 @@ impl WorkspaceLimitTracker {
     }
 }
 
-fn run_bitbake_command(build_dir: &Path, bitbake: &Path, arguments: &[&str]) -> io::Result<Output> {
-    Command::new(bitbake)
-        .current_dir(build_dir)
-        .args(arguments)
-        .output()
-        .map_err(|error| {
-            invalid_data(format!(
-                "could not invoke BitBake {}: {error}",
-                bitbake.display()
-            ))
-        })
+fn run_bitbake_command<I, A>(
+    runner: &mut BitBakeRunner,
+    build_dir: &Path,
+    bitbake: &Path,
+    phase: BitBakePhase,
+    arguments: I,
+) -> io::Result<BitBakeOutput>
+where
+    I: IntoIterator<Item = A>,
+    A: Into<String>,
+{
+    let invocation = BitBakeInvocation::new(bitbake, build_dir, phase, arguments);
+    runner
+        .run(invocation)
+        .map_err(|error| invalid_data(format!("{error}")))
 }
 
-fn bitbake_failure(phase: &str, output: &Output) -> io::Error {
-    let mut message = String::from_utf8_lossy(&output.stdout).into_owned();
-    if !output.stderr.is_empty() {
-        if !message.is_empty() && !message.ends_with('\n') {
-            message.push('\n');
-        }
-        message.push_str(&String::from_utf8_lossy(&output.stderr));
-    }
-    let message = message.trim();
-    let detail = if message.is_empty() {
-        format!("exit status {}", output.status)
-    } else {
-        message.to_owned()
+fn run_recipe_bitbake_command<I, A>(
+    runner: &mut BitBakeRunner,
+    build_dir: &Path,
+    bitbake: &Path,
+    phase: BitBakePhase,
+    recipe: &str,
+    arguments: I,
+) -> io::Result<BitBakeOutput>
+where
+    I: IntoIterator<Item = A>,
+    A: Into<String>,
+{
+    let invocation =
+        BitBakeInvocation::new(bitbake, build_dir, phase, arguments).recipe(recipe.to_owned());
+    runner
+        .run(invocation)
+        .map_err(|error| invalid_data(format!("{error}")))
+}
+
+/// Uses BitBake's version-compatible Tinfoil API to parse all recipes from one
+/// long-lived BitBake-backed process. The API is intentionally kept inside a
+/// tiny helper: Tinfoil is stable across the supported 2.8/2.18 releases, but
+/// its Python objects are not a library ABI that Rust should link against.
+/// `None` means that the executable cannot expose its adjacent BitBake Python
+/// library, so the caller may use the explicit bounded CLI fallback.
+fn query_recipe_includes_with_tinfoil(
+    runner: &mut BitBakeRunner,
+    build_dir: &Path,
+    bitbake: &Path,
+    recipes: &[PathBuf],
+) -> io::Result<Option<TinfoilBatchResult>> {
+    let Some(bitbake_lib) = bitbake_python_lib(bitbake) else {
+        return Ok(None);
     };
-    invalid_data(format!("BitBake {phase} failed: {detail}"))
+
+    let recipe_set = recipes
+        .iter()
+        .map(|path| fs::canonicalize(path).unwrap_or_else(|_| path.clone()))
+        .collect::<BTreeSet<_>>();
+    let invocation = BitBakeInvocation::new(
+        "python3",
+        build_dir,
+        BitBakePhase::RecipeEnvironment,
+        ["-c", TINFOIL_BATCH_HELPER],
+    )
+    .env("PYTHONPATH", bitbake_lib.to_string_lossy())
+    .env(
+        "BBTIDY_RECIPE_LIMIT",
+        runner.limits().max_recipe_queries.to_string(),
+    );
+    let output = match runner.run(invocation) {
+        Ok(output) => output,
+        Err(BitBakeError::Spawn { .. }) => return Ok(None),
+        Err(error) => return Err(invalid_data(format!("{error}"))),
+    };
+    let mut included_files = BTreeSet::new();
+    let mut returned_recipes = BTreeSet::new();
+    let mut query_count = 0;
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        query_count += 1;
+        let value: TinfoilRecipeOutput = serde_json::from_str(line).map_err(|error| {
+            invalid_data(format!(
+                "BitBake Tinfoil helper returned invalid output: {error}"
+            ))
+        })?;
+        let recipe = fs::canonicalize(&value.recipe).unwrap_or(value.recipe);
+        if !recipe_set.contains(&recipe) {
+            continue;
+        }
+        returned_recipes.insert(recipe);
+        for included in split_bitbake_words(Some(&value.included)) {
+            let path = PathBuf::from(included);
+            let path = if path.is_absolute() {
+                path
+            } else {
+                build_dir.join(path)
+            };
+            if let Ok(path) = fs::canonicalize(path) {
+                if path.is_file() && is_supported_metadata_path(&path) {
+                    included_files.insert(path);
+                }
+            }
+        }
+    }
+    // Some BitBake configurations omit recipes that are skipped during
+    // global cache construction from `all_recipe_files()`, even though a
+    // direct --environment --buildfile query still resolves them. Keep the
+    // authoritative workspace scope by returning those recipes to the
+    // explicitly bounded compatibility fallback below.
+    runner
+        .record_recipe_queries(query_count)
+        .map_err(|error| invalid_data(format!("{error}")))?;
+    Ok(Some(TinfoilBatchResult {
+        included_files,
+        missing_recipes: recipe_set.difference(&returned_recipes).cloned().collect(),
+    }))
 }
 
+struct TinfoilBatchResult {
+    included_files: BTreeSet<PathBuf>,
+    missing_recipes: Vec<PathBuf>,
+}
+
+fn bitbake_python_lib(bitbake: &Path) -> Option<PathBuf> {
+    let executable = if bitbake.components().count() == 1 {
+        let path = std::env::var_os("PATH")?;
+        std::env::split_paths(&path)
+            .map(|directory| directory.join(bitbake))
+            .find(|candidate| candidate.is_file())?
+    } else {
+        bitbake.to_path_buf()
+    };
+    let executable = fs::canonicalize(executable).ok()?;
+    let lib = executable.parent()?.parent()?.join("lib");
+    lib.is_dir().then_some(lib)
+}
+
+#[derive(serde::Deserialize)]
+struct TinfoilRecipeOutput {
+    recipe: PathBuf,
+    included: String,
+}
+
+const TINFOIL_BATCH_HELPER: &str = r#"
+import contextlib
+import json
+import os
+import sys
+
+import bb.tinfoil
+
+limit = int(os.environ.get("BBTIDY_RECIPE_LIMIT", "0"))
+protocol = sys.stdout
+try:
+    with contextlib.redirect_stdout(sys.stderr):
+        with bb.tinfoil.Tinfoil(output=sys.stderr) as tinfoil:
+            tinfoil.prepare(quiet=2)
+            for index, recipe in enumerate(tinfoil.all_recipe_files(variants=False)):
+                if limit and index >= limit:
+                    raise RuntimeError("recipe-query budget exceeded")
+                try:
+                    datastore = tinfoil.parse_recipe_file(recipe)
+                except Exception as error:
+                    raise RuntimeError("recipe %s: %s" % (recipe, error))
+                if datastore is None:
+                    raise RuntimeError("could not parse recipe %s" % recipe)
+                print(json.dumps({
+                    "recipe": os.path.realpath(recipe),
+                    "included": datastore.getVar("BBINCLUDED") or "",
+                }, separators=(",", ":")), file=protocol)
+except Exception as error:
+    print("bbtidy Tinfoil helper failed: %s" % error, file=sys.stderr)
+    raise
+"#;
+
+#[cfg(test)]
 fn parse_bitbake_environment(bytes: &[u8]) -> BTreeMap<String, String> {
     let raw = String::from_utf8_lossy(bytes);
     let lines = raw.lines().collect::<Vec<_>>();
@@ -1222,6 +1429,47 @@ fn parse_bitbake_environment(bytes: &[u8]) -> BTreeMap<String, String> {
             next += 1;
         }
         values.insert(name.to_owned(), decode_bitbake_value(&encoded_value));
+        index = next.max(index + 1);
+    }
+    values
+}
+
+fn parse_workspace_environment(bytes: &[u8]) -> BTreeMap<String, String> {
+    let names = |name: &str| {
+        matches!(
+            name,
+            "BBLAYERS" | "BBFILES" | "BBPATH" | "BBINCLUDED" | "BBFILE_COLLECTIONS"
+        ) || name.starts_with("BBFILE_PATTERN_")
+            || name.starts_with("BBFILE_PRIORITY_")
+            || name.starts_with("LAYERDEPENDS_")
+            || name.starts_with("LAYERSERIES_COMPAT_")
+    };
+    parse_bitbake_environment_selected(bytes, names)
+}
+
+fn parse_bitbake_environment_selected<F>(bytes: &[u8], selected: F) -> BTreeMap<String, String>
+where
+    F: Fn(&str) -> bool,
+{
+    let raw = String::from_utf8_lossy(bytes);
+    let lines = raw.lines().collect::<Vec<_>>();
+    let mut values = BTreeMap::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let Some((name, first_value)) = parse_bitbake_assignment(lines[index]) else {
+            index += 1;
+            continue;
+        };
+        let mut encoded_value = first_value.to_owned();
+        let mut next = index + 1;
+        while has_unterminated_double_quote(&encoded_value) && next < lines.len() {
+            encoded_value.push('\n');
+            encoded_value.push_str(lines[next]);
+            next += 1;
+        }
+        if selected(name) {
+            values.insert(name.to_owned(), decode_bitbake_value(&encoded_value));
+        }
         index = next.max(index + 1);
     }
     values
@@ -1865,4 +2113,41 @@ fn needs_canonicalization(path: &Path) -> bool {
                 std::path::Component::CurDir | std::path::Component::ParentDir
             )
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn workspace_environment_parser_keeps_only_resolution_metadata() {
+        let raw = br#"
+UNRELATED="a very large value that must not escape"
+BBLAYERS="/layers/one \
+/layers/two"
+BBFILE_COLLECTIONS="core"
+BBFILE_PATTERN_core="^/layers/one/"
+BBFILE_PRIORITY_core="7"
+BBINCLUDED="/layers/one/conf/layer.conf /layers/two/classes/base.bbclass"
+MULTILINE="first\
+second"
+"#;
+        let selected = parse_workspace_environment(raw);
+        assert_eq!(
+            selected.get("BBLAYERS"),
+            Some(&String::from("/layers/one /layers/two"))
+        );
+        assert_eq!(
+            selected.get("BBFILE_PRIORITY_core"),
+            Some(&String::from("7"))
+        );
+        assert!(selected.contains_key("BBINCLUDED"));
+        assert!(!selected.contains_key("UNRELATED"));
+        assert!(!selected.contains_key("MULTILINE"));
+
+        let complete = parse_bitbake_environment(raw);
+        for key in selected.keys() {
+            assert_eq!(complete.get(key), selected.get(key));
+        }
+    }
 }

@@ -1,6 +1,6 @@
 use bbtidy::{
-    WorkspaceClassContext, WorkspaceDependencyKind, WorkspaceFileDirective, WorkspaceIndex,
-    WorkspaceSearchScope,
+    BitBakeExecutionLimits, BitBakeRunner, WorkspaceClassContext, WorkspaceDependencyKind,
+    WorkspaceFileDirective, WorkspaceIndex, WorkspaceSearchScope,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -241,6 +241,237 @@ exit 1
         index.resolve_file(&recipe, "dynamic.inc"),
         Some(dynamic_include.as_path())
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn bitbake_index_uses_one_tinfoil_batch_for_recipe_includes() {
+    let project = TemporaryLayer::new("workspace-tinfoil-batch");
+    let layer = project.root.join("meta-batch");
+    let build = project.root.join("build");
+    let recipe = project.write("meta-batch/recipes-demo/demo.bb", "SUMMARY = \"demo\"\n");
+    let recipe_two = project.write(
+        "meta-batch/recipes-demo/second.bb",
+        "SUMMARY = \"second\"\n",
+    );
+    let recipe_three = project.write("meta-batch/recipes-demo/third.bb", "SUMMARY = \"third\"\n");
+    let dynamic = project.write("meta-batch/dynamic.inc", "DYNAMIC = \"1\"\n");
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(build.join("conf/local.conf"), "MACHINE = \"qemux86-64\"\n").unwrap();
+    fs::write(build.join("conf/bblayers.conf"), "BBLAYERS = \"\"\n").unwrap();
+    fs::create_dir_all(layer.join("conf")).unwrap();
+    fs::write(layer.join("conf/layer.conf"), "# fake layer\n").unwrap();
+
+    let layer = fs::canonicalize(layer).unwrap();
+    let build = fs::canonicalize(build).unwrap();
+    let recipe = fs::canonicalize(recipe).unwrap();
+    let recipe_two = fs::canonicalize(recipe_two).unwrap();
+    let recipe_three = fs::canonicalize(recipe_three).unwrap();
+    let dynamic = fs::canonicalize(dynamic).unwrap();
+    let bitbake_root = project.root.join("fake-bitbake-root");
+    let bin = bitbake_root.join("bin");
+    let python = bitbake_root.join("lib/bb");
+    fs::create_dir_all(&bin).unwrap();
+    fs::create_dir_all(&python).unwrap();
+    fs::write(python.join("__init__.py"), "# fake BitBake package\n").unwrap();
+    fs::write(
+        python.join("tinfoil.py"),
+        format!(
+            r#"import os
+
+class DataStore:
+    def getVar(self, name):
+        if name == "BBINCLUDED":
+            return "{layer}/conf/layer.conf {dynamic}"
+        return ""
+
+class Tinfoil:
+    def __init__(self, output=None):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+    def prepare(self, quiet=0):
+        pass
+    def all_recipe_files(self, variants=False):
+        return ["{recipe}", "{recipe_two}", "{recipe_three}"]
+    def parse_recipe_file(self, recipe):
+        return DataStore()
+"#,
+            layer = layer.display(),
+            dynamic = dynamic.display(),
+            recipe = recipe.display(),
+            recipe_two = recipe_two.display(),
+            recipe_three = recipe_three.display(),
+        ),
+    )
+    .unwrap();
+    let bitbake = bin.join("bitbake");
+    fs::write(
+        &bitbake,
+        format!(
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.18.0'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf '%s\n' 'BBLAYERS="{layer}"'
+  printf '%s\n' 'BBPATH="{layer}"'
+  printf '%s\n' 'BBFILES="{layer}/recipes-demo/*.bb"'
+  printf '%s\n' 'BBINCLUDED="{build}/conf/local.conf {build}/conf/bblayers.conf {layer}/conf/layer.conf"'
+  printf '%s\n' 'BBFILE_COLLECTIONS="batch"'
+  printf '%s\n' 'BBFILE_PATTERN_batch="^{layer}/"'
+  printf '%s\n' 'BBFILE_PRIORITY_batch="7"'
+  exit 0
+fi
+exit 1
+"###,
+            layer = layer.display(),
+            build = build.display(),
+        ),
+    )
+    .unwrap();
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let mut runner = BitBakeRunner::new(BitBakeExecutionLimits {
+        max_commands: 8,
+        max_recipe_queries: 4,
+        ..BitBakeExecutionLimits::default()
+    })
+    .unwrap();
+    let index =
+        WorkspaceIndex::from_bitbake_with_runner(&build, &bitbake, |_| true, None, &mut runner)
+            .unwrap();
+
+    assert!(index.is_workspace_file(&dynamic));
+    assert_eq!(runner.stats().strategy.as_deref(), Some("tinfoil-batch"));
+    assert_eq!(runner.stats().recipe_queries_completed, 3);
+    assert_eq!(runner.stats().total_commands, 4);
+}
+
+#[cfg(unix)]
+#[test]
+fn tinfoil_missing_recipe_files_use_the_bounded_authoritative_fallback() {
+    let project = TemporaryLayer::new("workspace-tinfoil-fallback");
+    let layer = project.root.join("meta-batch");
+    let build = project.root.join("build");
+    let recipe = project.write("meta-batch/recipes-demo/demo.bb", "SUMMARY = \"demo\"\n");
+    let recipe_two = project.write(
+        "meta-batch/recipes-demo/second.bb",
+        "SUMMARY = \"second\"\n",
+    );
+    let recipe_three = project.write("meta-batch/recipes-demo/third.bb", "SUMMARY = \"third\"\n");
+    let fallback = project.write("meta-batch/fallback.inc", "FALLBACK = \"1\"\n");
+    fs::create_dir_all(build.join("conf")).unwrap();
+    fs::write(build.join("conf/local.conf"), "MACHINE = \"qemux86-64\"\n").unwrap();
+    fs::write(build.join("conf/bblayers.conf"), "BBLAYERS = \"\"\n").unwrap();
+    fs::create_dir_all(layer.join("conf")).unwrap();
+    fs::write(layer.join("conf/layer.conf"), "# fake layer\n").unwrap();
+
+    let layer = fs::canonicalize(layer).unwrap();
+    let build = fs::canonicalize(build).unwrap();
+    let recipe = fs::canonicalize(recipe).unwrap();
+    let recipe_two = fs::canonicalize(recipe_two).unwrap();
+    let recipe_three = fs::canonicalize(recipe_three).unwrap();
+    let fallback = fs::canonicalize(fallback).unwrap();
+    let bitbake_root = project.root.join("fake-bitbake-root");
+    let bin = bitbake_root.join("bin");
+    let python = bitbake_root.join("lib/bb");
+    fs::create_dir_all(&bin).unwrap();
+    fs::create_dir_all(&python).unwrap();
+    fs::write(python.join("__init__.py"), "# fake BitBake package\n").unwrap();
+    fs::write(
+        python.join("tinfoil.py"),
+        format!(
+            r#"class DataStore:
+    def getVar(self, name):
+        if name == "BBINCLUDED":
+            return "{layer}/conf/layer.conf"
+        return ""
+
+class Tinfoil:
+    def __init__(self, output=None):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+    def prepare(self, quiet=0):
+        pass
+    def all_recipe_files(self, variants=False):
+        return ["{recipe}", "{recipe_two}"]
+    def parse_recipe_file(self, recipe):
+        return DataStore()
+"#,
+            layer = layer.display(),
+            recipe = recipe.display(),
+            recipe_two = recipe_two.display(),
+        ),
+    )
+    .unwrap();
+    let bitbake = bin.join("bitbake");
+    fs::write(
+        &bitbake,
+        format!(
+            r###"#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo 'BitBake Build Tool Core version 2.18.0'
+  exit 0
+fi
+if [ "$1" = "--parse-only" ]; then
+  exit 0
+fi
+if [ "$1" = "--environment" ] && [ "$2" = "--buildfile" ]; then
+  printf '%s\n' 'BBINCLUDED="{build}/conf/local.conf {fallback}"'
+  exit 0
+fi
+if [ "$1" = "--environment" ]; then
+  printf '%s\n' 'BBLAYERS="{layer}"'
+  printf '%s\n' 'BBPATH="{layer}"'
+  printf '%s\n' 'BBFILES="{layer}/recipes-demo/*.bb"'
+  printf '%s\n' 'BBINCLUDED="{build}/conf/local.conf {build}/conf/bblayers.conf {layer}/conf/layer.conf"'
+  printf '%s\n' 'BBFILE_COLLECTIONS="batch"'
+  printf '%s\n' 'BBFILE_PATTERN_batch="^{layer}/"'
+  printf '%s\n' 'BBFILE_PRIORITY_batch="7"'
+  exit 0
+fi
+exit 1
+"###,
+            build = build.display(),
+            fallback = fallback.display(),
+            layer = layer.display(),
+        ),
+    )
+    .unwrap();
+    let mut permissions = fs::metadata(&bitbake).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&bitbake, permissions).unwrap();
+
+    let mut runner = BitBakeRunner::new(BitBakeExecutionLimits {
+        max_commands: 8,
+        max_recipe_queries: 4,
+        ..BitBakeExecutionLimits::default()
+    })
+    .unwrap();
+    let index =
+        WorkspaceIndex::from_bitbake_with_runner(&build, &bitbake, |_| true, None, &mut runner)
+            .unwrap();
+
+    assert!(index.is_workspace_file(&recipe_three));
+    assert!(index.is_workspace_file(&fallback));
+    assert_eq!(
+        runner.stats().strategy.as_deref(),
+        Some("tinfoil-batch+bounded-buildfile-fallback")
+    );
+    assert_eq!(runner.stats().recipe_queries_completed, 3);
+    assert_eq!(runner.stats().total_commands, 5);
 }
 
 #[test]

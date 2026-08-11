@@ -1,6 +1,7 @@
 use logos::Logos;
 use std::fmt;
 
+mod bitbake;
 mod body;
 mod config;
 mod formatter;
@@ -11,6 +12,10 @@ mod semantic;
 mod syntax;
 mod workspace;
 
+pub use bitbake::{
+    BitBakeCancellationToken, BitBakeError, BitBakeExecutionLimits, BitBakeExecutionStats,
+    BitBakeInvocation, BitBakeOutput, BitBakePhase, BitBakeRunner,
+};
 pub use body::{BodyDiagnostic, BodyDiagnosticKind, analyze_python_body, analyze_shell_body};
 pub use config::{
     Config, ConfigError, SafetyOptions, SemanticConfig, discover_config, load_config,
@@ -35,7 +40,8 @@ pub use semantic::{
     SemanticDiagnosticPhase, SemanticDiagnosticStream, SemanticDryRun, SemanticEnvironment,
     SemanticError, SemanticGraphEdge, SemanticOptions, SemanticPackageSummary, SemanticProvider,
     SemanticRecipeInventory, SemanticRecipeVersion, SemanticReport, SemanticSeverity,
-    SemanticTargetResult, analyze_bitbake,
+    SemanticTargetResult, analyze_bitbake, analyze_bitbake_with_limits,
+    analyze_bitbake_with_runner,
 };
 pub use syntax::{
     AssignmentSyntax, DirectiveKeyword, DirectiveSyntax, FunctionKind, FunctionSyntax,

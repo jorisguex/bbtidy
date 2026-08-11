@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Adopted Ruff-style command names: `check` now runs linting, while
   `format --check` validates formatting. The former top-level formatting
   `check` command and `lint` command are no longer separate entry points.
+- BitBake-backed workspace and semantic operations now share a bounded,
+  streaming execution runner with operation-scoped version/parse reuse,
+  cancellation, process-group cleanup, command/query budgets, and phase-aware
+  execution statistics.
 
 ### Fixed
 
@@ -31,6 +35,12 @@ All notable changes to this project will be documented in this file.
 - Opt-in BitBake-backed semantic linting through `check --semantic`, including
   source-aware `BBT019` diagnostics, resolved target metadata checks, and JSON
   semantic provenance.
+- Workspace recipe include discovery now has a long-lived Tinfoil helper path
+  designed for BitBake 2.8/2.18, with an explicit bounded per-recipe CLI
+  fallback for minimal executables and globally skipped recipe files. The
+  helper keeps stdout reserved for its JSON protocol, and workspace environment
+  parsing retains only resolution metadata rather than every recipe's complete
+  environment.
 - Broader lint coverage for recipe metadata completeness, immediate
   `FILESEXTRAPATHS` expansion, Git fetch protocols, duplicate assignments and
   functions, empty dependency directives, recipe/package/source QA, and layer

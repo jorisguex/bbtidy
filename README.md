@@ -132,12 +132,16 @@ bbtidy check --workspace build --bitbake bitbake
 ```
 
 Workspace mode asks the selected BitBake engine to parse the build, then uses
-its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and per-recipe `BBINCLUDED`
-values. This means dynamically computed layers, classes, includes, overrides,
-and external metadata are resolved by BitBake rather than reconstructed from
-source-level assignments. A BitBake invocation failure is an operational
-error; bbtidy never falls back to a partial static workspace. Use
-`--bitbake PATH` or `[semantic].bitbake` when the engine is not on `PATH`.
+its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and `BBINCLUDED` values. When the
+adjacent BitBake Python library is available, one long-lived Tinfoil helper
+queries recipe includes; minimal or unsupported executables use an explicit,
+bounded per-recipe CLI fallback. Both strategies are authoritative and use
+the same command, output, time, and recipe-query budgets. Dynamically computed
+layers, classes, includes, overrides, and external metadata are resolved by
+BitBake rather than reconstructed from source-level assignments. A BitBake
+invocation or completeness failure is an operational error; bbtidy never
+returns a partial workspace. Use `--bitbake PATH` or `[semantic].bitbake` when
+the engine is not on `PATH`.
 
 To combine static linting with authoritative BitBake semantics:
 
@@ -149,9 +153,9 @@ bbtidy check --semantic \
 ```
 
 `check --semantic` requires an initialized BitBake build directory and uses the
-same project, environment-variable, configuration, and executable discovery
-as `semantic`. It runs `bitbake --parse-only` once, then `bitbake -e` for each
-selected `--target`. BitBake warnings and errors are reported as `BBT019` lint
+same project, environment-variable, configuration, executable discovery, and
+bounded execution policy as `semantic`. It runs `bitbake --parse-only` once,
+then `bitbake -e` for each selected `--target`. BitBake warnings and errors are reported as `BBT019` lint
 diagnostics. Add `--variable NAME` to include additional fully expanded
 variables in the semantic section of the report. `SUMMARY`, `DESCRIPTION`,
 `LICENSE`, `SRCREV`/`SRCPV`, and
@@ -198,7 +202,9 @@ variable expansion, overrides, anonymous Python, class inheritance, layer
 priorities, machine and distro configuration, and external providers are
 evaluated by the installed BitBake version rather than approximated by
 bbtidy. The command performs a parse-only check first; requested targets are
-then queried with `bitbake -e`. `--graph` uses BitBake's graph artifacts,
+then queried with `bitbake -e`. Every invocation is streamed through a bounded
+runner; command and total deadlines, stdout/stderr caps, command budgets, and
+recipe-query budgets can be configured. `--graph` uses BitBake's graph artifacts,
 `--dry-run` asks BitBake's scheduler for a non-executing build plan,
 `--inventory` parses `--show-versions`, and `--packages` summarizes resolved
 package, provider, runtime dependency, and image variables. These analyses do
@@ -217,7 +223,9 @@ status, source-aware BitBake diagnostics, selected target environments, and a
 target result for every requested target. Diagnostics identify their parse,
 target-query, graph, dry-run, inventory, or package-summary phase, target when
 applicable, output stream, severity, message,
-and optional source location fields. Text output remains the default. The Rust
+and optional source location fields. Execution counts, phase timings, capture
+sizes, cache hits, and the selected workspace query strategy are available in
+the `execution` object. Text output remains the default. The Rust
 API retains each complete `bitbake -e` dump through
 `SemanticEnvironment::raw`; the JSON report omits that verbose field. The
 `check --semantic` command embeds the same diagnostics, environments, target
@@ -309,6 +317,14 @@ exclude = ["vendor/**", "**/files/**"]
 [safety]
 max_files = 10000
 max_bytes = 268435456
+
+[bitbake]
+command_timeout_seconds = 1800
+total_timeout_seconds = 7200
+max_stdout_bytes = 268435456
+max_stderr_bytes = 16777216
+max_commands = 20000
+max_recipe_queries = 10000
 ```
 
 `metadata_list_layout` defaults to `preserve`. The opt-in `one-per-line` mode
@@ -331,6 +347,15 @@ retained by `check --workspace`, so a repository-wide operation cannot silently
 expand beyond a bounded scope. `--max-files` and `--max-bytes` override the
 configured values for either command. Zero is rejected. A file that changes
 after it was read is also rejected rather than overwritten.
+
+BitBake limits apply only to `check --workspace`, `semantic`, and
+`check --semantic`; ordinary formatting and static linting are unaffected.
+Timeout values are seconds and byte values are raw bytes. All values must be
+positive, and the total timeout must be at least the per-command timeout.
+The corresponding one-run CLI overrides are
+`--bitbake-command-timeout-seconds`, `--bitbake-total-timeout-seconds`,
+`--bitbake-max-stdout-bytes`, `--bitbake-max-stderr-bytes`,
+`--bitbake-max-commands`, and `--bitbake-max-recipe-queries`.
 
 Lint rule IDs are the stable IDs listed in the lint-rule table. Severity values
 are `info`, `warning`, or `error`. `fail_on` controls the minimum effective

@@ -34,6 +34,19 @@ not prove that every finding is a true positive or that a clean result is
 semantic or runtime proof. Generated baselines begin unreviewed and require
 human sampling before they support a release decision.
 
+BitBake-backed operations have an additional safety contract: every process
+launch is streamed through one bounded runner with per-command and total
+deadlines, stdout/stderr caps, command and recipe-query budgets, cancellation,
+and process-group cleanup. Workspace resolution selects the Tinfoil batch
+helper after source-level API inspection of the supported BitBake releases
+when the selected checkout exposes its adjacent Python library. A deterministic,
+explicitly reported per-recipe CLI fallback is retained for minimal
+executables and for recipe files omitted from a BitBake global inventory.
+Neither path may return a partial authoritative workspace. Both supported
+release fixtures have completed parse, workspace, and semantic target checks;
+the measured evidence and its disposable macOS-host caveat are recorded in
+[BitBake execution and scalability](bitbake-execution.md).
+
 ## Lint fingerprint contract
 
 The pure normalizer in `scripts/lint_quality.py` is the source of truth for
@@ -136,7 +149,7 @@ and safety limits.
 `check --workspace BUILD_DIR` is the BitBake-backed whole-build workspace mode.
 It invokes the selected BitBake executable, requires its complete parse to
 succeed, and obtains the expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
-per-recipe `BBINCLUDED` values from the engine. It therefore includes dynamic
+`BBINCLUDED` values from the engine. It therefore includes dynamic
 layers, classes, includes, overrides, and external metadata that BitBake
 actually resolves. A BitBake invocation or resolution failure is an
 operational error; bbtidy never silently falls back to a partial workspace.

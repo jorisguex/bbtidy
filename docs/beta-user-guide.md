@@ -58,11 +58,14 @@ bbtidy check --workspace build --bitbake bitbake
 ```
 
 This invokes BitBake and uses its expanded `BBLAYERS`, `BBFILES`, `BBPATH`, and
-per-recipe `BBINCLUDED` values. Dynamically computed layers, includes, and
-classes are therefore resolved by the installed engine. A BitBake invocation
-or resolution failure is reported as an operational error, so a successful
-run never represents only part of the configured build. Use `--bitbake PATH` or
-`[semantic].bitbake` when BitBake is not on `PATH`.
+`BBINCLUDED` values. The normal strategy uses one long-lived Tinfoil helper;
+minimal executables, or recipe files omitted from BitBake's global inventory,
+use an explicitly reported, bounded per-recipe fallback. Dynamically computed
+layers, includes, and classes are therefore resolved by the installed engine.
+A BitBake invocation or resolution failure is reported as an operational
+error, so a successful run never represents only part of the configured build.
+Use `--bitbake PATH` or `[semantic].bitbake` when BitBake
+is not on `PATH`.
 
 Review the diff and lint findings. Then run the repository's normal BitBake
 parse, build, and test validation. If the results are acceptable, apply the
@@ -94,6 +97,14 @@ supplied build directory. The build directory can be discovered from
 directory containing `build`/`build-*`; use `--project-dir` to select the
 discovery root. If more than one build variant matches, pass `--build-dir`
 explicitly.
+
+BitBake-backed commands are bounded independently of source safety limits.
+Configure `[bitbake]` in `.bbtidy.toml` or use the matching `--bitbake-*` flags
+to set command and operation timeouts, stdout/stderr caps, process-launch
+budgets, and recipe-query budgets. Text mode reports command counts; JSON and
+SARIF preserve execution metadata in a backward-compatible `execution` object.
+Pressing Ctrl-C cancels the active BitBake process group and prevents a partial
+machine-readable report.
 
 For CI linting that should include the same authoritative checks, use
 `check --semantic` with one or more explicit targets:

@@ -13,6 +13,7 @@ publish = true
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 globset = "0.4.16"
+libc = "0.2.189"
 logos = "0.15.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"

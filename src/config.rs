@@ -1,6 +1,7 @@
 use crate::semantic::SemanticAnalysisOptions;
 use crate::{
-    FormatOptions, LintFailurePolicy, LintOptions, LintSeverity, MetadataListLayout, lint_rules,
+    BitBakeExecutionLimits, FormatOptions, LintFailurePolicy, LintOptions, LintSeverity,
+    MetadataListLayout, lint_rules,
 };
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
@@ -50,6 +51,7 @@ pub struct Config {
     pub lint: LintOptions,
     pub semantic: SemanticConfig,
     pub safety: SafetyOptions,
+    pub bitbake: BitBakeExecutionLimits,
     base_dir: PathBuf,
     excludes: GlobSet,
 }
@@ -61,6 +63,7 @@ impl Config {
             lint: LintOptions::default(),
             semantic: SemanticConfig::default(),
             safety: SafetyOptions::default(),
+            bitbake: BitBakeExecutionLimits::default(),
             base_dir,
             excludes: empty_glob_set(),
         }
@@ -159,6 +162,39 @@ impl Config {
             ));
         }
 
+        let defaults = BitBakeExecutionLimits::default();
+        let bitbake = BitBakeExecutionLimits {
+            command_timeout: std::time::Duration::from_secs(
+                file_config
+                    .bitbake
+                    .command_timeout_seconds
+                    .unwrap_or(defaults.command_timeout.as_secs()),
+            ),
+            total_timeout: std::time::Duration::from_secs(
+                file_config
+                    .bitbake
+                    .total_timeout_seconds
+                    .unwrap_or(defaults.total_timeout.as_secs()),
+            ),
+            max_stdout_bytes: file_config
+                .bitbake
+                .max_stdout_bytes
+                .unwrap_or(defaults.max_stdout_bytes),
+            max_stderr_bytes: file_config
+                .bitbake
+                .max_stderr_bytes
+                .unwrap_or(defaults.max_stderr_bytes),
+            max_commands: file_config
+                .bitbake
+                .max_commands
+                .unwrap_or(defaults.max_commands),
+            max_recipe_queries: file_config
+                .bitbake
+                .max_recipe_queries
+                .unwrap_or(defaults.max_recipe_queries),
+        };
+        bitbake.validate().map_err(ConfigError::new)?;
+
         Ok(Self {
             format: FormatOptions {
                 max_top_level_blank_lines: file_config
@@ -192,6 +228,7 @@ impl Config {
                 },
             },
             safety,
+            bitbake,
             base_dir: base_dir.to_path_buf(),
             excludes,
         })
@@ -273,6 +310,19 @@ struct FileConfig {
     paths: FilePathsConfig,
     #[serde(default)]
     safety: FileSafetyConfig,
+    #[serde(default)]
+    bitbake: FileBitBakeConfig,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileBitBakeConfig {
+    command_timeout_seconds: Option<u64>,
+    total_timeout_seconds: Option<u64>,
+    max_stdout_bytes: Option<u64>,
+    max_stderr_bytes: Option<u64>,
+    max_commands: Option<usize>,
+    max_recipe_queries: Option<usize>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -373,6 +423,7 @@ mod tests {
         assert_eq!(config.lint, LintOptions::default());
         assert_eq!(config.semantic, SemanticConfig::default());
         assert_eq!(config.safety, SafetyOptions::default());
+        assert_eq!(config.bitbake, BitBakeExecutionLimits::default());
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
     }
 
@@ -404,6 +455,14 @@ packages = true
 [safety]
 max_files = 500
 max_bytes = 1048576
+
+[bitbake]
+command_timeout_seconds = 60
+total_timeout_seconds = 600
+max_stdout_bytes = 4096
+max_stderr_bytes = 2048
+max_commands = 20
+max_recipe_queries = 10
 "#,
         );
 
@@ -426,6 +485,12 @@ max_bytes = 1048576
         assert!(!config.semantic.analysis.dry_run);
         assert_eq!(config.safety.max_files, 500);
         assert_eq!(config.safety.max_bytes, 1_048_576);
+        assert_eq!(config.bitbake.command_timeout.as_secs(), 60);
+        assert_eq!(config.bitbake.total_timeout.as_secs(), 600);
+        assert_eq!(config.bitbake.max_stdout_bytes, 4096);
+        assert_eq!(config.bitbake.max_stderr_bytes, 2048);
+        assert_eq!(config.bitbake.max_commands, 20);
+        assert_eq!(config.bitbake.max_recipe_queries, 10);
         assert!(config.is_excluded(Path::new("/project/vendor/example.bb")));
         assert!(config.is_excluded(Path::new("/project/recipes/example/files/data.inc")));
         assert!(!config.is_excluded(Path::new("/project/recipes/example.bb")));
@@ -487,6 +552,37 @@ max_files = 0
         .unwrap();
         let error = Config::from_file_config(zero_files, Path::new("/project")).unwrap_err();
         assert!(error.to_string().contains("safety.max_files"));
+
+        let zero_bitbake: FileConfig = toml::from_str(
+            r#"
+[bitbake]
+max_commands = 0
+"#,
+        )
+        .unwrap();
+        let error = Config::from_file_config(zero_bitbake, Path::new("/project")).unwrap_err();
+        assert!(error.to_string().contains("bitbake.max_commands"));
+
+        let inverted_timeout: FileConfig = toml::from_str(
+            r#"
+[bitbake]
+command_timeout_seconds = 10
+total_timeout_seconds = 5
+"#,
+        )
+        .unwrap();
+        let error = Config::from_file_config(inverted_timeout, Path::new("/project")).unwrap_err();
+        assert!(error.to_string().contains("total_timeout_seconds"));
+
+        assert!(
+            toml::from_str::<FileConfig>(
+                r#"
+[bitbake]
+max_stdout_bytes = 18446744073709551616
+"#
+            )
+            .is_err()
+        );
     }
 
     #[test]

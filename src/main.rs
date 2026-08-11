@@ -1,9 +1,11 @@
 use bbtidy::{
+    BitBakeCancellationToken, BitBakeExecutionLimits, BitBakeExecutionStats, BitBakeRunner,
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
     LintSeverity, SafetyOptions, SemanticAnalysisOptions, SemanticOptions, SemanticReport,
-    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake, apply_lint_fixes,
-    discover_build_context_with_options, format_with_options, get_line_col, lint_rules,
-    lint_with_options, lint_with_workspace, load_config, parse, semantic_lint_diagnostics,
+    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake_with_limits, analyze_bitbake_with_runner,
+    apply_lint_fixes, discover_build_context_with_options, format_with_options, get_line_col,
+    lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
+    semantic_lint_diagnostics,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
@@ -15,10 +17,12 @@ use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 const EXIT_DIFFERENCES: i32 = 1;
 const EXIT_ERROR: i32 = 2;
 const BITBAKE_EXTENSIONS: &[&str] = &["bb", "bbappend", "bbclass", "conf", "inc"];
+static CLI_CANCELLED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Parser)]
 #[command(
@@ -167,6 +171,9 @@ struct SemanticLintArgs {
     /// Include resolved package, provider, runtime dependency, and image metadata.
     #[arg(long)]
     packages: bool,
+
+    #[command(flatten)]
+    bitbake_limits: BitBakeLimitArgs,
 }
 
 #[derive(Args)]
@@ -214,6 +221,36 @@ struct SemanticArgs {
     /// Select human-readable text or JSON output.
     #[arg(long, value_enum, default_value_t = SemanticOutput::Text, value_name = "FORMAT")]
     output: SemanticOutput,
+
+    #[command(flatten)]
+    bitbake_limits: BitBakeLimitArgs,
+}
+
+#[derive(Args, Clone, Default)]
+struct BitBakeLimitArgs {
+    /// Maximum seconds for one BitBake command.
+    #[arg(long = "bitbake-command-timeout-seconds", value_name = "SECONDS")]
+    command_timeout_seconds: Option<u64>,
+
+    /// Maximum seconds for all BitBake commands in this operation.
+    #[arg(long = "bitbake-total-timeout-seconds", value_name = "SECONDS")]
+    total_timeout_seconds: Option<u64>,
+
+    /// Maximum captured stdout bytes per BitBake command.
+    #[arg(long = "bitbake-max-stdout-bytes", value_name = "BYTES")]
+    max_stdout_bytes: Option<u64>,
+
+    /// Maximum captured stderr bytes per BitBake command.
+    #[arg(long = "bitbake-max-stderr-bytes", value_name = "BYTES")]
+    max_stderr_bytes: Option<u64>,
+
+    /// Maximum BitBake process launches in this operation.
+    #[arg(long = "bitbake-max-commands", value_name = "N")]
+    max_commands: Option<usize>,
+
+    /// Maximum recipe-specific environment queries in this operation.
+    #[arg(long = "bitbake-max-recipe-queries", value_name = "N")]
+    max_recipe_queries: Option<usize>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -245,6 +282,17 @@ impl From<LintFailureArg> for LintFailurePolicy {
             LintFailureArg::Error => Self::Error,
             LintFailureArg::Never => Self::Never,
         }
+    }
+}
+
+impl BitBakeLimitArgs {
+    fn is_set(&self) -> bool {
+        self.command_timeout_seconds.is_some()
+            || self.total_timeout_seconds.is_some()
+            || self.max_stdout_bytes.is_some()
+            || self.max_stderr_bytes.is_some()
+            || self.max_commands.is_some()
+            || self.max_recipe_queries.is_some()
     }
 }
 
@@ -291,6 +339,7 @@ fn main() {
 }
 
 fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
+    install_cli_cancellation_handler();
     let start = match args.project_dir {
         Some(path) => path,
         None => match std::env::current_dir() {
@@ -334,7 +383,9 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
             &config.semantic.analysis,
         ),
     };
-    let report = match analyze_bitbake(&options) {
+    let limits = effective_bitbake_limits(&config.bitbake, &args.bitbake_limits);
+    let cancellation = BitBakeCancellationToken::with_external_flag(&CLI_CANCELLED);
+    let report = match analyze_bitbake_with_limits(&options, limits, cancellation) {
         Ok(report) => report,
         Err(error) => {
             eprintln!("error: {error}");
@@ -359,6 +410,7 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
             "environments": report.environments(),
             "target_results": report.target_results(),
             "build_analysis": report.build_analysis(),
+            "execution": report.execution(),
         });
         match serde_json::to_writer_pretty(io::stdout().lock(), &value) {
             Ok(()) => println!(),
@@ -468,6 +520,11 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
                 );
             }
         }
+        println!(
+            "BitBake commands: {} ({} cache hits)",
+            report.execution().total_commands,
+            report.execution().cache_hits
+        );
     }
 
     if report.analysis_succeeded() && !report.has_errors() {
@@ -480,6 +537,7 @@ fn run_semantic(args: SemanticArgs, config: &Config) -> i32 {
 fn analyze_semantic_lint(
     args: &SemanticLintArgs,
     config: &Config,
+    runner: &mut BitBakeRunner,
 ) -> Result<SemanticLintAnalysis, String> {
     let start = match &args.project_dir {
         Some(path) => path.clone(),
@@ -530,7 +588,8 @@ fn analyze_semantic_lint(
             &config.semantic.analysis,
         ),
     };
-    let report = analyze_bitbake(&options).map_err(|error| error.to_string())?;
+    let report =
+        analyze_bitbake_with_runner(&options, runner).map_err(|error| error.to_string())?;
     Ok(SemanticLintAnalysis { context, report })
 }
 
@@ -626,6 +685,7 @@ fn check_formatted_inputs(formatted_inputs: &[FormattedInput]) -> i32 {
 }
 
 fn run_lint(args: LintArgs, config: &Config) -> i32 {
+    install_cli_cancellation_handler();
     let mut lint_options = config.lint.clone();
     if let Some(fail_on) = args.fail_on {
         lint_options.set_fail_on(fail_on.into());
@@ -638,6 +698,22 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         max_files: args.max_files.unwrap_or(config.safety.max_files),
         max_bytes: args.max_bytes.unwrap_or(config.safety.max_bytes),
     };
+    let bitbake_limits = effective_bitbake_limits(&config.bitbake, &args.semantic.bitbake_limits);
+    let uses_bitbake = args.workspace.is_some() || args.semantic.semantic;
+    let mut bitbake_runner = if uses_bitbake {
+        match BitBakeRunner::with_cancellation(
+            bitbake_limits,
+            BitBakeCancellationToken::with_external_flag(&CLI_CANCELLED),
+        ) {
+            Ok(runner) => Some(runner),
+            Err(error) => {
+                eprintln!("error: invalid BitBake execution limits: {error}");
+                return EXIT_ERROR;
+            }
+        }
+    } else {
+        None
+    };
     let (inputs, workspace) = if let Some(build_dir) = args.workspace.as_deref() {
         let bitbake = args
             .semantic
@@ -645,11 +721,12 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             .clone()
             .or_else(|| config.semantic.bitbake.clone())
             .unwrap_or_else(|| PathBuf::from("bitbake"));
-        let workspace = match WorkspaceIndex::from_bitbake_with_options(
+        let workspace = match WorkspaceIndex::from_bitbake_with_runner(
             build_dir,
             &bitbake,
             |path| !config.is_excluded(path),
             Some(limits),
+            bitbake_runner.as_mut().expect("workspace runner"),
         ) {
             Ok(workspace) => workspace,
             Err(error) => {
@@ -700,6 +777,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             || args.semantic.dry_run
             || args.semantic.inventory
             || args.semantic.packages
+            || args.semantic.bitbake_limits.is_set()
             || (args.semantic.bitbake.is_some() && args.workspace.is_none()))
     {
         eprintln!(
@@ -720,7 +798,11 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         return EXIT_ERROR;
     }
     let semantic_report = if args.semantic.semantic {
-        match analyze_semantic_lint(&args.semantic, config) {
+        match analyze_semantic_lint(
+            &args.semantic,
+            config,
+            bitbake_runner.as_mut().expect("semantic runner"),
+        ) {
             Ok(report) => Some(report),
             Err(error) => {
                 eprintln!("error: {error}");
@@ -904,6 +986,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             &collected,
             &applied_fixes,
             semantic_report.as_ref(),
+            bitbake_runner.as_ref().map(BitBakeRunner::stats),
             &mut stdout,
         ) {
             if error.kind() == io::ErrorKind::BrokenPipe {
@@ -946,6 +1029,21 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
                 return EXIT_ERROR;
             }
         }
+    }
+
+    if !machine_output && let Some(runner) = bitbake_runner.as_ref() {
+        let stats = runner.stats();
+        eprintln!(
+            "BitBake: {} commands, {} recipe queries, {} cache hits{}",
+            stats.total_commands,
+            stats.recipe_queries_completed,
+            stats.cache_hits,
+            stats
+                .strategy
+                .as_deref()
+                .map(|strategy| format!(", strategy {strategy}"))
+                .unwrap_or_default()
+        );
     }
 
     if lint_options.has_blocking_findings(
@@ -1022,12 +1120,13 @@ fn write_lint_report(
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
     semantic_report: Option<&SemanticLintAnalysis>,
+    execution: Option<&BitBakeExecutionStats>,
     stdout: &mut impl Write,
 ) -> io::Result<()> {
     let report = match output {
         LintOutput::Text => unreachable!("text reports are streamed directly"),
-        LintOutput::Json => json_report(diagnostics, applied_fixes, semantic_report),
-        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes, semantic_report),
+        LintOutput::Json => json_report(diagnostics, applied_fixes, semantic_report, execution),
+        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes, semantic_report, execution),
     };
     let serialized = serde_json::to_vec_pretty(&report)
         .map_err(|error| io::Error::other(format!("could not serialize diagnostics: {error}")))?;
@@ -1039,6 +1138,7 @@ fn json_report(
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
     semantic_report: Option<&SemanticLintAnalysis>,
+    execution: Option<&BitBakeExecutionStats>,
 ) -> Value {
     let mut report = json!({
         "version": 1,
@@ -1050,6 +1150,9 @@ fn json_report(
     });
     if let Some(semantic_report) = semantic_report {
         report["semantic"] = semantic_summary(semantic_report);
+    }
+    if let Some(execution) = execution {
+        report["execution"] = json!(execution);
     }
     report
 }
@@ -1072,6 +1175,7 @@ fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
         "environments": report.environments(),
         "target_results": report.target_results(),
         "build_analysis": report.build_analysis(),
+        "execution": report.execution(),
     })
 }
 
@@ -1105,6 +1209,7 @@ fn sarif_report(
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
     semantic_report: Option<&SemanticLintAnalysis>,
+    execution: Option<&BitBakeExecutionStats>,
 ) -> Value {
     let rules = lint_rules()
         .iter()
@@ -1187,6 +1292,9 @@ fn sarif_report(
     if let Some(semantic_report) = semantic_report {
         report["runs"][0]["properties"]["semantic"] = semantic_summary(semantic_report);
     }
+    if let Some(execution) = execution {
+        report["runs"][0]["properties"]["execution"] = json!(execution);
+    }
     report
 }
 
@@ -1196,6 +1304,49 @@ fn sarif_level(severity: LintSeverity) -> &'static str {
         LintSeverity::Warning => "warning",
         LintSeverity::Error => "error",
     }
+}
+
+fn effective_bitbake_limits(
+    configured: &BitBakeExecutionLimits,
+    overrides: &BitBakeLimitArgs,
+) -> BitBakeExecutionLimits {
+    BitBakeExecutionLimits {
+        command_timeout: std::time::Duration::from_secs(
+            overrides
+                .command_timeout_seconds
+                .unwrap_or(configured.command_timeout.as_secs()),
+        ),
+        total_timeout: std::time::Duration::from_secs(
+            overrides
+                .total_timeout_seconds
+                .unwrap_or(configured.total_timeout.as_secs()),
+        ),
+        max_stdout_bytes: overrides
+            .max_stdout_bytes
+            .unwrap_or(configured.max_stdout_bytes),
+        max_stderr_bytes: overrides
+            .max_stderr_bytes
+            .unwrap_or(configured.max_stderr_bytes),
+        max_commands: overrides.max_commands.unwrap_or(configured.max_commands),
+        max_recipe_queries: overrides
+            .max_recipe_queries
+            .unwrap_or(configured.max_recipe_queries),
+    }
+}
+
+fn install_cli_cancellation_handler() {
+    #[cfg(unix)]
+    {
+        static INSTALLED: std::sync::Once = std::sync::Once::new();
+        INSTALLED.call_once(|| unsafe {
+            libc::signal(libc::SIGINT, cli_sigint_handler as libc::sighandler_t);
+        });
+    }
+}
+
+#[cfg(unix)]
+extern "C" fn cli_sigint_handler(_signal: libc::c_int) {
+    CLI_CANCELLED.store(true, Ordering::SeqCst);
 }
 
 fn run_lex(args: InputArgs, config: &Config) -> i32 {
@@ -1866,5 +2017,25 @@ mod tests {
                 .contains(".bbtidy.")
         }));
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn cli_bitbake_overrides_take_precedence_over_configured_limits() {
+        let configured = BitBakeExecutionLimits::default();
+        let overrides = BitBakeLimitArgs {
+            command_timeout_seconds: Some(1),
+            total_timeout_seconds: Some(2),
+            max_stdout_bytes: Some(3),
+            max_stderr_bytes: Some(4),
+            max_commands: Some(5),
+            max_recipe_queries: Some(6),
+        };
+        let effective = effective_bitbake_limits(&configured, &overrides);
+        assert_eq!(effective.command_timeout.as_secs(), 1);
+        assert_eq!(effective.total_timeout.as_secs(), 2);
+        assert_eq!(effective.max_stdout_bytes, 3);
+        assert_eq!(effective.max_stderr_bytes, 4);
+        assert_eq!(effective.max_commands, 5);
+        assert_eq!(effective.max_recipe_queries, 6);
     }
 }

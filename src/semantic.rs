@@ -7,13 +7,16 @@
 //! module bridges that gap by executing the BitBake engine in an existing
 //! build directory and exposing its resolved results through a typed API.
 
+use crate::{
+    BitBakeCancellationToken, BitBakeError, BitBakeExecutionLimits, BitBakeExecutionStats,
+    BitBakeInvocation, BitBakeOutput, BitBakePhase, BitBakeRunner,
+};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
 
 /// Optional BitBake analyses to run after the parser check.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -564,6 +567,7 @@ pub struct SemanticReport {
     environments: Vec<SemanticEnvironment>,
     target_results: Vec<SemanticTargetResult>,
     build_analysis: Option<SemanticBuildAnalysis>,
+    execution: BitBakeExecutionStats,
 }
 
 impl SemanticReport {
@@ -620,6 +624,10 @@ impl SemanticReport {
         self.build_analysis.as_ref()
     }
 
+    pub fn execution(&self) -> &BitBakeExecutionStats {
+        &self.execution
+    }
+
     pub fn has_errors(&self) -> bool {
         self.diagnostics
             .iter()
@@ -634,6 +642,8 @@ pub enum SemanticError {
     Io(io::Error),
     BitBakeVersion(String),
     AnalysisTargetsRequired { mode: String },
+    BitBake(Box<BitBakeError>),
+    InvalidExecutionLimits(String),
 }
 
 impl fmt::Display for SemanticError {
@@ -656,11 +666,21 @@ impl fmt::Display for SemanticError {
                     "BitBake {mode} analysis requires at least one target"
                 )
             }
+            Self::BitBake(error) => write!(formatter, "{error}"),
+            Self::InvalidExecutionLimits(error) => {
+                write!(formatter, "invalid BitBake execution limits: {error}")
+            }
         }
     }
 }
 
 impl std::error::Error for SemanticError {}
+
+impl From<BitBakeError> for SemanticError {
+    fn from(error: BitBakeError) -> Self {
+        Self::BitBake(Box::new(error))
+    }
+}
 
 impl From<io::Error> for SemanticError {
     fn from(error: io::Error) -> Self {
@@ -676,6 +696,27 @@ impl From<io::Error> for SemanticError {
 /// including Python metadata, overrides, anonymous functions, layer
 /// priorities, machine/distro configuration, and external providers.
 pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, SemanticError> {
+    let mut runner = BitBakeRunner::new(BitBakeExecutionLimits::default())
+        .map_err(SemanticError::InvalidExecutionLimits)?;
+    analyze_bitbake_with_runner(options, &mut runner)
+}
+
+/// Runs semantic analysis with explicit execution limits and cancellation.
+pub fn analyze_bitbake_with_limits(
+    options: &SemanticOptions,
+    limits: BitBakeExecutionLimits,
+    cancellation: BitBakeCancellationToken,
+) -> Result<SemanticReport, SemanticError> {
+    let mut runner = BitBakeRunner::with_cancellation(limits, cancellation)
+        .map_err(SemanticError::InvalidExecutionLimits)?;
+    analyze_bitbake_with_runner(options, &mut runner)
+}
+
+/// Runs semantic analysis on an existing operation-scoped runner.
+pub fn analyze_bitbake_with_runner(
+    options: &SemanticOptions,
+    runner: &mut BitBakeRunner,
+) -> Result<SemanticReport, SemanticError> {
     validate_build_dir(&options.build_dir)?;
     if options.analysis.dependency_graph && options.targets.is_empty() {
         return Err(SemanticError::AnalysisTargetsRequired {
@@ -693,7 +734,7 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
         });
     }
 
-    let version_output = run_bitbake(options, &["--version"])?;
+    let version_output = run_bitbake(options, runner, BitBakePhase::Version, ["--version"], None)?;
     let bitbake_version = version_output
         .status
         .success()
@@ -703,7 +744,7 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
 
     let mut diagnostics = Vec::new();
     let parse_args = parse_arguments(&options.targets);
-    let parse_output = run_bitbake(options, &parse_args)?;
+    let parse_output = run_bitbake(options, runner, BitBakePhase::Parse, parse_args, None)?;
     diagnostics.extend(parse_diagnostics(
         &parse_output,
         SemanticDiagnosticPhase::Parse,
@@ -716,7 +757,13 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
     let mut target_results = Vec::new();
     if parse_succeeded {
         for target in &options.targets {
-            let environment_output = run_bitbake(options, &["--environment", target])?;
+            let environment_output = run_bitbake(
+                options,
+                runner,
+                BitBakePhase::TargetEnvironment,
+                ["--environment", target.as_str()],
+                Some(target),
+            )?;
             let target_diagnostics = parse_diagnostics(
                 &environment_output,
                 SemanticDiagnosticPhase::TargetQuery,
@@ -759,7 +806,7 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
     let build_analysis = if options.analysis.requested() {
         if parse_succeeded {
             let (analysis, analysis_diagnostics) =
-                run_build_analysis(options, &target_results, &environments)?;
+                run_build_analysis(options, &target_results, &environments, runner)?;
             diagnostics.extend(analysis_diagnostics);
             Some(analysis)
         } else {
@@ -787,6 +834,7 @@ pub fn analyze_bitbake(options: &SemanticOptions) -> Result<SemanticReport, Sema
         environments,
         target_results,
         build_analysis,
+        execution: runner.stats().clone(),
     })
 }
 
@@ -794,6 +842,7 @@ fn run_build_analysis(
     options: &SemanticOptions,
     target_results: &[SemanticTargetResult],
     _environments: &[SemanticEnvironment],
+    runner: &mut BitBakeRunner,
 ) -> Result<(SemanticBuildAnalysis, Vec<SemanticDiagnostic>), SemanticError> {
     let mut diagnostics = Vec::new();
     let mut succeeded = true;
@@ -801,7 +850,7 @@ fn run_build_analysis(
     let graphs = if options.analysis.dependency_graph {
         let mut graphs = Vec::new();
         for target in &options.targets {
-            let graph = run_dependency_graph(options, target)?;
+            let graph = run_dependency_graph(options, target, runner)?;
             succeeded &= graph.succeeded;
             diagnostics.extend(graph.diagnostics.clone());
             graphs.push(graph);
@@ -812,7 +861,7 @@ fn run_build_analysis(
     };
 
     let dry_run = if options.analysis.dry_run {
-        let dry_run = run_dry_run(options)?;
+        let dry_run = run_dry_run(options, runner)?;
         succeeded &= dry_run.succeeded;
         diagnostics.extend(dry_run.diagnostics.clone());
         Some(dry_run)
@@ -821,7 +870,7 @@ fn run_build_analysis(
     };
 
     let mut inventory = if options.analysis.inventory {
-        let inventory = run_recipe_inventory(options)?;
+        let inventory = run_recipe_inventory(options, runner)?;
         succeeded &= inventory.succeeded;
         diagnostics.extend(inventory.diagnostics.clone());
         Some(inventory)
@@ -874,6 +923,7 @@ fn run_build_analysis(
 fn run_dependency_graph(
     options: &SemanticOptions,
     target: &str,
+    runner: &mut BitBakeRunner,
 ) -> Result<SemanticDependencyGraph, SemanticError> {
     let filenames = [
         "task-depends.dot",
@@ -895,7 +945,13 @@ fn run_dependency_graph(
         })
         .collect::<Result<BTreeMap<_, _>, _>>()?;
     let arguments = ["--graphviz", target];
-    let output = match run_bitbake(options, &arguments) {
+    let output = match run_bitbake(
+        options,
+        runner,
+        BitBakePhase::DependencyGraph,
+        arguments,
+        Some(target),
+    ) {
         Ok(output) => output,
         Err(error) => {
             restore_graph_artifacts(&options.build_dir, &previous_artifacts)?;
@@ -991,14 +1047,17 @@ fn restore_graph_artifacts(
     Ok(())
 }
 
-fn run_dry_run(options: &SemanticOptions) -> Result<SemanticDryRun, SemanticError> {
+fn run_dry_run(
+    options: &SemanticOptions,
+    runner: &mut BitBakeRunner,
+) -> Result<SemanticDryRun, SemanticError> {
     let mut argument_storage = vec!["--dry-run".to_owned()];
     argument_storage.extend(options.targets.iter().cloned());
     let arguments = argument_storage
         .iter()
         .map(String::as_str)
         .collect::<Vec<_>>();
-    let output = run_bitbake(options, &arguments)?;
+    let output = run_bitbake(options, runner, BitBakePhase::DryRun, arguments, None)?;
     let diagnostics = parse_diagnostics(&output, SemanticDiagnosticPhase::DryRun, None);
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
@@ -1023,8 +1082,15 @@ fn run_dry_run(options: &SemanticOptions) -> Result<SemanticDryRun, SemanticErro
 
 fn run_recipe_inventory(
     options: &SemanticOptions,
+    runner: &mut BitBakeRunner,
 ) -> Result<SemanticRecipeInventory, SemanticError> {
-    let output = run_bitbake(options, &["--show-versions"])?;
+    let output = run_bitbake(
+        options,
+        runner,
+        BitBakePhase::RecipeInventory,
+        ["--show-versions"],
+        None,
+    )?;
     let diagnostics = parse_diagnostics(&output, SemanticDiagnosticPhase::Inventory, None);
     let raw = combined_output(&output);
     let succeeded = output.status.success();
@@ -1283,15 +1349,36 @@ fn parse_arguments(targets: &[String]) -> Vec<&str> {
     arguments
 }
 
-fn run_bitbake(options: &SemanticOptions, arguments: &[&str]) -> Result<Output, SemanticError> {
-    Command::new(&options.bitbake)
-        .current_dir(&options.build_dir)
-        .args(arguments)
-        .output()
-        .map_err(SemanticError::Io)
+fn run_bitbake<I, A>(
+    options: &SemanticOptions,
+    runner: &mut BitBakeRunner,
+    phase: BitBakePhase,
+    arguments: I,
+    target: Option<&str>,
+) -> Result<BitBakeOutput, SemanticError>
+where
+    I: IntoIterator<Item = A>,
+    A: Into<String>,
+{
+    let mut invocation =
+        BitBakeInvocation::new(&options.bitbake, &options.build_dir, phase, arguments);
+    if let Some(target) = target {
+        invocation = invocation.target(target);
+        if phase == BitBakePhase::TargetEnvironment {
+            invocation = invocation.recipe(target);
+        }
+    }
+    match runner.run(invocation) {
+        Ok(output) => Ok(output),
+        // A non-zero BitBake status is a semantic result. Preserve its exact
+        // bounded output so diagnostics can distinguish parse/target failures
+        // from runner failures such as timeout or cancellation.
+        Err(BitBakeError::NonZero { output, .. }) => Ok(output),
+        Err(error) => Err(SemanticError::BitBake(Box::new(error))),
+    }
 }
 
-fn combined_output(output: &Output) -> String {
+fn combined_output(output: &BitBakeOutput) -> String {
     let mut combined = String::from_utf8_lossy(&output.stdout).into_owned();
     if !output.stderr.is_empty() {
         if !combined.is_empty() && !combined.ends_with('\n') {
@@ -1302,7 +1389,7 @@ fn combined_output(output: &Output) -> String {
     combined
 }
 
-fn parse_version(output: &Output) -> Option<String> {
+fn parse_version(output: &BitBakeOutput) -> Option<String> {
     let text = combined_output(output);
     text.lines()
         .find(|line| line.contains("BitBake") && line.to_ascii_lowercase().contains("version"))
@@ -1312,7 +1399,7 @@ fn parse_version(output: &Output) -> Option<String> {
 }
 
 fn parse_diagnostics(
-    output: &Output,
+    output: &BitBakeOutput,
     phase: SemanticDiagnosticPhase,
     target: Option<&str>,
 ) -> Vec<SemanticDiagnostic> {
