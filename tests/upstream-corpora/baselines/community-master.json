@@ -24,6 +24,6 @@
     "files_changed_on_first_format": 64,
     "opaque_regions_preserved": 628,
     "excluded_payload_files_unchanged": 16,
-    "bitbake_parse": "skipped_development_corpus"
+    "bitbake_parse": "skipped_pinned_community_corpus"
   }
 }

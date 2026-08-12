@@ -56,7 +56,7 @@ class ManifestTests(unittest.TestCase):
         community = next(
             manifest for manifest in loaded if manifest["id"] == "community-master"
         )
-        self.assertEqual(community["tier"], "development")
+        self.assertEqual(community["tier"], "pinned-community")
         self.assertEqual(len(community["layers"]), 3)
         self.assertEqual(
             community["lint_quality"]["baseline"],

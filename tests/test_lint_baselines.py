@@ -274,7 +274,14 @@ class BaselineComparisonTests(BaselineFixture):
         )
 
         baseline["review"]["rules"]["BBT001"].update(
-            {"status": "reviewed", "sample_size": 1, "true_positive": 1}
+            {
+                "status": "reviewed",
+                "sample_size": 1,
+                "true_positive": 1,
+                "repositories": ["poky"],
+                "file_types": [".bb"],
+                "diagnostic_shapes": ["assignment"],
+            }
         )
         self.assertEqual(review_policy_failures(summary, baseline), [])
 
@@ -287,6 +294,9 @@ class BaselineComparisonTests(BaselineFixture):
                 "sample_size": 1,
                 "true_positive": 0,
                 "false_positive": 1,
+                "repositories": ["poky"],
+                "file_types": [".bb"],
+                "diagnostic_shapes": ["assignment"],
             }
         )
         with self.assertRaisesRegex(LintBaselineError, "notes"):
@@ -298,7 +308,14 @@ class BaselineComparisonTests(BaselineFixture):
     def test_update_preserves_unchanged_review_and_resets_changed_rules(self):
         previous = self.baseline()
         previous["review"]["rules"]["BBT001"].update(
-            {"status": "reviewed", "sample_size": 1, "true_positive": 1}
+            {
+                "status": "reviewed",
+                "sample_size": 1,
+                "true_positive": 1,
+                "repositories": ["poky"],
+                "file_types": [".bb"],
+                "diagnostic_shapes": ["assignment"],
+            }
         )
         validate_lint_baseline(previous, self.manifest)
 
@@ -308,6 +325,28 @@ class BaselineComparisonTests(BaselineFixture):
         changed_summary = self.summary([diagnostic(self.metadata, message="changed")])
         changed = baseline_for_update(self.manifest, changed_summary, previous)
         self.assertEqual(changed["review"]["rules"]["BBT001"]["status"], "unreviewed")
+
+    def test_large_rule_populations_need_more_than_one_review_sample(self):
+        baseline = self.baseline()
+        measurement = baseline["measurement"]["rules"]["BBT001"]
+        measurement["count"] = 100
+        baseline["measurement"]["total_findings"] = 100
+        baseline["measurement"]["severity_counts"] = {"info": 0, "warning": 100, "error": 0}
+        baseline["measurement"]["findings_sha256"] = "a" * 64
+        measurement["severity_counts"] = {"info": 0, "warning": 100, "error": 0}
+        record = baseline["review"]["rules"]["BBT001"]
+        record.update(
+            {
+                "status": "reviewed",
+                "sample_size": 1,
+                "true_positive": 1,
+                "repositories": ["poky"],
+                "file_types": [".bb"],
+                "diagnostic_shapes": ["assignment"],
+            }
+        )
+        with self.assertRaisesRegex(LintBaselineError, "at least 5"):
+            validate_lint_baseline(baseline, self.manifest)
 
     def test_harness_comparison_exposes_review_failures_as_blocking(self):
         summary = self.summary()

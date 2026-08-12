@@ -231,9 +231,10 @@ def load_manifest(path, enforce_lint_baseline=True):
 
     corpus_id = manifest.get("id")
     tier = manifest.get("tier")
-    if not corpus_id or tier not in {"supported", "development"}:
+    if not corpus_id or tier not in {"supported", "pinned-community", "development"}:
         raise CompatibilityError(
-            "upstream corpus manifest must identify a supported or development tier"
+            "upstream corpus manifest must identify a supported, pinned-community, "
+            "or development tier"
         )
     if not manifest.get("yocto_version") or not manifest.get("bitbake_version"):
         raise CompatibilityError(
@@ -254,7 +255,7 @@ def load_manifest(path, enforce_lint_baseline=True):
         tracking_ref = repository.get("ref", "")
         if not name or name in repository_names:
             raise CompatibilityError("repository names must be present and unique")
-        if tier == "supported" and not REVISION.fullmatch(revision):
+        if tier in {"supported", "pinned-community"} and not REVISION.fullmatch(revision):
             raise CompatibilityError(
                 "repository {} does not use a full commit revision".format(name)
             )
@@ -374,13 +375,8 @@ def load_manifest(path, enforce_lint_baseline=True):
         manifest["_baseline_metrics"] = baseline
 
     manifest_directory = path.resolve().parent
-    pinned_corpus = all(
-        REVISION.fullmatch(repository.get("revision", ""))
-        and not repository.get("ref")
-        for repository in repositories
-    )
     lint_quality = manifest.get("lint_quality")
-    if pinned_corpus:
+    if tier in {"supported", "pinned-community"}:
         if not isinstance(lint_quality, dict) or set(lint_quality) != {"baseline"}:
             raise CompatibilityError(
                 "pinned corpus must explicitly reference a lint-quality baseline"
@@ -970,6 +966,27 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def write_failure_evidence(evidence_dir, error):
+    """Leave a small diagnostic artifact when a run fails before full evidence."""
+
+    if evidence_dir is None:
+        return
+    try:
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        write_json(
+            evidence_dir / "failure.json",
+            {
+                "schema": 1,
+                "status": "failed",
+                "error": str(error),
+            },
+        )
+    except OSError:
+        # Preserve the original compatibility error; artifact upload can still
+        # report the missing diagnostic directory if the filesystem is broken.
+        pass
+
+
 def project_revision():
     try:
         return run(["git", "-C", PROJECT_ROOT, "rev-parse", "HEAD"]).stdout.strip()
@@ -1002,6 +1019,18 @@ def write_evidence(
             ).as_posix()
         commands.append(command)
     write_json(evidence_dir / "commands.json", commands)
+    semantic_probes = summary.get("semantic_probes", {})
+    write_json(
+        evidence_dir / "semantic.json",
+        {
+            "schema": 1,
+            "status": "passed"
+            if summary.get("bitbake_differential_parse") == "passed"
+            else "skipped",
+            "original": semantic_probes.get("original", {}),
+            "formatted": semantic_probes.get("formatted", {}),
+        },
+    )
     write_json(
         evidence_dir / "summary.json",
         {
@@ -1174,10 +1203,10 @@ def check_compatibility(arguments, workspace, evidence_dir):
         baseline_path,
     )
     write_lint_evidence(evidence_dir, lint_findings, lint_summary, lint_comparison)
+    blocking_tier = manifest["tier"] in {"supported", "pinned-community"}
     if (
         lint_comparison["blocking_failures"]
-        and manifest["tier"] != "supported"
-        and manifest["id"] != "community-master"
+        and not blocking_tier
         and not arguments.update_lint_baseline
     ):
         report_warning(
@@ -1188,7 +1217,7 @@ def check_compatibility(arguments, workspace, evidence_dir):
     if (
         not arguments.update_lint_baseline
         and lint_comparison["blocking_failures"]
-        and (manifest["tier"] == "supported" or manifest["id"] == "community-master")
+        and blocking_tier
     ):
         raise CompatibilityError(
             "lint quality baseline check failed: {}".format(
@@ -1396,6 +1425,7 @@ def main():
                 evidence_dir = arguments.evidence_dir or workspace / "evidence"
                 check_compatibility(arguments, workspace, evidence_dir)
     except (CompatibilityError, OSError, UnicodeError) as error:
+        write_failure_evidence(arguments.evidence_dir, error)
         report_error(error)
         return 1
     return 0

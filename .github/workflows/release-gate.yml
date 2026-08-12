@@ -1,0 +1,242 @@
+name: Blocking release gate
+
+on:
+  workflow_call:
+    inputs:
+      release_version:
+        description: "PEP 440 release version expected in evidence"
+        required: false
+        type: string
+        default: ""
+      release_tag:
+        description: "Version tag being rehearsed or released"
+        required: false
+        type: string
+        default: ""
+      source_commit:
+        description: "Exact commit whose source is being gated"
+        required: false
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional tag to validate; leave empty for a branch rehearsal"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-source:
+    name: Source quality and security
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ inputs.source_commit || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Validate release metadata and tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || '' }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_TAG" ]; then
+            python3 scripts/check_release_version.py --tag "$RELEASE_TAG"
+            python3 scripts/release_metadata.py --tag "$RELEASE_TAG"
+          else
+            python3 scripts/check_release_version.py
+            python3 scripts/release_metadata.py
+          fi
+
+      - name: Record normalized version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json, sys; data=json.load(sys.stdin); print(next(p["version"] for p in data["packages"] if p["name"] == "bbtidy"))')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate workflow pins and topology
+        run: python3 scripts/check_workflows.py
+
+      - name: Run Python unit tests
+        run: python3 -m unittest discover -s tests -p "test_*.py"
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check Clippy
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
+
+      - name: Run Rust tests
+        run: cargo test --all-targets --locked
+
+      - name: Validate package contents
+        run: |
+          set -euo pipefail
+          cargo publish --locked --dry-run
+          cargo package --locked --list
+
+      - name: Run layer-analysis benchmark
+        run: cargo bench --locked --bench layer_analysis
+
+      - name: Confirm clean generated/package diff
+        run: |
+          set -euo pipefail
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+  supported-compatibility:
+    name: ${{ matrix.name }}
+    needs: validate-source
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Yocto 5.0 / BitBake 2.8
+            artifact: yocto-5.0-scarthgap
+            manifest: tests/upstream-corpora/yocto-5.0-scarthgap.json
+          - name: Yocto 6.0 / BitBake 2.18
+            artifact: yocto-6.0-wrynose
+            manifest: tests/upstream-corpora/yocto-6.0-wrynose.json
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install BitBake host tools
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install --yes
+          chrpath cpio diffstat gawk iputils-ping libacl1 liblz4-tool locales
+          python3-git python3-jinja2 python3-pexpect python3-subunit socat
+          texinfo zstd &&
+          sudo locale-gen en_US.UTF-8
+      - name: Build bbtidy
+        run: cargo build --locked --release
+      - name: Run complete supported compatibility corpus
+        run: >-
+          python3 scripts/check_upstream_corpus.py
+          --manifest "${{ matrix.manifest }}"
+          --workspace compatibility-workspace
+          --evidence-dir compatibility-evidence
+        env:
+          LANG: en_US.UTF-8
+      - name: Upload raw supported evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compatibility-evidence-${{ matrix.artifact }}
+          path: compatibility-evidence
+          if-no-files-found: error
+
+  pinned-community:
+    name: Pinned community lint gate
+    needs: validate-source
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build bbtidy
+        run: cargo build --locked --release
+      - name: Run pinned community formatter and lint gate
+        run: >-
+          python3 scripts/check_upstream_corpus.py
+          --manifest tests/upstream-corpora/community-master.json
+          --skip-bitbake
+          --workspace compatibility-workspace
+          --evidence-dir compatibility-evidence
+      - name: Upload raw community evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compatibility-evidence-community
+          path: compatibility-evidence
+          if-no-files-found: error
+
+  verify-evidence:
+    name: Verify consolidated release evidence
+    needs: [validate-source, supported-compatibility, pinned-community]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Download raw compatibility evidence
+        if: always()
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: compatibility-evidence-*
+          path: evidence-raw
+      - name: Verify all blocking evidence and create archive
+        id: verify
+        if: always()
+        env:
+          RELEASE_VERSION: ${{ needs.validate-source.outputs.version }}
+          SOURCE_COMMIT: ${{ inputs.source_commit || github.sha }}
+        run: >-
+          python3 scripts/verify_release_evidence.py
+          --evidence-root evidence-raw
+          --manifest tests/upstream-corpora/yocto-5.0-scarthgap.json
+          --manifest tests/upstream-corpora/yocto-6.0-wrynose.json
+          --manifest tests/upstream-corpora/community-master.json
+          --source-commit "$SOURCE_COMMIT"
+          --version "$RELEASE_VERSION"
+          --output release-evidence.tar.gz
+          --checksums release-evidence.sha256
+      - name: Upload consolidated evidence
+        if: ${{ steps.verify.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence
+          path: |
+            release-evidence.tar.gz
+            release-evidence.sha256
+          if-no-files-found: error
+
+  release-gate-complete:
+    name: Release gate complete
+    needs: [validate-source, supported-compatibility, pinned-community, verify-evidence]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every blocking gate
+        run: |
+          set -euo pipefail
+          test "${{ needs.validate-source.result }}" = success
+          test "${{ needs.supported-compatibility.result }}" = success
+          test "${{ needs.pinned-community.result }}" = success
+          test "${{ needs.verify-evidence.result }}" = success

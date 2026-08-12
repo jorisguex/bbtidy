@@ -294,21 +294,25 @@ class ToolchainTests(unittest.TestCase):
 
 
 class ReleaseWorkflowTests(unittest.TestCase):
-    def test_crates_publication_is_tag_gated_with_manual_validation(self):
+    def test_crates_publisher_is_reusable_and_release_is_tag_gated(self):
         workflow = (
             Path(__file__).resolve().parents[1]
             / ".github"
             / "workflows"
             / "publish-crates.yml"
         ).read_text(encoding="utf-8")
+        release = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "release.yml"
+        ).read_text(encoding="utf-8")
 
-        self.assertIn('tags: ["v*"]', workflow)
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn(
-            "if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}",
-            workflow,
-        )
-        self.assertIn("needs: package", workflow)
+        self.assertIn("on:\n  workflow_call:", workflow)
+        self.assertNotIn("workflow_dispatch:", workflow)
+        self.assertIn('tags: ["v*"]', release)
+        self.assertIn("uses: ./.github/workflows/release-gate.yml", release)
+        self.assertIn("needs: [metadata, release-gate]", release)
         self.assertIn("scripts/release_metadata.py", workflow)
         self.assertIn("actions/setup-python@", workflow)
         self.assertIn('python-version: "3.12"', workflow)
@@ -320,28 +324,33 @@ class ReleaseWorkflowTests(unittest.TestCase):
             Path(__file__).resolve().parents[1]
             / ".github"
             / "workflows"
-            / "publish-pypi.yml"
+            / "release.yml"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("verify-release-binaries:", workflow)
-        self.assertIn("verify-distributions:", workflow)
-        self.assertIn("fromJSON(needs.validate.outputs.matrix)", workflow)
-        self.assertIn("scripts/verify_release_artifacts.py", workflow)
-        self.assertGreaterEqual(workflow.count("actions/setup-python@"), 5)
+        pypi = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "publish-pypi.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("verify-release-binaries:", pypi)
+        self.assertIn("verify-distributions:", pypi)
+        self.assertIn("fromJSON(needs.validate.outputs.matrix)", pypi)
+        self.assertIn("scripts/verify_release_artifacts.py", pypi)
+        self.assertGreaterEqual(pypi.count("actions/setup-python@"), 5)
         self.assertIn('python-version: "3.12"', workflow)
-        self.assertIn("docker/setup-qemu-action@", workflow)
-        self.assertIn('test "$actual_version" = "$expected_version"', workflow)
+        self.assertIn("docker/setup-qemu-action@", pypi)
+        self.assertIn('test "$actual_version" = "$expected_version"', pypi)
         self.assertIn("SHA256SUMS", workflow)
-        self.assertIn("needs: [verify-distributions, verify-release-binaries]", workflow)
-        self.assertIn("cargo publish --locked --dry-run", workflow)
-        self.assertIn("cargo package --locked --list", workflow)
+        self.assertIn("release-evidence.tar.gz", workflow)
+        self.assertIn("needs: [metadata, release-gate, publish-python]", workflow)
 
     def test_release_workflows_run_packaging_and_workflow_validation(self):
         root = Path(__file__).resolve().parents[1] / ".github" / "workflows"
         crates = (root / "publish-crates.yml").read_text(encoding="utf-8")
 
-        self.assertIn('python -m unittest discover -s tests -p "test_*.py"', crates)
-        self.assertIn("python scripts/check_workflows.py", crates)
+        self.assertIn('python3 -m unittest discover -s tests -p "test_*.py"', crates)
+        self.assertIn("python3 scripts/check_workflows.py", crates)
 
 
 if __name__ == "__main__":

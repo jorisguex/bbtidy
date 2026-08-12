@@ -4,30 +4,38 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/release-gate.yml"
       - ".github/workflows/upstream-compatibility.yml"
       - "Cargo.lock"
       - "Cargo.toml"
       - "scripts/check_upstream_corpus.py"
+      - "scripts/check_workflows.py"
       - "scripts/lint_quality.py"
+      - "scripts/verify_release_evidence.py"
       - "src/**"
       - "tests/fixtures/syntax-boundaries/**"
       - "tests/upstream-corpora/**"
       - "tests/syntax_boundaries.rs"
       - "tests/test_lint_quality.py"
       - "tests/test_upstream_corpus.py"
+      - "tests/test_workflows.py"
   pull_request:
     paths:
+      - ".github/workflows/release-gate.yml"
       - ".github/workflows/upstream-compatibility.yml"
       - "Cargo.lock"
       - "Cargo.toml"
       - "scripts/check_upstream_corpus.py"
+      - "scripts/check_workflows.py"
       - "scripts/lint_quality.py"
+      - "scripts/verify_release_evidence.py"
       - "src/**"
       - "tests/fixtures/syntax-boundaries/**"
       - "tests/upstream-corpora/**"
       - "tests/syntax_boundaries.rs"
       - "tests/test_lint_quality.py"
       - "tests/test_upstream_corpus.py"
+      - "tests/test_workflows.py"
   schedule:
     - cron: "23 4 * * 1"
   workflow_dispatch:
@@ -40,52 +48,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  supported:
-    name: ${{ matrix.name }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Yocto 5.0 / BitBake 2.8
-            artifact: yocto-5.0-scarthgap
-            manifest: tests/upstream-corpora/yocto-5.0-scarthgap.json
-          - name: Yocto 6.0 / BitBake 2.18
-            artifact: yocto-6.0-wrynose
-            manifest: tests/upstream-corpora/yocto-6.0-wrynose.json
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      - name: Install BitBake host tools
-        run: >-
-          sudo apt-get update &&
-          sudo apt-get install --yes
-          chrpath cpio diffstat gawk iputils-ping libacl1 liblz4-tool locales
-          python3-git python3-jinja2 python3-pexpect python3-subunit socat
-          texinfo zstd &&
-          sudo locale-gen en_US.UTF-8
-      - name: Build bbtidy
-        run: cargo build --locked --release
-      - name: Test compatibility harness
-        run: python -m unittest discover -s tests -p "test_*.py"
-      - name: Check pinned upstream corpus
-        run: >-
-          python scripts/check_upstream_corpus.py
-          --manifest "${{ matrix.manifest }}"
-          --workspace compatibility-workspace
-          --evidence-dir compatibility-evidence
-        env:
-          LANG: en_US.UTF-8
-      - name: Upload compatibility evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: compatibility-evidence-${{ matrix.artifact }}
-          path: compatibility-evidence
-          if-no-files-found: warn
+  release-gate:
+    name: Blocking supported and community gate
+    if: ${{ github.event_name != 'schedule' }}
+    uses: ./.github/workflows/release-gate.yml
+    with:
+      source_commit: ${{ github.sha }}
+    permissions:
+      contents: read
 
   development:
     name: Yocto master (non-blocking)
@@ -94,8 +64,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install BitBake host tools
@@ -110,44 +82,16 @@ jobs:
         run: cargo build --locked --release
       - name: Check moving upstream corpus
         run: >-
-          python scripts/check_upstream_corpus.py
+          python3 scripts/check_upstream_corpus.py
           --manifest tests/upstream-corpora/yocto-master.json
           --workspace compatibility-workspace
           --evidence-dir compatibility-evidence
         env:
           LANG: en_US.UTF-8
-      - name: Upload compatibility evidence
+      - name: Upload development evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: compatibility-evidence-yocto-master
-          path: compatibility-evidence
-          if-no-files-found: warn
-
-  community:
-    name: Community layers (non-blocking)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    continue-on-error: true
-    runs-on: ubuntu-22.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      - name: Build bbtidy
-        run: cargo build --locked --release
-      - name: Check pinned community corpus
-        run: >-
-          python scripts/check_upstream_corpus.py
-          --manifest tests/upstream-corpora/community-master.json
-          --skip-bitbake
-          --workspace compatibility-workspace
-          --evidence-dir compatibility-evidence
-      - name: Upload compatibility evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: compatibility-evidence-community
           path: compatibility-evidence
           if-no-files-found: warn

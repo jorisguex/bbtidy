@@ -49,6 +49,33 @@ class WorkflowPinTests(unittest.TestCase):
 
         self.assertEqual(errors, [])
 
+    def test_release_topology_has_one_tag_orchestrator_and_blocking_gates(self):
+        self.assertEqual(
+            check_workflows.validate_release_topology(
+                PROJECT_ROOT / ".github" / "workflows"
+            ),
+            [],
+        )
+
+    def test_release_topology_rejects_a_second_tag_workflow(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            source = PROJECT_ROOT / ".github" / "workflows"
+            for name in (
+                "release.yml",
+                "release-gate.yml",
+                "publish-crates.yml",
+                "publish-pypi.yml",
+            ):
+                (temporary / name).write_text(
+                    (source / name).read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            (temporary / "bypass.yml").write_text(
+                "on:\n  push:\n    tags: [\"v*\"]\n", encoding="utf-8"
+            )
+            errors = check_workflows.validate_release_topology(temporary)
+        self.assertTrue(any("exactly one workflow" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

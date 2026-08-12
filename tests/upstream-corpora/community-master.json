@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "community-master",
-  "tier": "development",
+  "tier": "pinned-community",
   "yocto_version": "master",
   "bitbake_version": "master",
   "lint_quality": {

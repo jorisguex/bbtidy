@@ -263,6 +263,35 @@ At minimum, after formatting a production layer:
 5. Run `bbtidy semantic` against the same build directory when the change
    affects dynamic values, overrides, or layer interactions.
 
+## Release rehearsal and publication
+
+The release gate has three blocking corpus checks: Yocto 5.0/BitBake 2.8,
+Yocto 6.0/BitBake 2.18, and the commit-pinned community corpus. The community
+manifest uses the explicit `pinned-community` tier. It runs formatter,
+preservation, structural, and lint-quality checks without requiring BitBake;
+Yocto `master` remains a separate scheduled, report-only development check.
+
+`release.yml` is the only tag-triggered workflow. It validates Cargo, Python,
+workflow security, Rust, packaging, and the exact tag commit, then calls the
+same reusable gate used by pull requests and `main`. Publication jobs cannot
+start until the gate verifies every corpus and creates
+`release-evidence.tar.gz` plus `release-evidence.sha256`. The archive is
+attached to the GitHub Release with the binaries and `SHA256SUMS`.
+
+Before a beta tag, run `release.yml` through `workflow_dispatch` from the
+candidate commit with `publish` set to false. Confirm that the full wheel,
+source-distribution, binary, compatibility, and evidence checks complete. A
+temporary lint fingerprint change, supported parse failure, or missing community
+artifact must make the aggregate gate fail and leave both registry publishers
+and the GitHub Release skipped. Download the evidence archive and independently
+run its checksum verification, then restore the clean candidate and repeat the
+green rehearsal before pushing the matching `vX.Y.Z[-alpha|beta|rc].N` tag.
+
+Manual publication additionally requires `publish: true`, the exact
+`PUBLISH` confirmation, and approval in the protected `release-publish`
+environment. Do not use the individual publisher workflows: they expose only
+`workflow_call` and are invoked by the orchestrator after the shared gate.
+
 ## Reporting a compatibility issue
 
 Open an issue with a minimal reproducible example when possible. Include:

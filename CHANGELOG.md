@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- A single tag-driven blocking release orchestrator with supported Yocto 5.0
+  and 6.0, pinned-community lint, strict evidence verification, safe rehearsal
+  dispatch, and durable checksum-protected release evidence.
+
 - Whole-build offline workspace linting through `check --workspace`, including
   static `BBLAYERS` discovery, build configuration indexing, cross-layer
   dependency resolution, and complete-scope safety/exclusion handling.

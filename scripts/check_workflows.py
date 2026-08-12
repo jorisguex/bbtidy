@@ -62,12 +62,107 @@ def validate_workflow_directory(directory):
     return errors
 
 
+def _workflow_text(directory, name):
+    path = Path(directory) / name
+    if not path.is_file():
+        raise ValueError("required workflow does not exist: {}".format(path))
+    return path.read_text(encoding="utf-8")
+
+
+def _job_block(text, job):
+    marker = "  {}:\n".format(job)
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    remainder = text[start + len(marker) :]
+    next_job = re.search(r"^  [A-Za-z0-9_-]+:\n", remainder, re.MULTILINE)
+    return remainder[: next_job.start()] if next_job else remainder
+
+
+def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
+    """Validate the release graph and the static no-bypass invariants.
+
+    This intentionally uses a small, conservative textual model.  It is a
+    regression guard for the security properties of these workflows, while
+    actionlint remains responsible for GitHub Actions expression semantics.
+    """
+
+    errors = []
+    try:
+        release = _workflow_text(directory, "release.yml")
+        gate = _workflow_text(directory, "release-gate.yml")
+        crates = _workflow_text(directory, "publish-crates.yml")
+        pypi = _workflow_text(directory, "publish-pypi.yml")
+    except (OSError, UnicodeError, ValueError) as error:
+        return [str(error)]
+
+    tag_workflows = []
+    for path in sorted(Path(directory).iterdir()):
+        if path.suffix not in WORKFLOW_SUFFIXES or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if 'tags: ["v*"]' in text:
+            tag_workflows.append(path.name)
+    if tag_workflows != ["release.yml"]:
+        errors.append(
+            "exactly one workflow may handle version-tag pushes; found {}".format(
+                ", ".join(tag_workflows) or "none"
+            )
+        )
+
+    for name, text in (("publish-crates.yml", crates), ("publish-pypi.yml", pypi)):
+        if "on:\n  workflow_call:" not in text:
+            errors.append("{} must expose workflow_call".format(name))
+        if re.search(r"^  (push|workflow_dispatch|pull_request|schedule):", text, re.MULTILINE):
+            errors.append("{} must not have a direct event trigger".format(name))
+        if "github.event_name" in text or "github.ref_type" in text:
+            errors.append("{} must not infer publication from the caller event".format(name))
+
+    if "uses: ./.github/workflows/release-gate.yml" not in release:
+        errors.append("release.yml must call the blocking release gate")
+    if "uses: ./.github/workflows/publish-crates.yml" not in release:
+        errors.append("release.yml must call the crates publisher")
+    if "uses: ./.github/workflows/publish-pypi.yml" not in release:
+        errors.append("release.yml must call the Python publisher")
+    if "needs: [metadata, release-gate]" not in release:
+        errors.append("publishers must depend on metadata and release-gate")
+    if "protected_confirmation" not in release or "environment:\n      name: release-publish" not in release:
+        errors.append("manual publication requires an explicit protected input and environment")
+
+    supported = _job_block(gate, "supported-compatibility")
+    community = _job_block(gate, "pinned-community")
+    if not supported or "tests/upstream-corpora/yocto-5.0-scarthgap.json" not in supported or "tests/upstream-corpora/yocto-6.0-wrynose.json" not in supported:
+        errors.append("blocking compatibility must include both supported corpora")
+    if "--skip-bitbake" in supported:
+        errors.append("supported compatibility cannot skip BitBake")
+    if "tests/upstream-corpora/community-master.json" not in community:
+        errors.append("blocking compatibility must include pinned-community")
+    for job in ("supported-compatibility", "pinned-community"):
+        if "continue-on-error" in _job_block(gate, job):
+            errors.append("blocking job {} cannot continue-on-error".format(job))
+    if "if-no-files-found: error" not in gate:
+        errors.append("release evidence uploads must fail when files are missing")
+    if "scripts/verify_release_evidence.py" not in gate:
+        errors.append("release gate must verify consolidated evidence")
+    if "if: always()" not in gate:
+        errors.append("raw evidence uploads must run after failures")
+
+    if "id-token: write" not in crates or "id-token: write" not in pypi:
+        errors.append("publisher trusted-publishing jobs must request only an OIDC token")
+    if "pypa/gh-action-pypi-publish@" not in pypi:
+        errors.append("PyPI publisher must use trusted publishing")
+    if "rust-lang/crates-io-auth-action@" not in crates:
+        errors.append("crates publisher must use crates.io trusted publishing")
+    return errors
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--workflow-dir", type=Path, default=DEFAULT_WORKFLOW_DIRECTORY)
     arguments = parser.parse_args(argv)
 
     errors = validate_workflow_directory(arguments.workflow_dir)
+    errors.extend(validate_release_topology(arguments.workflow_dir))
     if errors:
         for error in errors:
             print("error: {}".format(error), file=sys.stderr)

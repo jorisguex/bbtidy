@@ -41,7 +41,17 @@ BASELINE_RULE_MEASUREMENT_KEYS = frozenset(
 )
 BASELINE_REVIEW_KEYS = frozenset({"status", "rules"})
 BASELINE_REVIEW_RULE_KEYS = frozenset(
-    {"status", "sample_size", "true_positive", "false_positive", "unclear", "notes"}
+    {
+        "status",
+        "sample_size",
+        "true_positive",
+        "false_positive",
+        "unclear",
+        "notes",
+        "repositories",
+        "file_types",
+        "diagnostic_shapes",
+    }
 )
 REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -608,6 +618,19 @@ def review_policy_failures(
         status = record.get("status")
         if status not in REVIEWED_RULE_STATUSES:
             failures.append("active rule {} is {}".format(rule_id, status or "unreviewed"))
+        if status in REVIEWED_RULE_STATUSES:
+            required_samples = minimum_review_samples(measurement.get("count", 0))
+            if record.get("sample_size", 0) < required_samples:
+                failures.append(
+                    "active rule {} has only {} reviewed samples; {} required".format(
+                        rule_id, record.get("sample_size", 0), required_samples
+                    )
+                )
+            for field in ("repositories", "file_types", "diagnostic_shapes"):
+                if not record.get(field):
+                    failures.append(
+                        "active rule {} has no {} review metadata".format(rule_id, field)
+                    )
         notes = record.get("notes", "")
         if not isinstance(notes, str):
             notes = ""
@@ -743,7 +766,16 @@ def _default_review_rule(status: str = "unreviewed") -> dict:
         "false_positive": 0,
         "unclear": 0,
         "notes": "",
+        "repositories": [],
+        "file_types": [],
+        "diagnostic_shapes": [],
     }
+
+
+def minimum_review_samples(count: int) -> int:
+    """Require more than a token sample for large active rule populations."""
+
+    return min(5, count) if count else 0
 
 
 def baseline_from_summary(
@@ -854,6 +886,32 @@ def _validate_review_rule(rule: Any, count: int, rule_id: str) -> None:
         raise LintBaselineError("review rule {} samples more findings than measured".format(rule_id))
     if not isinstance(rule["notes"], str):
         raise LintBaselineError("review rule {} notes must be a string".format(rule_id))
+    for field in ("repositories", "file_types", "diagnostic_shapes"):
+        values = rule[field]
+        if (
+            not isinstance(values, list)
+            or any(not isinstance(value, str) or not value.strip() for value in values)
+            or len(set(values)) != len(values)
+        ):
+            raise LintBaselineError(
+                "review rule {} {} must be a list of unique strings".format(
+                    rule_id, field
+                )
+            )
+    if count and rule["status"] in REVIEWED_RULE_STATUSES:
+        required_samples = minimum_review_samples(count)
+        if rule["sample_size"] < required_samples:
+            raise LintBaselineError(
+                "review rule {} needs at least {} reviewed samples for {} findings".format(
+                    rule_id, required_samples, count
+                )
+            )
+        if not rule["repositories"] or not rule["file_types"] or not rule["diagnostic_shapes"]:
+            raise LintBaselineError(
+                "review rule {} must record repositories, file types, and diagnostic shapes".format(
+                    rule_id
+                )
+            )
     if (false_positive or unclear) and not rule["notes"].strip():
         raise LintBaselineError(
             "review rule {} false-positive or unclear samples require notes".format(

@@ -591,6 +591,7 @@ generated active rules start as `unreviewed`.
 | --- | --- | --- | --- |
 | Supported | 5.0 LTS (scarthgap) | 2.8 | Required on relevant changes |
 | Supported | 6.0 LTS (wrynose) | 2.18 | Required on relevant changes |
+| Pinned community | Arm, TI, virtualization samples | N/A | Blocking formatter and lint gate |
 | Development | master | master | Scheduled and manually triggered; non-blocking |
 
 The pinned manifests live in `tests/upstream-corpora/`. Updating a supported
@@ -599,7 +600,7 @@ review any CST metric movement, and require the complete differential parse
 check to pass. The moving `master` corpus follows upstream branch heads to
 surface upcoming syntax changes without changing the release gate.
 
-The development-tier `community-master.json` manifest adds pinned samples from
+The `pinned-community` `community-master.json` manifest adds pinned samples from
 the Arm platform/toolchain, TI BSP, and virtualization layer families. It runs
 the formatter, lint, preservation, and CST checks on every listed metadata file
 but skips the BitBake parse until the complete dependency stacks for those
@@ -607,6 +608,8 @@ layers are pinned. Its source and formatted CST metrics are recorded in
 `tests/upstream-corpora/baselines/community-master.json`. Its lint-quality
 baseline is separate, at
 `tests/upstream-corpora/lint-baselines/community-master.json`.
+It is blocking for pull requests, `main`, rehearsals, and releases; Yocto
+`master` is the only non-blocking corpus.
 
 Lint-quality baselines prove that a pinned corpus produces the same structured
 findings grouped by rule, severity, and fingerprint. They do not prove that
@@ -772,7 +775,7 @@ handling, and the no-write guarantee for malformed input.
 
 The extended compatibility check uses commit-pinned snapshots of
 OpenEmbedded-Core and the `meta-oe`, `meta-python`, and `meta-networking`
-layers, plus the development-tier community sample described above. The
+layers, plus the pinned-community sample described above. The
 revisions and minimum corpus sizes are recorded in
 `tests/upstream-corpora/`; upstream repositories are downloaded into a
 temporary workspace and are not vendored in this repository.
@@ -832,9 +835,10 @@ parseable, and does not edit the selected build configuration.
 ## Releasing
 
 The Python package workflow builds and installs a wheel on every pull request
-and push to `main`. The release workflow can be run manually to inspect all
-platform artifacts without publishing. The crates.io workflow also supports
-manual validation, but its publication job only runs for a pushed `v*` tag.
+and push to `main`. `release.yml` is the sole tag-triggered orchestrator. Its
+manual dispatch is a non-publishing rehearsal by default and runs the same
+metadata, source-quality, supported Yocto, pinned-community, packaging, binary,
+and evidence checks as a tag release.
 
 Tag releases also create a GitHub Release with standalone `bbtidy` binaries
 for every Python-wheel platform: Linux glibc x86-64, ARM64, and ARMv7;
@@ -850,23 +854,24 @@ To publish a release:
 1. Update the version in `Cargo.toml` and finalize the changelog.
 2. Create a tag that exactly matches the Cargo version, such as
    `v0.1.0-alpha.4`.
-3. Push the tag. The release workflows run their validation gates. The Python
-   workflow builds and smoke-tests the wheels and source distribution, then
-   publishes through PyPI Trusted Publishing and creates the GitHub Release.
-   The crates.io workflow validates the Cargo package and publishes it through
-   crates.io Trusted Publishing.
+3. Run a green full rehearsal from that exact commit with `publish` false.
+4. Push the tag. The release orchestrator validates the exact tagged commit,
+   assembles and checksums durable compatibility evidence, then publishes
+   through PyPI and crates.io Trusted Publishing and creates the GitHub Release.
 
 Before the first automated publication, configure the `bbtidy` project on PyPI
-with GitHub owner `jorisguex`, repository `bbtidy`, workflow
-`publish-pypi.yml`, and environment `pypi`. No repository API token is needed.
-For crates.io, configure the `bbtidy` crate with owner `jorisguex`, repository
-`bbtidy`, workflow `publish-crates.yml`, and environment `crates-io-release`.
-No repository API token is needed for either publisher. The version guard
-rejects mismatched tags before release artifacts are built, and manual workflow
-runs never publish to either registry. Registry publication and GitHub Release
-asset creation wait for the complete distribution and binary verification jobs;
-Linux smoke tests also compare each executable's `--version` output with the
-Cargo release version.
+with GitHub owner `jorisguex`, repository `bbtidy`, workflow `release.yml`, and
+environment `pypi`. No repository API token is needed. For crates.io, configure
+the `bbtidy` crate with owner `jorisguex`, repository `bbtidy`, workflow
+`release.yml`, and environment `crates-io-release`.
+No repository API token is needed for either publisher. Configure the protected
+`release-publish` environment for the GitHub Release job. The version guard
+rejects mismatched tags before release artifacts are built; a manual run cannot
+publish without `publish: true`, the exact `PUBLISH` confirmation, and approval
+in that protected environment. Registry publication and GitHub Release asset
+creation wait for the complete release gate, distribution, and binary
+verification jobs. Linux smoke tests also compare each executable's
+`--version` output with the Cargo release version.
 
 ## License
 

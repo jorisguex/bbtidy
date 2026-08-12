@@ -68,8 +68,9 @@ are derived from the same sorted normalized list. A future incompatible change
 must increment the fingerprint version.
 
 The contract applies to a release only when that release is identified as a
-beta release in its release notes. Alpha prereleases are evaluation builds and
-must not be represented as having completed the beta support gate.
+beta release in its release notes. Alpha prereleases run the same blocking
+release gate for safety, but are evaluation builds and must not be represented
+as having completed the beta support claim.
 
 ## Support tiers
 
@@ -95,6 +96,15 @@ Yocto Project and BitBake `master` are development targets. They are tested on
 the scheduled compatibility workflow when practical, but their results are
 non-blocking. New syntax found there may be unsupported until a focused
 regression test and a supported-release decision are made.
+
+### Pinned community
+
+The pinned community corpus is a blocking formatter, preservation, structural,
+and lint-quality gate. It is represented by the `pinned-community` manifest
+tier, has commit-pinned repositories and a checked-in lint baseline, and is
+allowed to omit BitBake parsing until a stable compatible build configuration
+is maintained. It does not expand the Yocto release compatibility promise; the
+two `supported` Yocto manifests remain the BitBake compatibility contract.
 
 ### Unsupported
 
@@ -338,12 +348,40 @@ community corpora compare deterministically against checked-in baselines;
 moving development corpora upload the same report but keep regressions
 non-blocking and have no checked-in lint baseline.
 For the blocking supported and pinned-community checks, every active rule must
-be `reviewed` or `accepted-known-limitations`; false-positive and unclear
-samples require notes documenting the remediation or limitation.
+be `reviewed` or `accepted-known-limitations`; review records identify the
+repositories, metadata file types, distinct diagnostic shapes, sample count,
+classification totals, and notes for known limitations or disputed findings.
+False-positive and unclear samples require notes documenting the remediation or
+limitation.
 
 Parseability is a required compatibility signal, not a complete semantic
 equivalence proof. Release notes must not describe the parse gate as proving
 identical build outputs.
+
+## Release gate and rehearsal procedure
+
+`.github/workflows/release.yml` is the only workflow that handles `v*` tags.
+It validates the tag on the exact tagged commit, calls the reusable blocking
+`release-gate.yml`, and only then enables the crates.io, PyPI, and GitHub Release
+jobs. The pull-request and `main` compatibility workflow calls the same gate;
+Yocto `master` remains a separate scheduled, non-blocking job.
+
+The gate must produce a durable `release-evidence.tar.gz` and matching
+`release-evidence.sha256`. The archive is attached to the GitHub Release beside
+the standalone binaries and `SHA256SUMS`. The verifier rejects missing or
+duplicate corpora, changed repository revisions, a different bbtidy source
+commit or version, failed summaries, missing logs or metrics, lint fingerprint
+changes, and unsafe archive members.
+
+Before the first beta, run a full non-publishing rehearsal from the intended
+candidate commit through `workflow_dispatch` with `publish` left false. Then
+repeat with a temporary lint fingerprint change, a deliberately failing
+supported BitBake parse, and missing community evidence; each must leave all
+publisher jobs skipped. Independently download the evidence archive and verify
+its checksum. Restore the clean candidate, run one final green rehearsal, and
+only then create and push the matching version tag. A manual publication also
+requires the explicit `PUBLISH` confirmation and approval in the protected
+`release-publish` environment.
 
 ## Compatibility change policy
 
