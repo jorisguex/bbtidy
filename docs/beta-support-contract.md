@@ -337,6 +337,9 @@ review even when the total finding count is unchanged. Supported and pinned
 community corpora compare deterministically against checked-in baselines;
 moving development corpora upload the same report but keep regressions
 non-blocking and have no checked-in lint baseline.
+For the blocking supported and pinned-community checks, every active rule must
+be `reviewed` or `accepted-known-limitations`; false-positive and unclear
+samples require notes documenting the remediation or limitation.
 
 Parseability is a required compatibility signal, not a complete semantic
 equivalence proof. Release notes must not describe the parse gate as proving

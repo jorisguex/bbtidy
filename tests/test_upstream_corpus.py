@@ -450,6 +450,12 @@ class LintQualityHarnessTests(unittest.TestCase):
         )
         stored = json.loads((evidence / "lint" / "findings.json").read_text(encoding="utf-8"))
         self.assertEqual(len(stored["findings"]), 1)
+        self.assertEqual(stored["fingerprint_version"], 1)
+        stored_summary = json.loads(
+            (evidence / "lint" / "summary.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(stored_summary["review"]["active_rules"], 1)
+        self.assertEqual(stored_summary["review"]["unreviewed_rules"], 1)
 
     def test_reordered_reports_write_identical_normalized_evidence(self):
         diagnostics = [

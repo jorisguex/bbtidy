@@ -23,6 +23,7 @@ BASELINE_SCHEMA = 1
 BASELINE_REVIEW_STATUSES = frozenset(
     {"unreviewed", "reviewed", "accepted-known-limitations", "not-applicable"}
 )
+REVIEWED_RULE_STATUSES = frozenset({"reviewed", "accepted-known-limitations"})
 BASELINE_TOP_LEVEL_KEYS = frozenset(
     {"schema", "corpus", "lint_contract", "measurement", "review"}
 )
@@ -530,6 +531,99 @@ def summarize_findings(
     }
 
 
+def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, Any]]) -> dict:
+    """Summarize human review coverage for the findings in ``summary``.
+
+    Measurement and review remain separate: this function only joins the
+    generated rule counts with review records when a baseline is available.
+    Missing records are intentionally reported as unreviewed instead of being
+    silently treated as clean.
+    """
+
+    rules = summary.get("rules", {})
+    review_rules = {}
+    if isinstance(baseline, Mapping):
+        review = baseline.get("review")
+        if isinstance(review, Mapping) and isinstance(review.get("rules"), Mapping):
+            review_rules = review["rules"]
+
+    active_rule_ids = sorted(
+        rule_id
+        for rule_id, rule in rules.items()
+        if isinstance(rule, Mapping) and rule.get("count", 0) > 0
+    )
+    reviewed_rule_ids = []
+    unreviewed_rule_ids = []
+    true_positive = false_positive = unclear = 0
+    for rule_id in active_rule_ids:
+        record = review_rules.get(rule_id)
+        if not isinstance(record, Mapping):
+            unreviewed_rule_ids.append(rule_id)
+            continue
+        status = record.get("status")
+        if status in REVIEWED_RULE_STATUSES:
+            reviewed_rule_ids.append(rule_id)
+        else:
+            unreviewed_rule_ids.append(rule_id)
+        for field in ("true_positive", "false_positive", "unclear"):
+            value = record.get(field, 0)
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                if field == "true_positive":
+                    true_positive += value
+                elif field == "false_positive":
+                    false_positive += value
+                else:
+                    unclear += value
+
+    return {
+        "active_rules": len(active_rule_ids),
+        "reviewed_rules": len(reviewed_rule_ids),
+        "unreviewed_rules": len(unreviewed_rule_ids),
+        "reviewed_rule_ids": reviewed_rule_ids,
+        "unreviewed_rule_ids": unreviewed_rule_ids,
+        "true_positive_samples": true_positive,
+        "false_positive_samples": false_positive,
+        "unclear_samples": unclear,
+    }
+
+
+def review_policy_failures(
+    summary: Mapping[str, Any], baseline: Optional[Mapping[str, Any]]
+) -> list:
+    """Return deterministic failures for active rules lacking review decisions."""
+
+    if baseline is None:
+        return ["lint-quality baseline is missing"]
+    review = baseline.get("review")
+    review_rules = review.get("rules", {}) if isinstance(review, Mapping) else {}
+    failures = []
+    for rule_id in sorted(summary.get("rules", {})):
+        measurement = summary["rules"][rule_id]
+        if not isinstance(measurement, Mapping) or measurement.get("count", 0) == 0:
+            continue
+        record = review_rules.get(rule_id) if isinstance(review_rules, Mapping) else None
+        if not isinstance(record, Mapping):
+            failures.append("active rule {} has no review record".format(rule_id))
+            continue
+        status = record.get("status")
+        if status not in REVIEWED_RULE_STATUSES:
+            failures.append("active rule {} is {}".format(rule_id, status or "unreviewed"))
+        notes = record.get("notes", "")
+        if not isinstance(notes, str):
+            notes = ""
+        if record.get("false_positive", 0) and not notes.strip():
+            failures.append(
+                "active rule {} has false-positive samples without remediation notes".format(
+                    rule_id
+                )
+            )
+        if record.get("unclear", 0) and not notes.strip():
+            failures.append(
+                "active rule {} has unclear samples without review notes".format(rule_id)
+            )
+    return failures
+
+
 def _baseline_exact_keys(value: Any, expected: Iterable[str], label: str) -> None:
     if not isinstance(value, Mapping) or set(value) != set(expected):
         raise LintBaselineError(
@@ -696,6 +790,55 @@ def baseline_from_summary(
     }
 
 
+def baseline_for_update(
+    manifest: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    previous: Optional[Mapping[str, Any]] = None,
+) -> dict:
+    """Create an explicit-update baseline without inventing review decisions.
+
+    Review metadata for an unchanged rule is retained when its measured
+    fingerprint is identical. Any new or changed rule receives the generated
+    ``unreviewed`` record, so a baseline update cannot silently bless a
+    changed diagnostic population.
+    """
+
+    generated = baseline_from_summary(manifest, summary)
+    if previous is None:
+        return generated
+    try:
+        validate_lint_baseline(previous, manifest)
+    except LintBaselineError:
+        return generated
+
+    previous_rules = previous["measurement"]["rules"]
+    generated_rules = generated["measurement"]["rules"]
+    previous_review_rules = previous["review"]["rules"]
+    retained = {}
+    for rule_id, generated_rule in generated_rules.items():
+        previous_rule = previous_rules.get(rule_id)
+        previous_review = previous_review_rules.get(rule_id)
+        if (
+            previous_rule == generated_rule
+            and isinstance(previous_review, Mapping)
+        ):
+            retained[rule_id] = deepcopy(dict(previous_review))
+        else:
+            retained[rule_id] = _default_review_rule()
+
+    active_unreviewed = any(
+        generated_rules[rule_id]["count"] > 0
+        and retained[rule_id].get("status") not in REVIEWED_RULE_STATUSES
+        for rule_id in generated_rules
+    )
+    previous_status = previous["review"].get("status", "unreviewed")
+    generated["review"] = {
+        "status": "unreviewed" if active_unreviewed else previous_status,
+        "rules": retained,
+    }
+    return generated
+
+
 def _validate_review_rule(rule: Any, count: int, rule_id: str) -> None:
     _baseline_exact_keys(rule, BASELINE_REVIEW_RULE_KEYS, "review rule {}".format(rule_id))
     status = rule["status"]
@@ -711,6 +854,12 @@ def _validate_review_rule(rule: Any, count: int, rule_id: str) -> None:
         raise LintBaselineError("review rule {} samples more findings than measured".format(rule_id))
     if not isinstance(rule["notes"], str):
         raise LintBaselineError("review rule {} notes must be a string".format(rule_id))
+    if (false_positive or unclear) and not rule["notes"].strip():
+        raise LintBaselineError(
+            "review rule {} false-positive or unclear samples require notes".format(
+                rule_id
+            )
+        )
     if status == "unreviewed" and sample_size != 0:
         raise LintBaselineError("unreviewed rule {} must have zero samples".format(rule_id))
     if status in {"reviewed", "accepted-known-limitations"} and count and sample_size == 0 and not rule["notes"]:
@@ -862,6 +1011,7 @@ def _comparison_result(corpus_id: Any) -> dict:
         "rules_removed": [],
         "rules_changed": {},
         "contract_changes": [],
+        "review_failures": [],
     }
 
 
@@ -935,4 +1085,6 @@ def compare_lint_baseline(
         or result["rules_changed"]
     )
     result["status"] = "changed" if changed else "matched"
+    result["review_failures"] = review_policy_failures(summary, baseline)
+    result["review"] = review_summary(summary, baseline)
     return result

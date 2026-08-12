@@ -7,6 +7,12 @@ diagnostic counts: every measurement is derived from normalized structured
 findings, while review metadata remains human-owned and starts as
 `unreviewed`.
 
+The supported and pinned-community gates require every active rule to have a
+`reviewed` or `accepted-known-limitations` decision. False-positive and
+unclear samples must include remediation or limitation notes. An explicit
+baseline update retains review records only when a rule's measurement is
+unchanged; changed or newly active rules are reset to `unreviewed`.
+
 Schema version 1 separates stable corpus identity, lint contract, generated
 measurements, and review records. Whole-corpus and per-rule SHA-256 digests
 cover normalized findings, so a count-neutral finding change is detected. The

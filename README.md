@@ -616,6 +616,12 @@ human-owned classifications of sampled true positives, false positives, and
 unclear cases; mechanical baseline generation never marks findings reviewed.
 Changed fingerprints are reported even when totals are unchanged and require
 explicit review before a baseline is relied on for a release decision.
+The supported and pinned-community gates also require every active rule to be
+`reviewed` or `accepted-known-limitations`; false-positive or unclear samples
+must carry remediation notes. The lint evidence summary reports active,
+reviewed, and unreviewed rule counts plus all review sample totals. An explicit
+baseline update retains review decisions only for unchanged rule fingerprints
+and resets changed or newly active rules to `unreviewed`.
 
 Lint fingerprint semantics are defined independently of the baseline policy.
 The normalizer in `scripts/lint_quality.py` accepts the parsed version-1 JSON

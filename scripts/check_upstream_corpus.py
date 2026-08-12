@@ -17,31 +17,35 @@ from pathlib import Path
 
 try:
     from scripts.lint_quality import (
+        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
         LintBaselineError,
         LintNormalizationError,
         NormalizationContext,
-        baseline_from_summary,
+        baseline_for_update,
         canonical_baseline_bytes,
         canonical_json_bytes,
         compare_lint_baseline as compare_lint_quality_baseline,
         load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
+        review_summary,
         summarize_findings,
         validate_lint_baseline as validate_lint_quality_baseline,
     )
 except ModuleNotFoundError:  # Direct ``python3 scripts/check_upstream_corpus.py``.
     from lint_quality import (  # type: ignore[no-redef]
+        FINGERPRINT_VERSION,
         KNOWN_RULE_IDS,
         LintBaselineError,
         LintNormalizationError,
         NormalizationContext,
-        baseline_from_summary,
+        baseline_for_update,
         canonical_baseline_bytes,
         canonical_json_bytes,
         compare_lint_baseline as compare_lint_quality_baseline,
         load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
+        review_summary,
         summarize_findings,
         validate_lint_baseline as validate_lint_quality_baseline,
     )
@@ -144,6 +148,7 @@ def summarize_lint_findings(corpus_id, findings, baseline=None):
 
     summary = summarize_findings(findings, KNOWN_RULE_IDS)
     summary["corpus_id"] = corpus_id
+    summary["review"] = review_summary(summary, baseline)
     return summary
 
 
@@ -189,24 +194,31 @@ def compare_lint_baseline(summary, baseline, manifest, baseline_path=None):
             comparison["blocking_failures"].append("lint-quality baseline changed")
         else:
             comparison["blocking_failures"].append("lint-quality baseline is invalid")
+    comparison["blocking_failures"].extend(comparison.get("review_failures", []))
     return comparison
 
 
 def build_lint_baseline(summary, manifest=None, previous=None):
-    del previous  # Review metadata is human-owned and is never inferred.
     if manifest is None:
         manifest = {
             "id": summary["corpus_id"],
             "repositories": [{"name": "synthetic", "revision": "0" * 40}],
             "layers": [{"name": "synthetic", "repository": "synthetic", "path": "."}],
         }
-    return baseline_from_summary(manifest, summary)
+    return baseline_for_update(manifest, summary, previous)
 
 
 def write_lint_evidence(evidence_dir, findings, summary, comparison):
     write_json(
         evidence_dir / "lint" / "findings.json",
-        {"schema": 1, "corpus_id": summary["corpus_id"], "findings": findings},
+        {
+            "schema": 1,
+            "fingerprint_version": (
+                findings[0]["fingerprint_version"] if findings else FINGERPRINT_VERSION
+            ),
+            "corpus_id": summary["corpus_id"],
+            "findings": findings,
+        },
     )
     write_json(evidence_dir / "lint" / "summary.json", summary)
     write_json(evidence_dir / "lint" / "baseline-comparison.json", comparison)
@@ -1263,7 +1275,9 @@ def check_compatibility(arguments, workspace, evidence_dir):
     if arguments.update_lint_baseline:
         baseline_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_path.write_bytes(
-            canonical_baseline_bytes(baseline_from_summary(manifest, lint_summary))
+            canonical_baseline_bytes(
+                build_lint_baseline(lint_summary, manifest, lint_baseline)
+            )
         )
         print(
             "WARNING: wrote lint baseline {}; active rules remain unreviewed".format(

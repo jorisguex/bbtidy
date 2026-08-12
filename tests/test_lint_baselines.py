@@ -4,14 +4,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.check_upstream_corpus import CompatibilityError, load_manifest
+from scripts.check_upstream_corpus import (
+    CompatibilityError,
+    compare_lint_baseline as compare_harness_lint_baseline,
+    load_manifest,
+)
 from scripts.lint_quality import (
     LintBaselineError,
     NormalizationContext,
+    baseline_for_update,
     baseline_from_summary,
     canonical_baseline_bytes,
     compare_lint_baseline,
     normalize_lint_report,
+    review_policy_failures,
+    review_summary,
     summarize_findings,
     validate_lint_baseline,
 )
@@ -257,6 +264,62 @@ class BaselineComparisonTests(BaselineFixture):
             result = compare_lint_baseline(baseline, self.summary(), self.manifest)
             with self.subTest(field=field):
                 self.assertEqual(result["status"], "invalid")
+
+    def test_review_policy_requires_an_explicit_decision_for_active_rules(self):
+        baseline = self.baseline()
+        summary = self.summary()
+        self.assertEqual(review_summary(summary, baseline)["unreviewed_rules"], 1)
+        self.assertEqual(
+            review_policy_failures(summary, baseline), ["active rule BBT001 is unreviewed"]
+        )
+
+        baseline["review"]["rules"]["BBT001"].update(
+            {"status": "reviewed", "sample_size": 1, "true_positive": 1}
+        )
+        self.assertEqual(review_policy_failures(summary, baseline), [])
+
+    def test_false_positive_and_unclear_samples_need_remediation_notes(self):
+        baseline = self.baseline()
+        record = baseline["review"]["rules"]["BBT001"]
+        record.update(
+            {
+                "status": "reviewed",
+                "sample_size": 1,
+                "true_positive": 0,
+                "false_positive": 1,
+            }
+        )
+        with self.assertRaisesRegex(LintBaselineError, "notes"):
+            validate_lint_baseline(baseline, self.manifest)
+        record["notes"] = "Known limitation is tracked for narrowing."
+        validate_lint_baseline(baseline, self.manifest)
+        self.assertEqual(review_policy_failures(self.summary(), baseline), [])
+
+    def test_update_preserves_unchanged_review_and_resets_changed_rules(self):
+        previous = self.baseline()
+        previous["review"]["rules"]["BBT001"].update(
+            {"status": "reviewed", "sample_size": 1, "true_positive": 1}
+        )
+        validate_lint_baseline(previous, self.manifest)
+
+        unchanged = baseline_for_update(self.manifest, self.summary(), previous)
+        self.assertEqual(unchanged["review"]["rules"]["BBT001"]["status"], "reviewed")
+
+        changed_summary = self.summary([diagnostic(self.metadata, message="changed")])
+        changed = baseline_for_update(self.manifest, changed_summary, previous)
+        self.assertEqual(changed["review"]["rules"]["BBT001"]["status"], "unreviewed")
+
+    def test_harness_comparison_exposes_review_failures_as_blocking(self):
+        summary = self.summary()
+        manifest = copy.deepcopy(self.manifest)
+        manifest["lint_quality"] = {"baseline": "lint-baselines/example.json"}
+        comparison = compare_harness_lint_baseline(
+            summary,
+            self.baseline(summary),
+            manifest,
+        )
+        self.assertEqual(comparison["status"], "matched")
+        self.assertIn("active rule BBT001 is unreviewed", comparison["blocking_failures"])
 
 
 class ManifestAssociationTests(unittest.TestCase):
