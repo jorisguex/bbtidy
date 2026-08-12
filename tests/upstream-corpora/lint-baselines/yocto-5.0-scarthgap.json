@@ -427,42 +427,42 @@
     "rules": {
       "BBT001": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT002": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT003": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT004": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT005": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT006": {
@@ -507,58 +507,58 @@
       },
       "BBT011": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT012": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT013": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT014": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT015": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT016": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT017": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT018": {
@@ -587,26 +587,26 @@
       },
       "BBT021": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT022": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT023": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT024": {
@@ -627,10 +627,10 @@
       },
       "BBT026": {
         "false_positive": 0,
-        "notes": "",
-        "sample_size": 0,
-        "status": "unreviewed",
-        "true_positive": 0,
+        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
+        "sample_size": 1,
+        "status": "reviewed",
+        "true_positive": 1,
         "unclear": 0
       },
       "BBT027": {
@@ -722,7 +722,7 @@
         "unclear": 0
       }
     },
-    "status": "unreviewed"
+    "status": "reviewed"
   },
   "schema": 1
 }
