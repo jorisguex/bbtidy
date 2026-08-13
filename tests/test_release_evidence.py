@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import verify_release_evidence as evidence
+from scripts.prepare_performance_evidence import consolidate
 from scripts.lint_quality import KNOWN_RULE_IDS, summarize_findings
 
 
@@ -207,6 +208,87 @@ class ReleaseEvidenceTests(unittest.TestCase):
             names = tar.getnames()
         self.assertIn("evidence-index.json", names)
         self.assertTrue(all(not name.startswith("/") and ".." not in name.split("/") for name in names))
+
+    def test_performance_release_evidence_is_identity_and_budget_checked(self):
+        performance_root = self.root / "performance"
+        record = {
+            "schema": 1,
+            "kind": "bbtidy-performance",
+            "workload": "synthetic-scaling",
+            "mode": "offline",
+            "commit": self.source_commit,
+            "version": self.version,
+            "runner": {"class": "test-runner"},
+            "corpus": {"id": "test", "revision_digest": "a" * 64},
+            "samples": [
+                {
+                    "result": {
+                        "status": "success",
+                        "wall_ms": 100,
+                        "user_cpu_ms": 1,
+                        "system_cpu_ms": 1,
+                        "peak_rss_bytes": 1024,
+                        "read_bytes": 0,
+                        "written_bytes": 0,
+                    }
+                }
+            ],
+            "summary": {
+                "status": "success",
+                "wall_ms": 100,
+                "user_cpu_ms": 1,
+                "system_cpu_ms": 1,
+                "peak_rss_bytes": 1024,
+                "read_bytes": 0,
+                "written_bytes": 0,
+                "sample_ranges": {
+                    field: {"median": value, "p90": value, "min": value, "max": value}
+                    for field, value in {
+                        "wall_ms": 100,
+                        "user_cpu_ms": 1,
+                        "system_cpu_ms": 1,
+                        "peak_rss_bytes": 1024,
+                        "read_bytes": 0,
+                        "written_bytes": 0,
+                    }.items()
+                },
+            },
+        }
+        record_path = self.root / "record.json"
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        budget_path = self.root / "budgets.json"
+        budget_path.write_text(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "runner_class": "test-runner",
+                    "policy": {"relative_and_absolute_required": True},
+                    "workloads": {
+                        "synthetic-scaling": {
+                            "wall_ms": {
+                                "baseline": None,
+                                "max_ratio": 1.15,
+                                "min_absolute_regression": 50,
+                                "blocking": False,
+                            }
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        consolidate(
+            performance_root,
+            budget_path,
+            [record_path],
+            self.source_commit,
+            self.version,
+            "test-runner",
+        )
+        result = evidence.validate_performance_evidence(
+            performance_root, budget_path, self.source_commit, self.version
+        )
+        self.assertEqual(result["status"], "passed")
 
 
 if __name__ == "__main__":

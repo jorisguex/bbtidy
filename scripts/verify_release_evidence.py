@@ -23,6 +23,8 @@ try:
         summarize_findings,
         load_lint_baseline,
     )
+    from scripts.check_performance_budget import BudgetError, compare_record, load_budgets
+    from scripts.performance_schema import PerformanceSchemaError, load_evidence
 except ImportError:  # pragma: no cover - direct script execution
     from check_upstream_corpus import load_manifest  # type: ignore
     from lint_quality import (  # type: ignore
@@ -30,6 +32,8 @@ except ImportError:  # pragma: no cover - direct script execution
         summarize_findings,
         load_lint_baseline,
     )
+    from check_performance_budget import BudgetError, compare_record, load_budgets  # type: ignore
+    from performance_schema import PerformanceSchemaError, load_evidence  # type: ignore
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -180,6 +184,73 @@ def _assert_lint(bundle, manifest):
                 raise EvidenceError("lint fingerprint does not match checked-in baseline: {}".format(field))
 
 
+def validate_performance_evidence(performance_root, budget_path, source_commit, version):
+    """Validate the consolidated performance evidence alongside release evidence."""
+
+    root = Path(performance_root).resolve()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise EvidenceError("performance evidence contains a symbolic link: {}".format(path))
+        if path.is_file():
+            _safe_relative(path.relative_to(root).as_posix(), "performance member")
+    required = ("manifest.json", "budgets.json", "summary.json")
+    for relative in required:
+        _required_file(root, relative)
+    manifest = _json(root / "manifest.json")
+    if manifest.get("schema") != 1 or manifest.get("kind") != "bbtidy-performance-release":
+        raise EvidenceError("performance manifest has an unsupported schema")
+    if manifest.get("source_commit") != source_commit or manifest.get("version") != version:
+        raise EvidenceError("performance evidence identity does not match the release")
+    budget = load_budgets(root / "budgets.json")
+    if Path(budget_path).read_bytes() != (root / "budgets.json").read_bytes():
+        raise EvidenceError("performance evidence does not contain the checked-in budget policy")
+    summary = _json(root / "summary.json")
+    if summary.get("schema") != 1 or summary.get("status") != "passed":
+        raise EvidenceError("performance summary is not passed")
+    if summary.get("source_commit") != source_commit or summary.get("version") != version:
+        raise EvidenceError("performance summary identity does not match the release")
+    records = manifest.get("records")
+    if not isinstance(records, list) or not records:
+        raise EvidenceError("performance manifest has no records")
+    reports = []
+    for relative in records:
+        _safe_relative(relative, "performance record")
+        path = root / relative
+        if not path.is_file():
+            raise EvidenceError("missing performance record: {}".format(relative))
+        try:
+            evidence = load_evidence(path)
+        except (PerformanceSchemaError, OSError, UnicodeError, ValueError) as error:
+            raise EvidenceError("invalid performance record {}: {}".format(relative, error)) from error
+        record_list = evidence.get("records") if evidence.get("kind") == "bbtidy-performance-suite" else [evidence]
+        for record in record_list:
+            if record.get("commit") != source_commit:
+                raise EvidenceError("performance record uses the wrong source commit")
+            if not _version_matches(record.get("version"), version):
+                raise EvidenceError("performance record uses the wrong bbtidy version")
+            if record["runner"]["class"] != budget["runner_class"]:
+                raise EvidenceError("performance record uses the wrong runner class")
+            if record["summary"]["status"] != "success":
+                raise EvidenceError("performance record did not complete successfully")
+            try:
+                comparison = compare_record(record, budget)
+            except (BudgetError, KeyError, TypeError, ValueError) as error:
+                raise EvidenceError("performance budget comparison failed: {}".format(error)) from error
+            if comparison["failures"]:
+                raise EvidenceError("performance budget has blocking failures")
+            reports.append({"path": relative, "workload": record["workload"], "comparison": comparison})
+    reports.sort(key=lambda report: (report["path"], report["workload"]))
+    if summary.get("records") != reports:
+        raise EvidenceError("performance summary does not match record comparisons")
+    return {
+        "status": "passed",
+        "source_commit": source_commit,
+        "version": version,
+        "runner_class": budget["runner_class"],
+        "records": reports,
+    }
+
+
 def validate_evidence_bundle(bundle, expected_manifest, source_commit, version):
     """Validate one extracted compatibility artifact directory."""
 
@@ -317,7 +388,7 @@ def _add_bytes(tar, name, data):
     tar.addfile(info, __import__("io").BytesIO(data))
 
 
-def create_evidence_archive(root, bundles, index, output, checksums):
+def create_evidence_archive(root, bundles, index, output, checksums, performance_root=None):
     """Create a deterministic tarball and a checksum entry for it."""
 
     output = Path(output)
@@ -332,6 +403,13 @@ def create_evidence_archive(root, bundles, index, output, checksums):
                 continue
             relative = path.relative_to(bundle).as_posix()
             archive_names.append("evidence/{}/{}".format(corpus_id, relative))
+            source_files.append((path, archive_names[-1]))
+    if performance_root is not None:
+        performance_root = Path(performance_root)
+        for path in sorted(performance_root.rglob("*")):
+            if not path.is_file():
+                continue
+            archive_names.append("performance/{}".format(path.relative_to(performance_root).as_posix()))
             source_files.append((path, archive_names[-1]))
     validate_archive_members(archive_names)
     index_bytes = (json.dumps(index, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
@@ -348,7 +426,17 @@ def create_evidence_archive(root, bundles, index, output, checksums):
     return digest
 
 
-def verify_release_evidence(evidence_root, manifests, source_commit, version, output=None, checksums=None):
+def verify_release_evidence(
+    evidence_root,
+    manifests,
+    source_commit,
+    version,
+    output=None,
+    checksums=None,
+    performance_root=None,
+    performance_budget=None,
+    require_performance=False,
+):
     """Verify all blocking corpora exactly once and optionally archive them."""
 
     root = Path(evidence_root).resolve()
@@ -397,10 +485,20 @@ def verify_release_evidence(evidence_root, manifests, source_commit, version, ou
         "source_commit": source_commit,
         "corpora": reports,
     }
+    if require_performance and performance_root is None:
+        raise EvidenceError("performance evidence is required for this release gate")
+    if performance_root is not None:
+        if performance_budget is None:
+            raise EvidenceError("performance budget path is required with performance evidence")
+        index["performance"] = validate_performance_evidence(
+            performance_root, performance_budget, source_commit, version
+        )
     if output is not None:
         if checksums is None:
             checksums = str(Path(output).with_suffix(Path(output).suffix + ".sha256"))
-        index["archive_sha256"] = create_evidence_archive(root, bundles, index, output, checksums)
+        index["archive_sha256"] = create_evidence_archive(
+            root, bundles, index, output, checksums, performance_root
+        )
         Path(str(output) + ".index.json").write_text(
             json.dumps(index, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
             encoding="utf-8",
@@ -416,6 +514,9 @@ def main(argv=None):
     parser.add_argument("--version", required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--checksums", type=Path)
+    parser.add_argument("--performance-root", type=Path)
+    parser.add_argument("--performance-budget", type=Path)
+    parser.add_argument("--require-performance", action="store_true")
     arguments = parser.parse_args(argv)
     try:
         index = verify_release_evidence(
@@ -425,6 +526,9 @@ def main(argv=None):
             arguments.version,
             arguments.output,
             arguments.checksums,
+            arguments.performance_root,
+            arguments.performance_budget,
+            arguments.require_performance,
         )
     except (EvidenceError, OSError, UnicodeError, ValueError) as error:
         print("error: {}".format(error), file=sys.stderr)

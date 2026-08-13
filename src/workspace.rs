@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 const DEFAULT_LAYER_PRIORITY: i32 = 0;
 
@@ -294,7 +295,7 @@ impl WorkspaceIndex {
             BitBakePhase::GlobalEnvironment,
             ["--environment"],
         )?;
-        let global = parse_workspace_environment(&global_output.stdout);
+        let global = parse_workspace_environment_recorded(runner, &global_output.stdout);
         for variable in ["BBLAYERS", "BBFILES", "BBPATH"] {
             if !global.contains_key(variable) {
                 return Err(invalid_data(format!(
@@ -346,6 +347,12 @@ impl WorkspaceIndex {
                     "tinfoil-batch+bounded-buildfile-fallback"
                 };
                 runner.stats_mut().set_strategy(strategy);
+                runner
+                    .stats_mut()
+                    .record_helper_recipes(batch.helper_recipe_count);
+                runner
+                    .stats_mut()
+                    .record_fallback_recipes(batch.missing_recipes.len());
                 for path in batch.included_files {
                     if keep(&path) {
                         files.insert(path);
@@ -362,7 +369,7 @@ impl WorkspaceIndex {
                         &recipe,
                         ["--environment", "--buildfile", recipe.as_str()],
                     )?;
-                    let environment = parse_workspace_environment(&output.stdout);
+                    let environment = parse_workspace_environment_recorded(runner, &output.stdout);
                     add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
                     files.retain(|path| keep(path));
                     limit_tracker.check(&files)?;
@@ -371,6 +378,7 @@ impl WorkspaceIndex {
                 runner
                     .stats_mut()
                     .set_strategy("bounded-buildfile-fallback");
+                runner.stats_mut().record_fallback_recipes(recipes.len());
                 for recipe in recipes {
                     let recipe = recipe.to_string_lossy().into_owned();
                     let output = run_recipe_bitbake_command(
@@ -381,7 +389,7 @@ impl WorkspaceIndex {
                         &recipe,
                         ["--environment", "--buildfile", recipe.as_str()],
                     )?;
-                    let environment = parse_workspace_environment(&output.stdout);
+                    let environment = parse_workspace_environment_recorded(runner, &output.stdout);
                     add_resolved_files(&mut files, &environment, "BBINCLUDED", &build_dir);
                     files.retain(|path| keep(path));
                     limit_tracker.check(&files)?;
@@ -393,10 +401,14 @@ impl WorkspaceIndex {
         for path in bitbake_paths(&global, "BBPATH", &build_dir, ':') {
             roots.insert(path);
         }
+        let postprocess_started = Instant::now();
         let mut index = Self::from_canonical_files(files, build_files, roots)?;
         index.authoritative = true;
         index.apply_bitbake_context(&global, &build_dir);
         index.dependencies = index.build_dependencies();
+        runner
+            .stats_mut()
+            .add_postprocess_ms(postprocess_started.elapsed().as_millis());
         Ok(index)
     }
 
@@ -1313,11 +1325,29 @@ fn query_recipe_includes_with_tinfoil(
     let mut included_files = BTreeSet::new();
     let mut returned_recipes = BTreeSet::new();
     let mut query_count = 0;
+    let mut prepare_ms = 0;
+    let mut parse_ms = 0;
     for line in String::from_utf8_lossy(&output.stdout).lines() {
-        query_count += 1;
-        let value: TinfoilRecipeOutput = serde_json::from_str(line).map_err(|error| {
+        let raw: serde_json::Value = serde_json::from_str(line).map_err(|error| {
             invalid_data(format!(
                 "BitBake Tinfoil helper returned invalid output: {error}"
+            ))
+        })?;
+        if raw.get("kind").and_then(serde_json::Value::as_str) == Some("metrics") {
+            prepare_ms = raw
+                .get("prepare_ms")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or_default() as u128;
+            parse_ms = raw
+                .get("parse_ms")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or_default() as u128;
+            continue;
+        }
+        query_count += 1;
+        let value: TinfoilRecipeOutput = serde_json::from_value(raw).map_err(|error| {
+            invalid_data(format!(
+                "BitBake Tinfoil helper returned invalid recipe output: {error}"
             ))
         })?;
         let recipe = fs::canonicalize(&value.recipe).unwrap_or(value.recipe);
@@ -1347,14 +1377,17 @@ fn query_recipe_includes_with_tinfoil(
     runner
         .record_recipe_queries(query_count)
         .map_err(|error| invalid_data(format!("{error}")))?;
+    runner.stats_mut().set_tinfoil_timings(prepare_ms, parse_ms);
     Ok(Some(TinfoilBatchResult {
         included_files,
+        helper_recipe_count: returned_recipes.len(),
         missing_recipes: recipe_set.difference(&returned_recipes).cloned().collect(),
     }))
 }
 
 struct TinfoilBatchResult {
     included_files: BTreeSet<PathBuf>,
+    helper_recipe_count: usize,
     missing_recipes: Vec<PathBuf>,
 }
 
@@ -1383,6 +1416,7 @@ import contextlib
 import json
 import os
 import sys
+import time
 
 import bb.tinfoil
 
@@ -1391,7 +1425,10 @@ protocol = sys.stdout
 try:
     with contextlib.redirect_stdout(sys.stderr):
         with bb.tinfoil.Tinfoil(output=sys.stderr) as tinfoil:
+            prepare_started = time.monotonic()
             tinfoil.prepare(quiet=2)
+            prepare_ms = int((time.monotonic() - prepare_started) * 1000)
+            parse_started = time.monotonic()
             for index, recipe in enumerate(tinfoil.all_recipe_files(variants=False)):
                 if limit and index >= limit:
                     raise RuntimeError("recipe-query budget exceeded")
@@ -1405,6 +1442,12 @@ try:
                     "recipe": os.path.realpath(recipe),
                     "included": datastore.getVar("BBINCLUDED") or "",
                 }, separators=(",", ":")), file=protocol)
+            parse_ms = int((time.monotonic() - parse_started) * 1000)
+            print(json.dumps({
+                "kind": "metrics",
+                "prepare_ms": prepare_ms,
+                "parse_ms": parse_ms,
+            }, separators=(",", ":")), file=protocol)
 except Exception as error:
     print("bbtidy Tinfoil helper failed: %s" % error, file=sys.stderr)
     raise
@@ -1445,6 +1488,18 @@ fn parse_workspace_environment(bytes: &[u8]) -> BTreeMap<String, String> {
             || name.starts_with("LAYERSERIES_COMPAT_")
     };
     parse_bitbake_environment_selected(bytes, names)
+}
+
+fn parse_workspace_environment_recorded(
+    runner: &mut BitBakeRunner,
+    bytes: &[u8],
+) -> BTreeMap<String, String> {
+    let started = Instant::now();
+    let environment = parse_workspace_environment(bytes);
+    runner
+        .stats_mut()
+        .add_workspace_environment_parse_ms(started.elapsed().as_millis());
+    environment
 }
 
 fn parse_bitbake_environment_selected<F>(bytes: &[u8], selected: F) -> BTreeMap<String, String>

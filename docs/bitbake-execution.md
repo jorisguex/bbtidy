@@ -97,3 +97,21 @@ three recipe queries complete in four commands (version, parse, global
 environment, and one helper) rather than the legacy `N + 3` commands. It is a
 synthetic scalability check, not a substitute for the supported Yocto corpus
 equivalence run.
+For the complete versioned performance contract use
+[scripts/benchmark_performance.py](../scripts/benchmark_performance.py).
+It measures child processes, records cold/warm/offline modes, preserves raw
+repetitions, and includes BitBake attempt/failure/timeout/cancellation/limit
+statistics, Tinfoil timings, helper/fallback selection, cache state, and
+workspace post-processing timings. The checked-in
+[tests/performance/budgets.json](../tests/performance/budgets.json) keeps
+safety limits separate from performance budgets; baseline updates require an
+explicit reason and are disabled in CI by default.
+
+Metric meanings are deliberately narrow: total_commands counts launched
+processes and excludes cache hits; recipe_queries_completed counts successful
+recipe-specific environment queries, not recipes parsed by the Tinfoil
+helper; commands_attempted includes spawn attempts; failure, timeout,
+cancellation, and limit-termination counters are mutually classified outcomes;
+and fallback_recipe_percentage is reported in basis points. The helper and
+fallback counts are derived from the returned recipe protocol and bounded
+fallback set, so a process count must not be interpreted as a recipe count.

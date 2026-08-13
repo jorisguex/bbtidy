@@ -12,7 +12,10 @@ All notable changes to this project will be documented in this file.
 - BitBake-backed workspace and semantic operations now share a bounded,
   streaming execution runner with operation-scoped version/parse reuse,
   cancellation, process-group cleanup, command/query budgets, and phase-aware
-  execution statistics.
+  execution statistics. The runner now also records operation timing,
+  per-outcome command counts, peak live processes, largest output phase,
+  helper/fallback ratios, Tinfoil timing, cache state, and workspace
+  post-processing timing.
 
 ### Fixed
 
@@ -27,7 +30,12 @@ All notable changes to this project will be documented in this file.
   and compatibility-preserving `all`), deterministic per-rule quality reports,
   stratified review fingerprints, reasoned inline suppressions, and validated
   finding baselines with explicit refresh controls. JSON/SARIF reports expose
-  profile, catalog, origin, suppression, and baseline metadata.
+ profile, catalog, origin, suppression, and baseline metadata.
+
+- Versioned performance evidence and runner-bound budgets covering synthetic
+  scaling, offline corpora, BitBake cold/warm/full-semantic modes, process-tree
+  resources, structural invariants, explicit baseline updates, and consolidated
+  release artifacts.
 
 - A single tag-driven blocking release orchestrator with supported Yocto 5.0
   and 6.0, pinned-community lint, strict evidence verification, safe rehearsal

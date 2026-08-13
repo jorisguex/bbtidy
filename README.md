@@ -752,16 +752,21 @@ The scheduled Security workflow also runs `actionlint`, audits both Cargo lock
 files against the RustSec advisory database, and Dependabot opens weekly Cargo
 and GitHub Actions update pull requests.
 
-Measure the main layer-analysis paths on a repeatable synthetic 1,000-recipe
-fixture with:
+Measure the parameterized layer-analysis paths (100, 1,000, and 5,000 recipe
+fixtures, with each sample running for at least 100 ms) with:
 
 ```bash
 cargo bench --locked --bench layer_analysis
 ```
 
 The benchmark reports workspace index construction, single-file formatting,
-and batch workspace-aware linting. It is intended for comparing changes across
-the same machine rather than enforcing a wall-clock threshold in CI.
+and batch workspace-aware linting. Versioned process/resource evidence,
+synthetic workload scaling, offline corpus records, BitBake cold/warm/full
+semantic records, and release budget policy are documented in
+[tests/performance/README.md](tests/performance/README.md). The performance
+runner records process-tree RSS, CPU, read/write bytes, status, structural
+counters, and corpus/runner identity; it never treats a safety-limit failure as
+a usable baseline.
 
 Exercise parser and formatter invariants with the property tests:
 

@@ -5,45 +5,57 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-const ITERATIONS: u32 = 5;
-const RECIPE_COUNT: usize = 1_000;
+const ITERATIONS: u32 = 3;
+const MIN_SAMPLE_DURATION: Duration = Duration::from_millis(100);
+const RECIPE_COUNTS: &[usize] = &[100, 1_000, 5_000];
 
 fn main() {
-    let fixture = Fixture::new();
-    let index_time = average_duration(ITERATIONS, || {
-        let index = WorkspaceIndex::from_paths(&fixture.paths).expect("benchmark fixture paths");
-        std::hint::black_box(index);
-    });
-    let format_time = average_duration(ITERATIONS, || {
-        let formatted = format_with_options(Fixture::SOURCE, &FormatOptions::default())
-            .expect("benchmark source should format");
-        std::hint::black_box(formatted);
-    });
-    let workspace = WorkspaceIndex::from_paths(&fixture.paths).expect("benchmark fixture paths");
-    let lint_time = average_duration(ITERATIONS, || {
-        let mut finding_count = 0;
-        for path in &fixture.recipe_paths {
-            finding_count +=
-                lint_with_workspace(Fixture::SOURCE, path, &workspace, &LintOptions::default())
-                    .expect("benchmark source should lint")
-                    .len();
-        }
-        std::hint::black_box(finding_count);
-    });
-
     println!("bbtidy layer-analysis benchmark");
-    println!("fixture files: {}", fixture.paths.len());
-    println!("recipes linted per sample: {}", fixture.recipe_paths.len());
-    print_duration("workspace index", index_time);
-    print_duration("single-file format", format_time);
-    print_duration("workspace lint batch", lint_time);
+    println!(
+        "minimum sample duration: {:.0} ms",
+        MIN_SAMPLE_DURATION.as_secs_f64() * 1_000.0
+    );
+    for &recipe_count in RECIPE_COUNTS {
+        let fixture = Fixture::new(recipe_count);
+        let index_time = average_duration(ITERATIONS, || {
+            let index =
+                WorkspaceIndex::from_paths(&fixture.paths).expect("benchmark fixture paths");
+            std::hint::black_box(index);
+        });
+        let format_time = average_duration(ITERATIONS, || {
+            let formatted = format_with_options(Fixture::SOURCE, &FormatOptions::default())
+                .expect("benchmark source should format");
+            std::hint::black_box(formatted);
+        });
+        let workspace =
+            WorkspaceIndex::from_paths(&fixture.paths).expect("benchmark fixture paths");
+        let lint_time = average_duration(ITERATIONS, || {
+            let mut finding_count = 0;
+            for path in &fixture.recipe_paths {
+                finding_count +=
+                    lint_with_workspace(Fixture::SOURCE, path, &workspace, &LintOptions::default())
+                        .expect("benchmark source should lint")
+                        .len();
+            }
+            std::hint::black_box(finding_count);
+        });
+
+        println!("workload recipes: {recipe_count}");
+        println!("fixture files: {}", fixture.paths.len());
+        println!("recipes linted per sample: {}", fixture.recipe_paths.len());
+        print_duration("workspace index", index_time);
+        print_duration("single-file format", format_time);
+        print_duration("workspace lint batch", lint_time);
+    }
 }
 
 fn average_duration(iterations: u32, mut operation: impl FnMut()) -> Duration {
     let mut total = Duration::ZERO;
     for _ in 0..iterations {
         let start = Instant::now();
-        operation();
+        while start.elapsed() < MIN_SAMPLE_DURATION {
+            operation();
+        }
         total += start.elapsed();
     }
     total / iterations
@@ -65,7 +77,7 @@ struct Fixture {
 impl Fixture {
     const SOURCE: &'static str = "SUMMARY=\"benchmark\"\nrequire common.inc\ninherit base\n";
 
-    fn new() -> Self {
+    fn new(recipe_count: usize) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock should be after the Unix epoch")
@@ -76,7 +88,7 @@ impl Fixture {
         ));
         fs::create_dir_all(&root).expect("create benchmark fixture root");
 
-        let mut paths = Vec::with_capacity(RECIPE_COUNT + 3);
+        let mut paths = Vec::with_capacity(recipe_count + 3);
         paths.push(write(
             &root,
             "conf/layer.conf",
@@ -95,8 +107,8 @@ impl Fixture {
             "COMMON = \"1\"\n",
         ));
 
-        let mut recipe_paths = Vec::with_capacity(RECIPE_COUNT);
-        for index in 0..RECIPE_COUNT {
+        let mut recipe_paths = Vec::with_capacity(recipe_count);
+        for index in 0..recipe_count {
             let relative = format!("recipes-example/generated/recipe-{index}.bb");
             let path = write(&root, &relative, Self::SOURCE);
             paths.push(path.clone());

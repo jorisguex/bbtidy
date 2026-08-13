@@ -45,6 +45,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Command {
     /// Format BitBake metadata
     Format(FormatArgs),
@@ -1173,6 +1174,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         }
     }
 
+    let bitbake_stats_snapshot = bitbake_runner.as_ref().map(BitBakeRunner::stats_snapshot);
     let mut stdout = io::stdout().lock();
     if machine_output {
         if let Err(error) = write_lint_report(
@@ -1184,7 +1186,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             baseline_summary.as_ref(),
             suppression_summary,
             semantic_report.as_ref(),
-            bitbake_runner.as_ref().map(BitBakeRunner::stats),
+            bitbake_stats_snapshot.as_ref(),
             &mut stdout,
         ) {
             if error.kind() == io::ErrorKind::BrokenPipe {
@@ -1230,7 +1232,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
     }
 
     if !machine_output && let Some(runner) = bitbake_runner.as_ref() {
-        let stats = runner.stats();
+        let stats = runner.stats_snapshot();
         eprintln!(
             "BitBake: {} commands, {} recipe queries, {} cache hits{}",
             stats.total_commands,
@@ -1625,6 +1627,7 @@ fn write_text_diagnostic(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn write_lint_report(
     output: LintOutput,
     output_version: u8,
@@ -1665,6 +1668,7 @@ fn write_lint_report(
     stdout.write_all(b"\n")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn json_report(
     output_version: u8,
     profile: LintProfile,

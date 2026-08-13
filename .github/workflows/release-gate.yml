@@ -112,9 +112,13 @@ jobs:
           - name: Yocto 5.0 / BitBake 2.8
             artifact: yocto-5.0-scarthgap
             manifest: tests/upstream-corpora/yocto-5.0-scarthgap.json
+            performance_workload: yocto-5.0-offline
+            bitbake_prefix: yocto-5.0
           - name: Yocto 6.0 / BitBake 2.18
             artifact: yocto-6.0-wrynose
             manifest: tests/upstream-corpora/yocto-6.0-wrynose.json
+            performance_workload: yocto-6.0-offline
+            bitbake_prefix: yocto-6.0
     steps:
       - name: Check out exact source commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -149,6 +153,65 @@ jobs:
           name: compatibility-evidence-${{ matrix.artifact }}
           path: compatibility-evidence
           if-no-files-found: error
+      - name: Collect pinned offline and BitBake performance evidence
+        run: |
+          set -euo pipefail
+          mkdir -p performance-evidence
+          python3 scripts/benchmark_performance.py \
+            --bbtidy target/release/bbtidy \
+            --source-root compatibility-workspace/formatted \
+            --operation json \
+            --mode offline \
+            --repetitions 3 \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            --workload "${{ matrix.performance_workload }}" \
+            --output "performance-evidence/${{ matrix.performance_workload }}.json"
+          build_dir="$(find compatibility-workspace -type f -path '*/build-original/conf/bblayers.conf' -print -quit | sed 's#/conf/bblayers.conf##')"
+          bitbake="$(find compatibility-workspace -type f -path '*/bitbake/bin/bitbake' -print -quit)"
+          test -n "$build_dir"
+          test -n "$bitbake"
+          cold_build_dir="$RUNNER_TEMP/bbtidy-cold-build"
+          cp -a "$build_dir" "$cold_build_dir"
+          python3 scripts/benchmark_performance.py \
+            --bbtidy target/release/bbtidy \
+            --source-root "$cold_build_dir" \
+            --operation bitbake \
+            --mode cold \
+            --repetitions 1 \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            --workload "${{ matrix.bitbake_prefix }}-bitbake-cold" \
+            --bitbake-command "$bitbake" \
+            --timeout-seconds 3600 \
+            --output "performance-evidence/${{ matrix.bitbake_prefix }}-bitbake-cold.json"
+          python3 scripts/benchmark_performance.py \
+            --bbtidy target/release/bbtidy \
+            --source-root "$cold_build_dir" \
+            --operation bitbake \
+            --mode warm \
+            --repetitions 2 \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            --workload "${{ matrix.bitbake_prefix }}-bitbake-warm" \
+            --bitbake-command "$bitbake" \
+            --timeout-seconds 3600 \
+            --output "performance-evidence/${{ matrix.bitbake_prefix }}-bitbake-warm.json"
+          python3 scripts/benchmark_performance.py \
+            --bbtidy target/release/bbtidy \
+            --source-root "$build_dir" \
+            --operation semantic \
+            --mode cold \
+            --repetitions 1 \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            --workload "${{ matrix.bitbake_prefix }}-semantic-full" \
+            --bitbake-command "$bitbake" \
+            --timeout-seconds 3600 \
+            --output "performance-evidence/${{ matrix.bitbake_prefix }}-semantic-full.json"
+      - name: Upload raw supported performance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: performance-evidence-${{ matrix.artifact }}
+          path: performance-evidence
+          if-no-files-found: error
 
   pinned-community:
     name: Pinned community lint gate
@@ -180,10 +243,83 @@ jobs:
           name: compatibility-evidence-community
           path: compatibility-evidence
           if-no-files-found: error
+      - name: Collect pinned community performance evidence
+        run: >-
+          python3 scripts/benchmark_performance.py
+          --bbtidy target/release/bbtidy
+          --source-root compatibility-workspace/formatted
+          --operation json
+          --mode offline
+          --repetitions 3
+          --runner-class github-ubuntu-24.04-x86_64
+          --workload yocto-community-offline
+          --output performance-community.json
+      - name: Upload raw community performance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: performance-evidence-community
+          path: performance-community.json
+          if-no-files-found: error
+
+  performance-release:
+    name: Consolidate release performance evidence
+    needs: [validate-source, supported-compatibility, pinned-community]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Download raw performance records
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: performance-evidence-*
+          path: performance-raw
+      - name: Build bbtidy and collect synthetic performance evidence
+        run: |
+          set -euo pipefail
+          cargo build --locked --release
+          python3 scripts/benchmark_performance.py \
+            --bbtidy target/release/bbtidy \
+            --synthetic \
+            --operation json \
+            --mode offline \
+            --repetitions 3 \
+            --minimum-duration-ms 100 \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            --output synthetic-performance.json
+      - name: Consolidate and validate performance evidence
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit || github.sha }}
+          RELEASE_VERSION: ${{ needs.validate-source.outputs.version }}
+        run: |
+          set -euo pipefail
+          records=()
+          while IFS= read -r record; do
+            records+=(--record "$record")
+          done < <(find performance-raw -type f -name '*.json' -print | sort)
+          records+=(--record synthetic-performance.json)
+          python3 scripts/prepare_performance_evidence.py \
+            --output performance-release \
+            --budget tests/performance/budgets.json \
+            --source-commit "$SOURCE_COMMIT" \
+            --version "$RELEASE_VERSION" \
+            --runner-class github-ubuntu-24.04-x86_64 \
+            "${records[@]}"
+      - name: Upload consolidated performance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: performance-evidence-release
+          path: performance-release
+          if-no-files-found: error
 
   verify-evidence:
     name: Verify consolidated release evidence
-    needs: [validate-source, supported-compatibility, pinned-community]
+    needs: [validate-source, supported-compatibility, pinned-community, performance-release]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -201,6 +337,12 @@ jobs:
         with:
           pattern: compatibility-evidence-*
           path: evidence-raw
+      - name: Download consolidated performance evidence
+        if: always()
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: performance-evidence-release
+          path: performance-release
       - name: Verify all blocking evidence and create archive
         id: verify
         if: always()
@@ -215,6 +357,9 @@ jobs:
           --manifest tests/upstream-corpora/community-master.json
           --source-commit "$SOURCE_COMMIT"
           --version "$RELEASE_VERSION"
+          --performance-root performance-release
+          --performance-budget tests/performance/budgets.json
+          --require-performance
           --output release-evidence.tar.gz
           --checksums release-evidence.sha256
       - name: Upload consolidated evidence
@@ -229,7 +374,7 @@ jobs:
 
   release-gate-complete:
     name: Release gate complete
-    needs: [validate-source, supported-compatibility, pinned-community, verify-evidence]
+    needs: [validate-source, supported-compatibility, pinned-community, performance-release, verify-evidence]
     if: always()
     runs-on: ubuntu-24.04
     steps:

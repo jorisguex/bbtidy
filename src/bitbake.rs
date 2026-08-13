@@ -248,19 +248,41 @@ impl BitBakeOutput {
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct BitBakeExecutionStats {
     pub limits: BitBakeExecutionLimits,
+    /// Wall time for the complete caller-owned operation, populated by
+    /// `BitBakeRunner::stats_snapshot` so partial reports remain auditable.
+    pub operation_elapsed_ms: u128,
     pub total_commands: usize,
+    pub commands_attempted: usize,
+    pub commands_succeeded: usize,
+    pub commands_failed: usize,
+    pub commands_timed_out: usize,
+    pub commands_cancelled: usize,
+    pub commands_limit_terminated: usize,
+    pub peak_live_processes: usize,
     pub commands_by_phase: BTreeMap<BitBakePhase, usize>,
     pub elapsed_ms_by_phase: BTreeMap<BitBakePhase, u128>,
     pub stdout_bytes_by_phase: BTreeMap<BitBakePhase, u64>,
     pub stderr_bytes_by_phase: BTreeMap<BitBakePhase, u64>,
     pub max_stdout_bytes: u64,
     pub max_stderr_bytes: u64,
+    pub largest_output_bytes: u64,
+    pub largest_output_phase: Option<BitBakePhase>,
     pub total_stdout_bytes: u64,
     pub total_stderr_bytes: u64,
     pub recipe_queries_scheduled: usize,
     pub recipe_queries_completed: usize,
     pub cache_hits: usize,
     pub strategy: Option<String>,
+    pub helper_recipe_count: usize,
+    pub fallback_recipe_count: usize,
+    pub fallback_recipe_percentage: u64,
+    pub tinfoil_prepare_ms: u128,
+    pub tinfoil_parse_ms: u128,
+    pub workspace_environment_parse_ms: u128,
+    pub postprocess_ms: u128,
+    pub cache_state: Option<String>,
+    pub last_failure_phase: Option<BitBakePhase>,
+    pub last_failure_kind: Option<String>,
 }
 
 impl BitBakeExecutionStats {
@@ -270,6 +292,76 @@ impl BitBakeExecutionStats {
 
     pub fn set_strategy(&mut self, strategy: impl Into<String>) {
         self.strategy = Some(strategy.into());
+    }
+
+    pub fn set_cache_state(&mut self, state: impl Into<String>) {
+        self.cache_state = Some(state.into());
+    }
+
+    pub fn set_tinfoil_timings(&mut self, prepare_ms: u128, parse_ms: u128) {
+        self.tinfoil_prepare_ms = prepare_ms;
+        self.tinfoil_parse_ms = parse_ms;
+    }
+
+    pub fn add_workspace_environment_parse_ms(&mut self, elapsed_ms: u128) {
+        self.workspace_environment_parse_ms = self
+            .workspace_environment_parse_ms
+            .saturating_add(elapsed_ms);
+    }
+
+    pub fn add_postprocess_ms(&mut self, elapsed_ms: u128) {
+        self.postprocess_ms = self.postprocess_ms.saturating_add(elapsed_ms);
+    }
+
+    pub fn record_helper_recipes(&mut self, count: usize) {
+        self.helper_recipe_count = self.helper_recipe_count.saturating_add(count);
+        self.update_fallback_percentage();
+    }
+
+    pub fn record_fallback_recipes(&mut self, count: usize) {
+        self.fallback_recipe_count = self.fallback_recipe_count.saturating_add(count);
+        self.update_fallback_percentage();
+    }
+
+    fn update_fallback_percentage(&mut self) {
+        let total = self
+            .helper_recipe_count
+            .saturating_add(self.fallback_recipe_count);
+        self.fallback_recipe_percentage = if total == 0 {
+            0
+        } else {
+            ((self.fallback_recipe_count as u128 * 10_000) / total as u128) as u64
+        };
+    }
+
+    fn record_failure(&mut self, phase: BitBakePhase, kind: &str) {
+        self.last_failure_phase = Some(phase);
+        self.last_failure_kind = Some(kind.to_owned());
+        match kind {
+            "timeout" | "total-deadline" => self.commands_timed_out += 1,
+            "cancelled" => self.commands_cancelled += 1,
+            "command-budget" | "recipe-query-budget" | "stdout-limit" | "stderr-limit" => {
+                self.commands_limit_terminated += 1;
+            }
+            _ => self.commands_failed += 1,
+        }
+    }
+
+    fn record_error(&mut self, error: &BitBakeError) {
+        let kind = match error {
+            BitBakeError::Cancelled { .. } => "cancelled",
+            BitBakeError::Timeout { .. } => "timeout",
+            BitBakeError::TotalDeadline { .. } => "total-deadline",
+            BitBakeError::StdoutLimit { .. } => "stdout-limit",
+            BitBakeError::StderrLimit { .. } => "stderr-limit",
+            BitBakeError::CommandBudget { .. } => "command-budget",
+            BitBakeError::RecipeQueryBudget { .. } => "recipe-query-budget",
+            BitBakeError::Spawn { .. } => "spawn",
+            BitBakeError::Wait { .. } => "wait",
+            BitBakeError::Read { .. } => "read",
+            BitBakeError::NonZero { .. } => "non-zero",
+        };
+        self.record_failure(error.phase(), kind);
     }
 }
 
@@ -526,6 +618,22 @@ impl BitBakeRunner {
         &self.stats
     }
 
+    pub fn stats_snapshot(&self) -> BitBakeExecutionStats {
+        let mut stats = self.stats.clone();
+        stats.operation_elapsed_ms = self.elapsed().as_millis();
+        if stats.cache_state.is_none() {
+            stats.cache_state = Some(
+                if stats.cache_hits == 0 {
+                    "cold"
+                } else {
+                    "warm"
+                }
+                .to_owned(),
+            );
+        }
+        stats
+    }
+
     pub fn stats_mut(&mut self) -> &mut BitBakeExecutionStats {
         &mut self.stats
     }
@@ -538,11 +646,13 @@ impl BitBakeRunner {
                 .max_recipe_queries
                 .saturating_sub(self.stats.recipe_queries_scheduled)
         {
-            return Err(BitBakeError::RecipeQueryBudget {
+            let error = BitBakeError::RecipeQueryBudget {
                 phase: BitBakePhase::RecipeEnvironment,
                 recipe: None,
                 limit: self.limits.max_recipe_queries,
-            });
+            };
+            self.stats.record_error(&error);
+            return Err(error);
         }
         self.stats.recipe_queries_scheduled += count;
         self.stats.recipe_queries_completed += count;
@@ -556,31 +666,39 @@ impl BitBakeRunner {
     #[allow(clippy::result_large_err)]
     pub fn run(&mut self, invocation: BitBakeInvocation) -> Result<BitBakeOutput, BitBakeError> {
         if self.cancellation.is_cancelled() {
-            return Err(BitBakeError::Cancelled {
+            let error = BitBakeError::Cancelled {
                 invocation,
                 elapsed: self.elapsed(),
-            });
+            };
+            self.stats.record_error(&error);
+            return Err(error);
         }
         if self.elapsed() >= self.limits.total_timeout {
-            return Err(BitBakeError::TotalDeadline {
+            let error = BitBakeError::TotalDeadline {
                 invocation,
                 elapsed: self.elapsed(),
                 limit: self.limits.total_timeout,
-            });
+            };
+            self.stats.record_error(&error);
+            return Err(error);
         }
         if self.stats.total_commands >= self.limits.max_commands {
-            return Err(BitBakeError::CommandBudget {
+            let error = BitBakeError::CommandBudget {
                 phase: invocation.phase,
                 limit: self.limits.max_commands,
-            });
+            };
+            self.stats.record_error(&error);
+            return Err(error);
         }
         if invocation.recipe.is_some() {
             if self.stats.recipe_queries_scheduled >= self.limits.max_recipe_queries {
-                return Err(BitBakeError::RecipeQueryBudget {
+                let error = BitBakeError::RecipeQueryBudget {
                     phase: invocation.phase,
                     recipe: invocation.recipe.clone(),
                     limit: self.limits.max_recipe_queries,
-                });
+                };
+                self.stats.record_error(&error);
+                return Err(error);
             }
             self.stats.recipe_queries_scheduled += 1;
         }
@@ -594,6 +712,8 @@ impl BitBakeRunner {
         }
 
         self.stats.total_commands += 1;
+        self.stats.commands_attempted += 1;
+        self.stats.peak_live_processes = self.stats.peak_live_processes.max(1);
         *self
             .stats
             .commands_by_phase
@@ -611,10 +731,17 @@ impl BitBakeRunner {
             command.env(name, value);
         }
         configure_process_group(&mut command);
-        let mut child = command.spawn().map_err(|source| BitBakeError::Spawn {
-            invocation: invocation.clone(),
-            source,
-        })?;
+        let mut child = match command.spawn() {
+            Ok(child) => child,
+            Err(source) => {
+                let error = BitBakeError::Spawn {
+                    invocation: invocation.clone(),
+                    source,
+                };
+                self.stats.record_error(&error);
+                return Err(error);
+            }
+        };
         let stdout = child.stdout.take().expect("piped stdout requested");
         let stderr = child.stderr.take().expect("piped stderr requested");
         let stdout_flag = Arc::new(AtomicBool::new(false));
@@ -688,7 +815,14 @@ impl BitBakeRunner {
                 });
             }
             thread::sleep(POLL_INTERVAL);
-        }?;
+        };
+        let status = match status {
+            Ok(status) => status,
+            Err(error) => {
+                self.stats.record_error(&error);
+                return Err(error);
+            }
+        };
 
         let stdout = stdout_reader
             .join()
@@ -744,6 +878,14 @@ impl BitBakeRunner {
         self.stats.total_stderr_bytes = self.stats.total_stderr_bytes.saturating_add(stderr_bytes);
         self.stats.max_stdout_bytes = self.stats.max_stdout_bytes.max(stdout_bytes);
         self.stats.max_stderr_bytes = self.stats.max_stderr_bytes.max(stderr_bytes);
+        let output_bytes = stdout_bytes.saturating_add(stderr_bytes);
+        if output_bytes > self.stats.largest_output_bytes {
+            self.stats.largest_output_bytes = output_bytes;
+            self.stats.largest_output_phase = Some(invocation.phase);
+        }
+        if status.success() {
+            self.stats.commands_succeeded += 1;
+        }
         if invocation.recipe.is_some() {
             self.stats.recipe_queries_completed += 1;
         }
@@ -754,6 +896,7 @@ impl BitBakeRunner {
             elapsed,
         };
         if !output.status.success() {
+            self.stats.record_failure(invocation.phase, "non-zero");
             return Err(BitBakeError::NonZero {
                 invocation,
                 stdout_excerpt: excerpt(&output.stdout),
@@ -975,6 +1118,13 @@ mod tests {
             }
             other => panic!("unexpected runner error: {other}"),
         }
+        assert_eq!(runner.stats().commands_attempted, 1);
+        assert_eq!(runner.stats().commands_succeeded, 0);
+        assert_eq!(runner.stats().commands_failed, 1);
+        assert_eq!(
+            runner.stats().last_failure_kind.as_deref(),
+            Some("non-zero")
+        );
     }
 
     #[test]
@@ -1005,6 +1155,8 @@ mod tests {
         .unwrap();
         let error = runner.run(invocation(&path).uncached()).unwrap_err();
         assert!(matches!(error, BitBakeError::Timeout { .. }));
+        assert_eq!(runner.stats().commands_timed_out, 1);
+        assert_eq!(runner.stats().commands_attempted, 1);
     }
 
     #[test]

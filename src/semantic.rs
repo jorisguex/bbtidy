@@ -834,7 +834,7 @@ pub fn analyze_bitbake_with_runner(
         environments,
         target_results,
         build_analysis,
-        execution: runner.stats().clone(),
+        execution: runner.stats_snapshot(),
     })
 }
 

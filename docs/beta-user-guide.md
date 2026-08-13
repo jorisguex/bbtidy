@@ -308,3 +308,20 @@ Remove proprietary paths, credentials, and metadata before posting publicly.
 Do not report a dynamic or unavailable dependency as a formatter regression
 without first checking whether it is outside the supported scope in the
 [contract](beta-support-contract.md).
+## Performance measurements
+
+Use the versioned performance runner when comparing releases or reviewing a
+large workspace. Keep the runner class, exact corpus digest, and command line
+constant; alternate base and candidate invocations on the same runner so
+thermal and host drift do not become a false regression. Use a fresh
+disposable build for cold, repeated unchanged inputs for warm, and no
+BitBake/network activity for offline. Collect at least three synthetic and
+offline samples, one cold BitBake sample, and two warm samples.
+
+Performance budgets are distinct from safety limits. Command/query limits,
+timeouts, output caps, and cancellation are protection against runaway work;
+they are not targets to tune upward. A failed, cancelled, timed-out, or
+limit-terminated run is invalid baseline evidence. See the
+[performance evidence guide](../tests/performance/README.md) for the
+measurement schema, structural invariants, budget update review process, and
+release evidence layout.

@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "runner_class": "github-ubuntu-24.04-x86_64",
+  "policy": {
+    "relative_and_absolute_required": true,
+    "timing_is_advisory_until_populated": true,
+    "structural_changes_are_blocking": true
+  },
+  "workloads": {
+    "synthetic-scaling": {
+      "wall_ms": {
+        "baseline": null,
+        "max_ratio": 1.15,
+        "min_absolute_regression": 50,
+        "blocking": false
+      },
+      "peak_rss_bytes": {
+        "baseline": null,
+        "max_ratio": 1.15,
+        "min_absolute_regression": 33554432,
+        "blocking": false
+      },
+      "bbtidy.files_discovered": {
+        "max": 1000000
+      },
+      "bbtidy.source_bytes": {
+        "max": 1099511627776
+      },
+      "structural.unknown_nodes": {
+        "max": 1000000
+      }
+    },
+    "synthetic-serialization": {
+      "wall_ms": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 1000,
+        "blocking": false
+      },
+      "peak_rss_bytes": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 33554432,
+        "blocking": false
+      },
+      "bbtidy.output_bytes": {"max": 1099511627776}
+    },
+    "yocto-5.0-offline": {
+      "wall_ms": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 2000,
+        "blocking": false
+      },
+      "peak_rss_bytes": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 67108864,
+        "blocking": false
+      },
+      "bbtidy.files_discovered": {"max": 1000000},
+      "bbtidy.diagnostics": {"max": 10000000}
+      ,
+      "structural.unknown_nodes": {"max": 1000000}
+    },
+    "yocto-6.0-offline": {
+      "wall_ms": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 2000,
+        "blocking": false
+      },
+      "peak_rss_bytes": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 67108864,
+        "blocking": false
+      },
+      "bbtidy.files_discovered": {"max": 1000000},
+      "bbtidy.diagnostics": {"max": 10000000}
+      ,
+      "structural.unknown_nodes": {"max": 1000000}
+    },
+    "yocto-community-offline": {
+      "wall_ms": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 2000,
+        "blocking": false
+      },
+      "peak_rss_bytes": {
+        "baseline": null,
+        "max_ratio": 1.2,
+        "min_absolute_regression": 67108864,
+        "blocking": false
+      },
+      "bbtidy.files_discovered": {"max": 1000000},
+      "bbtidy.diagnostics": {"max": 10000000}
+      ,
+      "structural.unknown_nodes": {"max": 1000000}
+    },
+    "bitbake-common": {
+      "structural": {
+        "bitbake.strategy": {
+          "allowed": [
+            "tinfoil-batch",
+            "tinfoil-batch+bounded-buildfile-fallback",
+            "bounded-buildfile-fallback"
+          ]
+        },
+        "bitbake.cache_state": {"allowed": ["cold", "warm"]},
+        "bitbake.commands_attempted": {"max": 20000},
+        "bitbake.commands_failed": {"max": 0},
+        "bitbake.commands_timed_out": {"max": 0},
+        "bitbake.commands_cancelled": {"max": 0},
+        "bitbake.commands_limit_terminated": {"max": 0},
+        "bitbake.peak_live_processes": {"max": 32},
+        "bitbake.fallback_recipe_percentage": {"max": 10000},
+        "bitbake.largest_output_bytes": {"max": 285212672}
+      }
+    },
+    "yocto-5.0-bitbake-cold": {
+      "wall_ms": {"baseline": null, "max_ratio": 1.35, "min_absolute_regression": 60000, "blocking": true},
+      "peak_rss_bytes": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 268435456, "blocking": true},
+      "bitbake.total_commands": {"max": 20000},
+      "bitbake.recipe_queries_completed": {"max": 10000}
+    },
+    "yocto-5.0-bitbake-warm": {
+      "wall_ms": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 30000, "blocking": true},
+      "peak_rss_bytes": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 268435456, "blocking": true},
+      "bitbake.total_commands": {"max": 20000},
+      "bitbake.recipe_queries_completed": {"max": 10000}
+    },
+    "yocto-6.0-bitbake-cold": {
+      "wall_ms": {"baseline": null, "max_ratio": 1.35, "min_absolute_regression": 60000, "blocking": true},
+      "peak_rss_bytes": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 268435456, "blocking": true},
+      "bitbake.total_commands": {"max": 20000},
+      "bitbake.recipe_queries_completed": {"max": 10000}
+    },
+    "yocto-6.0-bitbake-warm": {
+      "wall_ms": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 30000, "blocking": true},
+      "peak_rss_bytes": {"baseline": null, "max_ratio": 1.25, "min_absolute_regression": 268435456, "blocking": true},
+      "bitbake.total_commands": {"max": 20000},
+      "bitbake.recipe_queries_completed": {"max": 10000}
+    }
+  }
+}
