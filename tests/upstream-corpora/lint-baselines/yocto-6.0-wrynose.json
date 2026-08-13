@@ -46,8 +46,8 @@
     "source_state": "formatted"
   },
   "measurement": {
-    "files_with_findings": 1874,
-    "findings_sha256": "a99391554985a0896fb2cfcc4af6ab390bc3d0c1f3b67886d88e07573bc2fbaf",
+    "files_with_findings": 1853,
+    "findings_sha256": "199c3b8c82e5307929df84d44955538bdcc00e4f2e67d26ff6ba325a67564cc8",
     "rules": {
       "BBT001": {
         "count": 280,
@@ -200,13 +200,13 @@
         }
       },
       "BBT016": {
-        "count": 271,
-        "files": 43,
-        "findings_sha256": "66f3f6ea786aae5cbcd95589743c5d7ae9f7437cec5d55b42f71a4b7672efef8",
+        "count": 219,
+        "files": 12,
+        "findings_sha256": "044c6e33060a1deab9a63bdedd4ff352300365fc18c9509396612278285d312c",
         "severity_counts": {
           "error": 0,
           "info": 0,
-          "warning": 271
+          "warning": 219
         }
       },
       "BBT017": {
@@ -418,419 +418,629 @@
           "info": 0,
           "warning": 0
         }
+      },
+      "BBT038": {
+        "count": 0,
+        "files": 0,
+        "findings_sha256": "ee74d23eba98f6a62991810c8c4f790d2ce1c4f7c02f69b5cdbde6c435e73894",
+        "severity_counts": {
+          "error": 0,
+          "info": 0,
+          "warning": 0
+        }
       }
     },
     "severity_counts": {
       "error": 0,
       "info": 0,
-      "warning": 2745
+      "warning": 2693
     },
-    "total_findings": 2745
+    "total_findings": 2693
   },
   "review": {
     "rules": {
       "BBT001": {
+        "diagnostic_shapes": [
+          "BBT001"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT001"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT002": {
+        "diagnostic_shapes": [
+          "BBT002"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT002"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT003": {
+        "diagnostic_shapes": [
+          "BBT003"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT003"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT004": {
+        "diagnostic_shapes": [
+          "BBT004"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT004"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 4,
         "status": "reviewed",
         "true_positive": 4,
         "unclear": 0
       },
       "BBT005": {
+        "diagnostic_shapes": [
+          "BBT005"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT005"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 4,
         "status": "reviewed",
         "true_positive": 4,
         "unclear": 0
       },
       "BBT006": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT007": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT008": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT009": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT010": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT011": {
+        "diagnostic_shapes": [
+          "BBT011"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT011"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT012": {
+        "diagnostic_shapes": [
+          "BBT012"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT012"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT013": {
+        "diagnostic_shapes": [
+          "BBT013"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT013"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT014": {
+        "diagnostic_shapes": [
+          "BBT014"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT014"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT015": {
+        "diagnostic_shapes": [
+          "BBT015"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT015"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT016": {
+        "diagnostic_shapes": [
+          "BBT016"
+        ],
         "false_positive": 0,
-        "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT016"],
+        "file_types": [
+          ".bb",
+          ".conf",
+          ".inc"
+        ],
+        "notes": "Re-reviewed five current direct-assignment findings after excluding override-scoped and legacy suffix operators; all are true positives.",
+        "repositories": [
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT017": {
+        "diagnostic_shapes": [
+          "BBT017"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT017"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT018": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT019": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT020": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT021": {
+        "diagnostic_shapes": [
+          "BBT021"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT021"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT022": {
+        "diagnostic_shapes": [
+          "BBT022"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT022"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT023": {
+        "diagnostic_shapes": [
+          "BBT023"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT023"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT024": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT025": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT026": {
+        "diagnostic_shapes": [
+          "BBT026"
+        ],
         "false_positive": 0,
+        "file_types": [
+          ".bb",
+          ".bbappend",
+          ".bbclass",
+          ".conf",
+          ".inc"
+        ],
         "notes": "Sampled one upstream finding; the diagnostic is a true positive.",
-        "repositories": ["bitbake","meta-openembedded","openembedded-core"],
-        "file_types": [".bb",".bbappend",".bbclass",".conf",".inc"],
-        "diagnostic_shapes": ["BBT026"],
+        "repositories": [
+          "bitbake",
+          "meta-openembedded",
+          "openembedded-core"
+        ],
         "sample_size": 5,
         "status": "reviewed",
         "true_positive": 5,
         "unclear": 0
       },
       "BBT027": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT028": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT029": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT030": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT031": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT032": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT033": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT034": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT035": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT036": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
-        "diagnostic_shapes": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,
         "unclear": 0
       },
       "BBT037": {
+        "diagnostic_shapes": [],
         "false_positive": 0,
+        "file_types": [],
         "notes": "",
         "repositories": [],
-        "file_types": [],
+        "sample_size": 0,
+        "status": "unreviewed",
+        "true_positive": 0,
+        "unclear": 0
+      },
+      "BBT038": {
         "diagnostic_shapes": [],
+        "false_positive": 0,
+        "file_types": [],
+        "notes": "",
+        "repositories": [],
         "sample_size": 0,
         "status": "unreviewed",
         "true_positive": 0,

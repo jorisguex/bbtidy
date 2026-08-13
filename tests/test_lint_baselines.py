@@ -325,6 +325,15 @@ class BaselineComparisonTests(BaselineFixture):
         changed_summary = self.summary([diagnostic(self.metadata, message="changed")])
         changed = baseline_for_update(self.manifest, changed_summary, previous)
         self.assertEqual(changed["review"]["rules"]["BBT001"]["status"], "unreviewed")
+        validate_lint_baseline(changed, self.manifest)
+
+        legacy_previous = copy.deepcopy(previous)
+        legacy_previous["review"].pop("schema")
+        legacy_changed = baseline_for_update(
+            self.manifest, changed_summary, legacy_previous
+        )
+        self.assertNotIn("schema", legacy_changed["review"])
+        validate_lint_baseline(legacy_changed, self.manifest)
 
     def test_large_rule_populations_need_more_than_one_review_sample(self):
         baseline = self.baseline()

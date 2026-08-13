@@ -1215,6 +1215,7 @@ def baseline_for_update(
     previous_rules = previous["measurement"]["rules"]
     generated_rules = generated["measurement"]["rules"]
     previous_review_rules = previous["review"]["rules"]
+    legacy_review = "schema" not in previous["review"]
     retained = {}
     for rule_id, generated_rule in generated_rules.items():
         previous_rule = previous_rules.get(rule_id)
@@ -1225,7 +1226,13 @@ def baseline_for_update(
         ):
             retained[rule_id] = deepcopy(dict(previous_review))
         else:
-            retained[rule_id] = _default_review_rule()
+            default_review = _default_review_rule()
+            if legacy_review:
+                default_review = {
+                    key: default_review[key]
+                    for key in BASELINE_REVIEW_RULE_LEGACY_KEYS
+                }
+            retained[rule_id] = default_review
 
     active_unreviewed = any(
         generated_rules[rule_id]["count"] > 0
@@ -1234,7 +1241,7 @@ def baseline_for_update(
     )
     previous_status = previous["review"].get("status", "unreviewed")
     generated["review"] = {
-        "schema": REVIEW_SCHEMA,
+        **({} if legacy_review else {"schema": REVIEW_SCHEMA}),
         "status": "unreviewed" if active_unreviewed else previous_status,
         "rules": retained,
     }
