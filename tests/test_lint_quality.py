@@ -15,6 +15,9 @@ from scripts.lint_quality import (
     finding_sort_key,
     normalize_diagnostic,
     normalize_lint_report,
+    minimum_review_samples,
+    quality_report,
+    stratified_review_sample,
     summarize_findings,
 )
 
@@ -295,6 +298,27 @@ class LintQualityTests(unittest.TestCase):
         self.assertEqual(summary["files_with_findings"], 2)
         self.assertEqual(summary["rules"]["BBT001"]["count"], 3)
         self.assertEqual(summary["rules"]["BBT001"]["files"], 2)
+
+    def test_quality_report_has_profiles_distributions_and_stratified_samples(self):
+        findings = self.normalize(
+            [
+                diagnostic(self.example, message="trailing whitespace 1"),
+                diagnostic(self.extra_example, message="trailing whitespace 2"),
+                diagnostic(self.extra_example, rule_id="BBT019", message="BitBake: warning"),
+            ]
+        )
+        report = quality_report(findings, total_files=10)
+        self.assertEqual(report["version"], 1)
+        self.assertEqual(report["rules"]["BBT001"]["origin"]["static"], 2)
+        self.assertEqual(report["rules"]["BBT019"]["origin"]["authoritative"], 1)
+        self.assertIn("essential", report["profiles"])
+        self.assertEqual(
+            len(report["rules"]["BBT001"]["review_sampling"]["sample_fingerprints"]), 2
+        )
+        self.assertEqual(len(stratified_review_sample(findings, 2)), 2)
+
+    def test_review_sample_policy_is_tiered(self):
+        self.assertEqual([minimum_review_samples(value) for value in (0, 1, 5, 6, 25, 26, 100, 101, 500, 501)], [0, 1, 5, 8, 8, 12, 12, 20, 20, 30])
 
 
 if __name__ == "__main__":

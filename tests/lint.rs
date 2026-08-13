@@ -17,7 +17,7 @@ const CORPUS_FILES: [&str; 6] = [
 #[test]
 fn public_lint_api_exposes_rule_metadata_and_diagnostics() {
     let rules = lint_rules();
-    assert_eq!(rules.len(), 37);
+    assert_eq!(rules.len(), 38);
     assert_eq!(rules[0].id(), "BBT001");
     assert_eq!(rules[0].name(), "trailing-whitespace");
     assert_eq!(rules[0].severity(), LintSeverity::Warning);

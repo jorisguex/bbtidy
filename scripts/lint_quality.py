@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from copy import deepcopy
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -18,8 +19,19 @@ from typing import Any, Iterable, Mapping, Optional, Sequence, Tuple
 FINGERPRINT_VERSION = 1
 REPORT_VERSION = 1
 SEVERITIES = ("info", "warning", "error")
-KNOWN_RULE_IDS = tuple("BBT{:03d}".format(number) for number in range(1, 38))
+KNOWN_RULE_IDS = tuple("BBT{:03d}".format(number) for number in range(1, 39))
 BASELINE_SCHEMA = 1
+REVIEW_SCHEMA = 2
+QUALITY_REPORT_VERSION = 1
+PILOT_THRESHOLDS = {
+    "essential_false_positive_rate": 0.01,
+    "recommended_false_positive_rate": 0.05,
+    "recommended_unclear_rate": 0.05,
+    "recommended_actionable_rate": 0.70,
+    "new_config_minutes": 15,
+    "operational_failures_mistaken_for_lint": 0,
+    "unsafe_edits": 0,
+}
 BASELINE_REVIEW_STATUSES = frozenset(
     {"unreviewed", "reviewed", "accepted-known-limitations", "not-applicable"}
 )
@@ -40,7 +52,24 @@ BASELINE_RULE_MEASUREMENT_KEYS = frozenset(
     {"count", "files", "findings_sha256", "severity_counts"}
 )
 BASELINE_REVIEW_KEYS = frozenset({"status", "rules"})
+BASELINE_REVIEW_V2_KEYS = frozenset({"schema", "status", "rules"})
 BASELINE_REVIEW_RULE_KEYS = frozenset(
+    {
+        "status",
+        "sample_size",
+        "true_positive",
+        "false_positive",
+        "unclear",
+        "notes",
+        "repositories",
+        "file_types",
+        "diagnostic_shapes",
+        "correctness",
+        "actionability",
+        "sample_fingerprints",
+    }
+)
+BASELINE_REVIEW_RULE_LEGACY_KEYS = frozenset(
     {
         "status",
         "sample_size",
@@ -541,6 +570,294 @@ def summarize_findings(
     }
 
 
+PROFILE_RULES = {
+    "essential": frozenset(
+        {
+            rule_id
+            for rule_id in KNOWN_RULE_IDS
+            if rule_id not in {"BBT003", "BBT011", "BBT012", "BBT013", "BBT016", "BBT020", "BBT021"}
+        }
+    ),
+    "recommended": frozenset(
+        rule_id
+        for rule_id in KNOWN_RULE_IDS
+        if rule_id not in {"BBT003", "BBT011", "BBT012", "BBT013", "BBT016", "BBT021"}
+    ),
+    "strict": frozenset(KNOWN_RULE_IDS),
+    "all": frozenset(KNOWN_RULE_IDS),
+}
+
+
+def _diagnostic_shape(finding: Mapping[str, Any]) -> str:
+    message = re.sub(r"\d+", "#", str(finding.get("message", "")).lower())
+    message = re.sub(r"[^a-z0-9_]+", " ", message).strip()
+    return "{}:{}".format(finding["rule_id"], message)
+
+
+def _file_type(path: str) -> str:
+    suffix = Path(path).suffix.lower()
+    return suffix if suffix else "<no-extension>"
+
+
+def _distribution(values: Iterable[str]) -> dict:
+    counts = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return {key: counts[key] for key in sorted(counts)}
+
+
+def stratified_review_sample(
+    findings: Iterable[Mapping[str, Any]], sample_size: int
+) -> list:
+    """Select deterministic fingerprints across the important signal strata."""
+
+    ordered = sorted(list(findings), key=lambda finding: (finding_sort_key(finding), _finding_digest(finding)))
+    if sample_size <= 0 or not ordered:
+        return []
+    target = min(sample_size, len(ordered))
+    selected = []
+    selected_digests = set()
+
+    def add(finding):
+        digest = _finding_digest(finding)
+        if digest in selected_digests or len(selected) >= target:
+            return False
+        selected.append(finding)
+        selected_digests.add(digest)
+        return True
+
+    # Cover every repository, file type, and diagnostic shape first.
+    for dimension in (
+        lambda finding: finding["source"]["repository"],
+        lambda finding: _file_type(finding["source"]["path"]),
+        _diagnostic_shape,
+    ):
+        groups = {}
+        for finding in ordered:
+            groups.setdefault(dimension(finding), []).append(finding)
+        for key in sorted(groups):
+            add(groups[key][0])
+
+    # Reserve at least ten percent per repository where the target permits it.
+    repositories = {}
+    for finding in ordered:
+        repositories.setdefault(finding["source"]["repository"], []).append(finding)
+    for repository in sorted(repositories):
+        quota = max(1, math.ceil(len(repositories[repository]) * 0.10))
+        for finding in repositories[repository][:quota]:
+            if len(selected) >= target:
+                break
+            add(finding)
+
+    # Fill the remaining budget in digest order, which naturally retains
+    # long-tail diagnostic shapes rather than over-sampling one common form.
+    for finding in ordered:
+        if len(selected) >= target:
+            break
+        add(finding)
+    return [_finding_digest(finding) for finding in selected]
+
+
+def _review_classification(record: Optional[Mapping[str, Any]]) -> dict:
+    if not isinstance(record, Mapping):
+        return {
+            "correctness": {"true_positive": 0, "false_positive": 0, "unclear": 0},
+            "actionability": {
+                "must_fix": 0,
+                "should_fix": 0,
+                "context_dependent": 0,
+                "policy_only": 0,
+                "not_actionable": 0,
+            },
+        }
+    correctness = record.get("correctness")
+    if not isinstance(correctness, Mapping):
+        correctness = {
+            "true_positive": record.get("true_positive", 0),
+            "false_positive": record.get("false_positive", 0),
+            "unclear": record.get("unclear", 0),
+        }
+    elif sum(int(correctness.get(key, 0) or 0) for key in ("true_positive", "false_positive", "unclear")) == 0 and any(
+        record.get(key, 0) for key in ("true_positive", "false_positive", "unclear")
+    ):
+        correctness = {
+            "true_positive": record.get("true_positive", 0),
+            "false_positive": record.get("false_positive", 0),
+            "unclear": record.get("unclear", 0),
+        }
+    actionability = record.get("actionability")
+    if not isinstance(actionability, Mapping):
+        # Legacy true-positive reviews predate the actionability dimension;
+        # retain their decision as should-fix for compatibility while new v2
+        # reviews must record the five explicit actionability classes.
+        actionability = {"should_fix": correctness.get("true_positive", 0)}
+    elif sum(int(actionability.get(key, 0) or 0) for key in ("must_fix", "should_fix", "context_dependent", "policy_only", "not_actionable")) == 0 and sum(
+        int(correctness.get(key, 0) or 0) for key in ("true_positive", "false_positive", "unclear")
+    ):
+        actionability = {"should_fix": correctness.get("true_positive", 0)}
+    return {
+        "correctness": {
+            key: int(correctness.get(key, 0) or 0)
+            for key in ("true_positive", "false_positive", "unclear")
+        },
+        "actionability": {
+            key: int(actionability.get(key, 0) or 0)
+            for key in (
+                "must_fix",
+                "should_fix",
+                "context_dependent",
+                "policy_only",
+                "not_actionable",
+            )
+        },
+    }
+
+
+def quality_report(
+    findings: Iterable[Mapping[str, Any]],
+    total_files: Optional[int] = None,
+    reviews: Optional[Mapping[str, Any]] = None,
+    runtime_seconds: Optional[Mapping[str, float]] = None,
+    known_rule_ids: Sequence[str] = KNOWN_RULE_IDS,
+) -> dict:
+    """Build per-rule signal, review, and runtime measurements.
+
+    The report deliberately keeps static findings separate from authoritative
+    BitBake diagnostics so a high-volume static rule cannot look trustworthy
+    merely because a resolver emitted a related message.
+    """
+
+    ordered = sorted(list(findings), key=finding_sort_key)
+    denominator = total_files if total_files is not None else len(
+        {(f["source"]["repository"], f["source"]["path"]) for f in ordered}
+    )
+    denominator = max(int(denominator), 1)
+    review_rules = {}
+    if isinstance(reviews, Mapping):
+        raw_rules = reviews.get("rules", reviews)
+        if isinstance(raw_rules, Mapping):
+            review_rules = raw_rules
+    by_rule = {rule_id: [] for rule_id in sorted(set(known_rule_ids))}
+    for finding in ordered:
+        by_rule.setdefault(finding["rule_id"], []).append(finding)
+    rules = {}
+    for rule_id, rule_findings in sorted(by_rule.items()):
+        repositories = [f["source"]["repository"] for f in rule_findings]
+        file_types = [_file_type(f["source"]["path"]) for f in rule_findings]
+        shapes = [_diagnostic_shape(f) for f in rule_findings]
+        authoritative = [
+            f
+            for f in rule_findings
+            if f["rule_id"] == "BBT019"
+            or str(f.get("message", "")).startswith("BitBake:")
+        ]
+        static = [f for f in rule_findings if f not in authoritative]
+        review = _review_classification(review_rules.get(rule_id))
+        review_target = minimum_review_samples(len(rule_findings))
+        rules[rule_id] = {
+            "total": len(rule_findings),
+            "files": len({(f["source"]["repository"], f["source"]["path"]) for f in rule_findings}),
+            "density_per_1000_files": round(len(rule_findings) * 1000 / denominator, 6),
+            "repositories": _distribution(repositories),
+            "file_types": _distribution(file_types),
+            "diagnostic_shapes": _distribution(shapes),
+            "origin": {"static": len(static), "authoritative": len(authoritative)},
+            "fixability": {
+                "fixable": sum(bool(f.get("fixable")) for f in rule_findings),
+                "not_fixable": sum(not bool(f.get("fixable")) for f in rule_findings),
+            },
+            "review": review,
+            "review_sampling": {
+                "target": review_target,
+                "sample_size": min(review_target, len(rule_findings)),
+                "sample_fingerprints": stratified_review_sample(rule_findings, review_target),
+                "repositories": sorted(set(repositories)),
+                "file_types": sorted(set(file_types)),
+                "diagnostic_shapes": sorted(set(shapes)),
+            },
+            "runtime_seconds": round(float((runtime_seconds or {}).get(rule_id, 0.0)), 6),
+        }
+    profile_totals = {}
+    for profile, profile_rule_ids in PROFILE_RULES.items():
+        selected = [f for f in ordered if f["rule_id"] in profile_rule_ids]
+        profile_totals[profile] = {
+            "rules": sorted(profile_rule_ids),
+            "total_findings": len(selected),
+            "files_with_findings": len({(f["source"]["repository"], f["source"]["path"]) for f in selected}),
+            "findings_sha256": digest_findings(selected),
+        }
+    report = {
+        "version": QUALITY_REPORT_VERSION,
+        "fingerprint_version": FINGERPRINT_VERSION,
+        "total_files": int(total_files) if total_files is not None else denominator,
+        "total_findings": len(ordered),
+        "profiles": profile_totals,
+        "rules": rules,
+    }
+    report["pilot_evidence"] = evaluate_pilot_thresholds(report)
+    return report
+
+
+def quality_report_markdown(report: Mapping[str, Any]) -> str:
+    """Render the quality report in a compact review-friendly form."""
+
+    lines = [
+        "# bbtidy lint quality report",
+        "",
+        "- Findings: {}".format(report.get("total_findings", 0)),
+        "- Files: {}".format(report.get("total_files", 0)),
+        "",
+        "| Rule | Findings | Files | Density/1000 | Static | Authoritative | TP | FP | Unclear | Actionable |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for rule_id, rule in sorted(report.get("rules", {}).items()):
+        review = rule.get("review", {})
+        correctness = review.get("correctness", {})
+        actionability = review.get("actionability", {})
+        actionable = int(actionability.get("must_fix", 0)) + int(actionability.get("should_fix", 0))
+        lines.append(
+            "| {rule} | {total} | {files} | {density} | {static} | {authoritative} | {tp} | {fp} | {unclear} | {actionable} |".format(
+                rule=rule_id,
+                total=rule.get("total", 0),
+                files=rule.get("files", 0),
+                density=rule.get("density_per_1000_files", 0),
+                static=rule.get("origin", {}).get("static", 0),
+                authoritative=rule.get("origin", {}).get("authoritative", 0),
+                tp=correctness.get("true_positive", 0),
+                fp=correctness.get("false_positive", 0),
+                unclear=correctness.get("unclear", 0),
+                actionable=actionable,
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
+def evaluate_pilot_thresholds(
+    report: Mapping[str, Any], pilot_metrics: Optional[Mapping[str, Any]] = None
+) -> dict:
+    """Evaluate the documented beta thresholds without inventing pilot data."""
+
+    pilot_metrics = pilot_metrics or {}
+    results = {}
+    for key, limit in PILOT_THRESHOLDS.items():
+        value = pilot_metrics.get(key)
+        if value is None:
+            results[key] = {"limit": limit, "value": None, "status": "not-run"}
+        else:
+            passing = value <= limit if "rate" not in key else value <= limit
+            results[key] = {
+                "limit": limit,
+                "value": value,
+                "status": "pass" if passing else "fail",
+            }
+    measured = [entry["status"] for entry in results.values() if entry["status"] != "not-run"]
+    return {
+        "thresholds": results,
+        "status": "pass" if measured and all(status == "pass" for status in measured) and len(measured) == len(results) else "insufficient-evidence",
+        "default_decision": "recommended-beta-candidate" if measured and all(status == "pass" for status in measured) and len(measured) == len(results) else "retain-all-and-collect-pilot-evidence",
+    }
+
+
 def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, Any]]) -> dict:
     """Summarize human review coverage for the findings in ``summary``.
 
@@ -565,6 +882,7 @@ def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, A
     reviewed_rule_ids = []
     unreviewed_rule_ids = []
     true_positive = false_positive = unclear = 0
+    must_fix = should_fix = context_dependent = policy_only = not_actionable = 0
     for rule_id in active_rule_ids:
         record = review_rules.get(rule_id)
         if not isinstance(record, Mapping):
@@ -575,8 +893,9 @@ def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, A
             reviewed_rule_ids.append(rule_id)
         else:
             unreviewed_rule_ids.append(rule_id)
+        classifications = _review_classification(record)
         for field in ("true_positive", "false_positive", "unclear"):
-            value = record.get(field, 0)
+            value = classifications["correctness"].get(field, 0)
             if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
                 if field == "true_positive":
                     true_positive += value
@@ -584,6 +903,12 @@ def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, A
                     false_positive += value
                 else:
                     unclear += value
+        actionability = classifications["actionability"]
+        must_fix += actionability["must_fix"]
+        should_fix += actionability["should_fix"]
+        context_dependent += actionability["context_dependent"]
+        policy_only += actionability["policy_only"]
+        not_actionable += actionability["not_actionable"]
 
     return {
         "active_rules": len(active_rule_ids),
@@ -594,6 +919,13 @@ def review_summary(summary: Mapping[str, Any], baseline: Optional[Mapping[str, A
         "true_positive_samples": true_positive,
         "false_positive_samples": false_positive,
         "unclear_samples": unclear,
+        "actionability_samples": {
+            "must_fix": must_fix,
+            "should_fix": should_fix,
+            "context_dependent": context_dependent,
+            "policy_only": policy_only,
+            "not_actionable": not_actionable,
+        },
     }
 
 
@@ -606,6 +938,7 @@ def review_policy_failures(
         return ["lint-quality baseline is missing"]
     review = baseline.get("review")
     review_rules = review.get("rules", {}) if isinstance(review, Mapping) else {}
+    tiered_sampling = isinstance(review, Mapping) and review.get("schema") == REVIEW_SCHEMA
     failures = []
     for rule_id in sorted(summary.get("rules", {})):
         measurement = summary["rules"][rule_id]
@@ -619,10 +952,11 @@ def review_policy_failures(
         if status not in REVIEWED_RULE_STATUSES:
             failures.append("active rule {} is {}".format(rule_id, status or "unreviewed"))
         if status in REVIEWED_RULE_STATUSES:
-            required_samples = minimum_review_samples(measurement.get("count", 0))
+            count = measurement.get("count", 0)
+            required_samples = minimum_review_samples(count) if tiered_sampling else min(5, count)
             if record.get("sample_size", 0) < required_samples:
                 failures.append(
-                    "active rule {} has only {} reviewed samples; {} required".format(
+                    "active rule {} has only {} reviewed samples; at least 5 and {} required".format(
                         rule_id, record.get("sample_size", 0), required_samples
                     )
                 )
@@ -631,16 +965,31 @@ def review_policy_failures(
                     failures.append(
                         "active rule {} has no {} review metadata".format(rule_id, field)
                     )
+        classifications = _review_classification(record)
+        false_positive = classifications["correctness"]["false_positive"]
         notes = record.get("notes", "")
         if not isinstance(notes, str):
             notes = ""
-        if record.get("false_positive", 0) and not notes.strip():
+        if false_positive and not notes.strip():
             failures.append(
                 "active rule {} has false-positive samples without remediation notes".format(
                     rule_id
                 )
             )
-        if record.get("unclear", 0) and not notes.strip():
+        unclear = classifications["correctness"]["unclear"]
+        false_positive = classifications["correctness"]["false_positive"]
+        sample_size = record.get("sample_size", 0)
+        review_is_v2 = isinstance(review, Mapping) and review.get("schema") == REVIEW_SCHEMA
+        has_explicit_actionability = bool(record.get("sample_fingerprints")) or any(
+            record.get("actionability", {}).get(key, 0)
+            for key in ("must_fix", "should_fix", "context_dependent", "policy_only", "not_actionable")
+        ) if isinstance(record.get("actionability"), Mapping) else False
+        if sample_size and review_is_v2 and unclear / sample_size > 0.05:
+            failures.append("active rule {} has more than 5% unclear samples".format(rule_id))
+        actionable = classifications["actionability"]["must_fix"] + classifications["actionability"]["should_fix"]
+        if sample_size and review_is_v2 and has_explicit_actionability and actionable / sample_size < 0.70:
+            failures.append("active rule {} has fewer than 70% actionable samples".format(rule_id))
+        if unclear and not notes.strip():
             failures.append(
                 "active rule {} has unclear samples without review notes".format(rule_id)
             )
@@ -769,13 +1118,32 @@ def _default_review_rule(status: str = "unreviewed") -> dict:
         "repositories": [],
         "file_types": [],
         "diagnostic_shapes": [],
+        "correctness": {"true_positive": 0, "false_positive": 0, "unclear": 0},
+        "actionability": {
+            "must_fix": 0,
+            "should_fix": 0,
+            "context_dependent": 0,
+            "policy_only": 0,
+            "not_actionable": 0,
+        },
+        "sample_fingerprints": [],
     }
 
 
 def minimum_review_samples(count: int) -> int:
     """Require more than a token sample for large active rule populations."""
 
-    return min(5, count) if count else 0
+    if not count:
+        return 0
+    if count <= 5:
+        return count
+    if count <= 25:
+        return 8
+    if count <= 100:
+        return 12
+    if count <= 500:
+        return 20
+    return 30
 
 
 def baseline_from_summary(
@@ -798,6 +1166,7 @@ def baseline_from_summary(
 
     if review is None:
         review_value = {
+            "schema": REVIEW_SCHEMA,
             "status": "unreviewed",
             "rules": {
                 rule_id: _default_review_rule()
@@ -865,27 +1234,45 @@ def baseline_for_update(
     )
     previous_status = previous["review"].get("status", "unreviewed")
     generated["review"] = {
+        "schema": REVIEW_SCHEMA,
         "status": "unreviewed" if active_unreviewed else previous_status,
         "rules": retained,
     }
     return generated
 
 
-def _validate_review_rule(rule: Any, count: int, rule_id: str) -> None:
-    _baseline_exact_keys(rule, BASELINE_REVIEW_RULE_KEYS, "review rule {}".format(rule_id))
+def _validate_review_rule(rule: Any, count: int, rule_id: str, tiered_sampling: bool = True) -> None:
+    if "correctness" in rule or "actionability" in rule:
+        _baseline_exact_keys(rule, BASELINE_REVIEW_RULE_KEYS, "review rule {}".format(rule_id))
+    else:
+        _baseline_exact_keys(rule, BASELINE_REVIEW_RULE_LEGACY_KEYS, "review rule {}".format(rule_id))
     status = rule["status"]
     if status not in BASELINE_REVIEW_STATUSES:
         raise LintBaselineError("review rule {} has an unknown status".format(rule_id))
     sample_size = _baseline_integer(rule["sample_size"], "review rule {} sample_size".format(rule_id))
-    true_positive = _baseline_integer(rule["true_positive"], "review rule {} true_positive".format(rule_id))
-    false_positive = _baseline_integer(rule["false_positive"], "review rule {} false_positive".format(rule_id))
-    unclear = _baseline_integer(rule["unclear"], "review rule {} unclear".format(rule_id))
+    classifications = _review_classification(rule)
+    true_positive = _baseline_integer(classifications["correctness"]["true_positive"], "review rule {} true_positive".format(rule_id))
+    false_positive = _baseline_integer(classifications["correctness"]["false_positive"], "review rule {} false_positive".format(rule_id))
+    unclear = _baseline_integer(classifications["correctness"]["unclear"], "review rule {} unclear".format(rule_id))
     if true_positive + false_positive + unclear != sample_size:
         raise LintBaselineError("review rule {} classifications do not total sample_size".format(rule_id))
     if sample_size > count:
         raise LintBaselineError("review rule {} samples more findings than measured".format(rule_id))
     if not isinstance(rule["notes"], str):
         raise LintBaselineError("review rule {} notes must be a string".format(rule_id))
+    if "correctness" in rule:
+        for field in ("correctness", "actionability"):
+            values = rule[field]
+            if not isinstance(values, Mapping):
+                raise LintBaselineError("review rule {} {} must be an object".format(rule_id, field))
+        for field in ("true_positive", "false_positive", "unclear"):
+            _baseline_integer(rule["correctness"].get(field), "review rule {} correctness.{}".format(rule_id, field))
+        for field in ("must_fix", "should_fix", "context_dependent", "policy_only", "not_actionable"):
+            _baseline_integer(rule["actionability"].get(field), "review rule {} actionability.{}".format(rule_id, field))
+        if not isinstance(rule["sample_fingerprints"], list) or any(
+            not isinstance(value, str) or not value.strip() for value in rule["sample_fingerprints"]
+        ) or len(set(rule["sample_fingerprints"])) != len(rule["sample_fingerprints"]):
+            raise LintBaselineError("review rule {} sample_fingerprints must be unique strings".format(rule_id))
     for field in ("repositories", "file_types", "diagnostic_shapes"):
         values = rule[field]
         if (
@@ -899,10 +1286,10 @@ def _validate_review_rule(rule: Any, count: int, rule_id: str) -> None:
                 )
             )
     if count and rule["status"] in REVIEWED_RULE_STATUSES:
-        required_samples = minimum_review_samples(count)
+        required_samples = minimum_review_samples(count) if tiered_sampling else min(5, count)
         if rule["sample_size"] < required_samples:
             raise LintBaselineError(
-                "review rule {} needs at least {} reviewed samples for {} findings".format(
+                "review rule {} needs at least 5 and {} reviewed samples for {} findings".format(
                     rule_id, required_samples, count
                 )
             )
@@ -1013,7 +1400,12 @@ def validate_lint_baseline(
         raise LintBaselineError("measurement rule counts do not total findings")
 
     review = baseline["review"]
-    _baseline_exact_keys(review, BASELINE_REVIEW_KEYS, "review")
+    if isinstance(review, Mapping) and "schema" in review:
+        _baseline_exact_keys(review, BASELINE_REVIEW_V2_KEYS, "review")
+        if review["schema"] != REVIEW_SCHEMA:
+            raise LintBaselineError("review must use schema 2")
+    else:
+        _baseline_exact_keys(review, BASELINE_REVIEW_KEYS, "review")
     if review["status"] not in BASELINE_REVIEW_STATUSES:
         raise LintBaselineError("baseline has an unknown review status")
     if not isinstance(review["rules"], Mapping):
@@ -1028,7 +1420,12 @@ def validate_lint_baseline(
             if rule["count"]:
                 raise LintBaselineError("active rule {} has no review record".format(rule_id))
             continue
-        _validate_review_rule(review["rules"][rule_id], rule["count"], rule_id)
+        _validate_review_rule(
+            review["rules"][rule_id],
+            rule["count"],
+            rule_id,
+            tiered_sampling=isinstance(review, Mapping) and review.get("schema") == REVIEW_SCHEMA,
+        )
     return baseline
 
 

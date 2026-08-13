@@ -23,9 +23,10 @@ pub use config::{
 pub use formatter::{FormatOptions, MetadataListLayout, format_syntax, format_syntax_with_options};
 pub use lint::{
     ExternalLintDiagnostic, LintDiagnostic, LintFailurePolicy, LintFix, LintFixError, LintOptions,
-    LintRule, LintSeverity, apply_lint_fixes, lint, lint_rules, lint_syntax,
-    lint_syntax_with_options, lint_syntax_with_workspace, lint_with_bitbake, lint_with_options,
-    lint_with_workspace, semantic_lint_diagnostics,
+    LintProfile, LintRule, LintSeverity, LintSuppressionSummary, apply_lint_fixes, lint,
+    lint_rules, lint_suppression_summary, lint_syntax, lint_syntax_with_options,
+    lint_syntax_with_workspace, lint_with_bitbake, lint_with_options, lint_with_workspace,
+    semantic_lint_diagnostics,
 };
 pub use overrides::{
     OverrideKey, OverrideKeyError, OverrideOperation, OverrideResolution, parse_override_key,

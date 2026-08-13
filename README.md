@@ -176,6 +176,41 @@ bbtidy check --show-fixes recipes-example/
 bbtidy check --fix recipes-example/
 ```
 
+Lint adoption profiles are selected with `--profile essential|recommended|strict|all`.
+The default remains `all` for alpha compatibility; `essential` and
+`recommended` omit the five high-volume policy rules while corpus evidence is
+collected, and `strict` enables the complete policy set. `--enable RULE` adds a
+rule, `--disable RULE` removes one, and severity overrides are applied last.
+The same settings can be configured with `[lint] profile`, `enable`, and
+`disable`. Rule/profile metadata is included in JSON and SARIF; use
+`--output-version 2` when a consumer wants the version-2 JSON envelope.
+
+Inline suppressions are deliberately narrow and require a reason:
+
+```bitbake
+# bbtidy: ignore-next-line[BBT004] -- release branch intentionally floats
+SRCREV = "${AUTOREV}"
+SRC_URI = "git://example.invalid/repo;protocol=https" # bbtidy: ignore[BBT015] -- legacy mirror
+```
+
+`# bbtidy: disable-file[BBT012] -- generated recipe metadata` is valid only
+on the first line. Unknown, malformed, and unused suppressions emit the
+non-suppressible `BBT038` diagnostic. `--show-suppressed` retains matched
+findings in output and machine reports include suppression counts.
+
+For incremental adoption, create and compare an explicit baseline:
+
+```bash
+bbtidy check --write-baseline .bbtidy-baseline.json recipes-example/
+bbtidy check --baseline .bbtidy-baseline.json recipes-example/
+bbtidy check --refresh-baseline .bbtidy-baseline.json recipes-example/
+```
+
+Existing baseline findings remain visible but do not fail the command; new
+findings and operational failures still do. Baselines are validated for safe
+relative paths, bounded size, duplicate IDs, profile/catalog fingerprints,
+and stale entries. They are never updated implicitly.
+
 To run BitBake's authoritative parser and inspect fully expanded recipe values:
 
 ```bash
@@ -304,8 +339,11 @@ inventory = false
 packages = false
 
 [lint]
+profile = "all" # essential, recommended, strict, or all
+enable = ["BBT016"]
 disable = ["BBT003"]
 fail_on = "warning" # info, warning, error, or never
+baseline = ".bbtidy-baseline.json"
 
 [lint.severity]
 BBT001 = "error"
@@ -430,10 +468,11 @@ remain part of the token stream on standard output and cause exit code `2`.
 | `BBT035` | `python-syntax` | An embedded Python body has malformed syntax or delimiters | Manual |
 | `BBT036` | `python-indentation` | An embedded Python body has inconsistent indentation | Manual |
 | `BBT037` | `unknown-override` | A static override component is missing from `OVERRIDES` | Manual |
+| `BBT038` | `suppression` | A suppression is unknown, malformed, or unused | Manual |
 
 Rules `BBT001` through `BBT018` and `BBT020` through `BBT037` are warnings;
 `BBT019` adopts BitBake's
-severity for each semantic diagnostic. Diagnostics are sorted by source location and
+severity for each semantic diagnostic, and `BBT038` is an operational error. Diagnostics are sorted by source location and
 exposed through the public `lint`, `lint_rules`, `LintDiagnostic`, `LintFix`,
 `LintRule`, and `LintSeverity` Rust APIs. `apply_lint_fixes` validates all
 proposed ranges and rejects overlapping edits atomically. Structurally
@@ -681,8 +720,14 @@ multiple runs. The `lint/` subdirectory contains `findings.json` with every
 normalized finding, `summary.json` with deterministic measurements derived
 solely from those findings, and `baseline-comparison.json` with one of
 `matched`, `changed`, or `invalid` plus deterministic total, severity, rule, and
-contract differences. Temporary paths, timestamps, and runner metadata are not
-part of checked-in baselines.
+contract differences. `quality-report.json` and `quality-report.md` add per-rule
+volume/density, repository/file-type/diagnostic-shape distributions, static vs
+authoritative origin, fixability, stratified sample fingerprints, separate
+correctness/actionability classifications, and all/recommended/essential
+profile totals. It also records the beta pilot thresholds and leaves the
+default decision as `retain-all-and-collect-pilot-evidence` until every
+threshold has measured evidence. Temporary paths, timestamps, and runner
+metadata are not part of checked-in baselines.
 
 ## Development
 

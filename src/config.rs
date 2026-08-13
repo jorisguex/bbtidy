@@ -1,7 +1,7 @@
 use crate::semantic::SemanticAnalysisOptions;
 use crate::{
-    BitBakeExecutionLimits, FormatOptions, LintFailurePolicy, LintOptions, LintSeverity,
-    MetadataListLayout, lint_rules,
+    BitBakeExecutionLimits, FormatOptions, LintFailurePolicy, LintOptions, LintProfile,
+    LintSeverity, MetadataListLayout, lint_rules,
 };
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
@@ -111,12 +111,29 @@ impl Config {
 
     fn from_file_config(file_config: FileConfig, base_dir: &Path) -> Result<Self, ConfigError> {
         let known_rules: BTreeSet<&str> = lint_rules().iter().map(|rule| rule.id()).collect();
+        let profile = file_config
+            .lint
+            .profile
+            .unwrap_or_else(|| LintProfile::default().to_string())
+            .parse::<LintProfile>()
+            .map_err(ConfigError::new)?;
+        let enabled_rules: BTreeSet<String> = file_config
+            .lint
+            .enable
+            .into_iter()
+            .map(|rule_id| validate_rule_id(&known_rules, &rule_id).map(|()| rule_id))
+            .collect::<Result<_, _>>()?;
         let disabled_rules: BTreeSet<String> = file_config
             .lint
             .disable
             .into_iter()
             .map(|rule_id| validate_rule_id(&known_rules, &rule_id).map(|()| rule_id))
             .collect::<Result<_, _>>()?;
+        if let Some(rule_id) = enabled_rules.intersection(&disabled_rules).next() {
+            return Err(ConfigError::new(format!(
+                "lint rule '{rule_id}' cannot appear in both lint.enable and lint.disable"
+            )));
+        }
 
         let mut severity_overrides = BTreeMap::new();
         for (rule_id, severity) in file_config.lint.severity {
@@ -206,7 +223,17 @@ impl Config {
                     .metadata_list_layout
                     .unwrap_or(FormatOptions::default().metadata_list_layout),
             },
-            lint: LintOptions::from_parts(disabled_rules, severity_overrides, fail_on),
+            lint: LintOptions::from_parts_with_profile(
+                profile,
+                enabled_rules,
+                disabled_rules,
+                severity_overrides,
+                fail_on,
+                file_config
+                    .lint
+                    .baseline
+                    .map(|path| resolve_config_path(base_dir, path)),
+            ),
             semantic: SemanticConfig {
                 build_dir: file_config
                     .semantic
@@ -352,11 +379,15 @@ struct FileFormatConfig {
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct FileLintConfig {
+    profile: Option<String>,
+    #[serde(default)]
+    enable: Vec<String>,
     #[serde(default)]
     disable: Vec<String>,
     #[serde(default)]
     severity: BTreeMap<String, String>,
     fail_on: Option<String>,
+    baseline: Option<PathBuf>,
 }
 
 #[derive(Debug, Default, Deserialize)]

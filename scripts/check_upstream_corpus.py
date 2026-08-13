@@ -28,6 +28,8 @@ try:
         compare_lint_baseline as compare_lint_quality_baseline,
         load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
+        quality_report,
+        quality_report_markdown,
         review_summary,
         summarize_findings,
         validate_lint_baseline as validate_lint_quality_baseline,
@@ -45,6 +47,8 @@ except ModuleNotFoundError:  # Direct ``python3 scripts/check_upstream_corpus.py
         compare_lint_baseline as compare_lint_quality_baseline,
         load_lint_baseline as load_lint_quality_baseline,
         normalize_lint_report as normalize_parsed_lint_report,
+        quality_report,
+        quality_report_markdown,
         review_summary,
         summarize_findings,
         validate_lint_baseline as validate_lint_quality_baseline,
@@ -84,8 +88,11 @@ def format_idempotence_command(bbtidy, inputs):
     return [bbtidy, "format", "--check"] + inputs
 
 
-def lint_command(bbtidy, inputs):
-    return [bbtidy, "--no-config", "check", "--output", "json", "--fail-on", "never"] + inputs
+def lint_command(bbtidy, inputs, profile=None):
+    command = [bbtidy, "--no-config", "check", "--output", "json", "--fail-on", "never"]
+    if profile is not None:
+        command += ["--profile", profile]
+    return command + inputs
 
 
 def report_error(error):
@@ -208,7 +215,7 @@ def build_lint_baseline(summary, manifest=None, previous=None):
     return baseline_for_update(manifest, summary, previous)
 
 
-def write_lint_evidence(evidence_dir, findings, summary, comparison):
+def write_lint_evidence(evidence_dir, findings, summary, comparison, quality=None):
     write_json(
         evidence_dir / "lint" / "findings.json",
         {
@@ -222,6 +229,12 @@ def write_lint_evidence(evidence_dir, findings, summary, comparison):
     )
     write_json(evidence_dir / "lint" / "summary.json", summary)
     write_json(evidence_dir / "lint" / "baseline-comparison.json", comparison)
+    if quality is not None:
+        write_json(evidence_dir / "lint" / "quality-report.json", quality)
+        (evidence_dir / "lint" / "quality-report.md").parent.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "lint" / "quality-report.md").write_text(
+            quality_report_markdown(quality), encoding="utf-8"
+        )
 
 
 def load_manifest(path, enforce_lint_baseline=True):
@@ -1171,7 +1184,7 @@ def check_compatibility(arguments, workspace, evidence_dir):
         manifest.get("_baseline_metrics"),
     )
     linted = run_recorded(
-        lint_command(arguments.bbtidy, inputs),
+        lint_command(arguments.bbtidy, inputs, "all"),
         "lint metadata",
         records,
         accepted=(0,),
@@ -1196,13 +1209,37 @@ def check_compatibility(arguments, workspace, evidence_dir):
     lint_summary = summarize_lint_findings(
         manifest["id"], lint_findings, lint_baseline
     )
+    lint_duration = next(
+        (
+            float(record.get("duration_seconds", 0.0))
+            for record in reversed(records)
+            if record.get("label") == "lint metadata"
+        ),
+        0.0,
+    )
+    runtime_by_rule = {
+        rule_id: lint_duration * measurement.get("count", 0) / max(lint_summary["total_findings"], 1)
+        for rule_id, measurement in lint_summary["rules"].items()
+    }
+    lint_quality_report = quality_report(
+        lint_findings,
+        total_files=total_files,
+        reviews=(lint_baseline or {}).get("review") if isinstance(lint_baseline, dict) else None,
+        runtime_seconds=runtime_by_rule,
+    )
     lint_comparison = compare_lint_baseline(
         lint_summary,
         lint_baseline,
         manifest,
         baseline_path,
     )
-    write_lint_evidence(evidence_dir, lint_findings, lint_summary, lint_comparison)
+    write_lint_evidence(
+        evidence_dir,
+        lint_findings,
+        lint_summary,
+        lint_comparison,
+        lint_quality_report,
+    )
     blocking_tier = manifest["tier"] in {"supported", "pinned-community"}
     if (
         lint_comparison["blocking_failures"]
@@ -1332,6 +1369,7 @@ def check_compatibility(arguments, workspace, evidence_dir):
             "lint_quality": {
                 "summary": lint_summary,
                 "baseline_comparison": lint_comparison,
+                "quality_report": lint_quality_report,
             },
             "source_metrics": source_metrics,
             "formatted_metrics": formatted_metrics,

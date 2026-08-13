@@ -663,6 +663,56 @@ fn lint_json_output_has_a_stable_schema() {
 }
 
 #[test]
+fn lint_profiles_suppressions_and_baselines_are_incremental() {
+    let directory = TemporaryDirectory::new("lint-adoption");
+    let file = directory.write(
+        "example.bb",
+        "# bbtidy: ignore-next-line[BBT004] -- pinned release\nSRCREV = \"${AUTOREV}\"\n",
+    );
+    let path = file.to_str().unwrap();
+
+    let suppressed = run([
+        "check",
+        "--output",
+        "json",
+        "--show-suppressed",
+        "--profile",
+        "essential",
+        path,
+    ]);
+    assert_success(&suppressed);
+    let report: Value = serde_json::from_slice(&suppressed.stdout).unwrap();
+    assert_eq!(report["profile"], "essential");
+    assert_eq!(report["diagnostics"][0]["suppressed"], true);
+    assert_eq!(report["suppressions"]["suppressed_findings"], 1);
+
+    let baseline = directory.path().join("baseline.json");
+    fs::write(&file, "SRCREV = \"${AUTOREV}\"\n").unwrap();
+    let written = run([
+        "check",
+        "--fail-on",
+        "never",
+        "--write-baseline",
+        baseline.to_str().unwrap(),
+        path,
+    ]);
+    assert_success(&written);
+    assert!(baseline.is_file());
+    let existing = run([
+        "check",
+        "--output",
+        "json",
+        "--baseline",
+        baseline.to_str().unwrap(),
+        path,
+    ]);
+    assert_success(&existing);
+    let existing_report: Value = serde_json::from_slice(&existing.stdout).unwrap();
+    assert_eq!(existing_report["baseline"]["existing"], 1);
+    assert_eq!(existing_report["baseline"]["new"], 0);
+}
+
+#[test]
 fn lint_show_fixes_explains_safe_edits_without_changing_default_text() {
     let directory = TemporaryDirectory::new("lint-show-fixes");
     let file = directory.write("example.bb", "SUMMARY = \"demo\"  \n");
@@ -767,7 +817,7 @@ fn lint_sarif_output_contains_rules_locations_and_results() {
     );
     let run = &report["runs"][0];
     assert_eq!(run["tool"]["driver"]["name"], "bbtidy");
-    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 37);
+    assert_eq!(run["tool"]["driver"]["rules"].as_array().unwrap().len(), 38);
     assert_eq!(
         run["tool"]["driver"]["rules"]
             .as_array()

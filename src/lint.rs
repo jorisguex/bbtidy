@@ -33,6 +33,7 @@ const RULE_SHELL_SYNTAX: usize = 33;
 const RULE_PYTHON_SYNTAX: usize = 34;
 const RULE_PYTHON_INDENTATION: usize = 35;
 const RULE_UNKNOWN_OVERRIDE: usize = 36;
+const RULE_SUPPRESSION: usize = 37;
 
 static LINT_RULES: &[LintRule] = &[
     LintRule::new(
@@ -294,7 +295,88 @@ static LINT_RULES: &[LintRule] = &[
         "Static override components should be listed in OVERRIDES.",
         false,
     ),
+    LintRule::new(
+        "BBT038",
+        "suppression",
+        LintSeverity::Error,
+        "Inline lint suppressions must name known rules, include a reason, and suppress a finding.",
+        false,
+    ),
 ];
+
+/// Evidence-driven rule profiles. `all` is the compatibility profile and
+/// keeps the alpha-era rule catalog available for adoption and measurement.
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+pub enum LintProfile {
+    Essential,
+    Recommended,
+    Strict,
+    #[default]
+    All,
+}
+
+impl FromStr for LintProfile {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "essential" => Ok(Self::Essential),
+            "recommended" => Ok(Self::Recommended),
+            "strict" => Ok(Self::Strict),
+            "all" => Ok(Self::All),
+            _ => Err(format!(
+                "invalid lint profile '{value}'; expected essential, recommended, strict, or all"
+            )),
+        }
+    }
+}
+
+impl fmt::Display for LintProfile {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Essential => "essential",
+            Self::Recommended => "recommended",
+            Self::Strict => "strict",
+            Self::All => "all",
+        })
+    }
+}
+
+impl LintProfile {
+    /// Returns the rules selected by this profile, in stable catalog order.
+    pub fn rules(self) -> Vec<&'static LintRule> {
+        LINT_RULES
+            .iter()
+            .filter(|rule| rule.profiles().contains(&self))
+            .collect()
+    }
+
+    fn includes(self, rule_id: &str) -> bool {
+        self.rules().iter().any(|rule| rule.id() == rule_id)
+    }
+}
+
+fn profile_membership(rule_id: &str) -> &'static [LintProfile] {
+    use LintProfile::{All, Essential, Recommended, Strict};
+    match rule_id {
+        // High-confidence syntax, resolution, and authoritative diagnostics.
+        "BBT001" | "BBT002" | "BBT004" | "BBT005" | "BBT006" | "BBT007" | "BBT008" | "BBT009"
+        | "BBT010" | "BBT014" | "BBT015" | "BBT017" | "BBT018" | "BBT019" | "BBT022" | "BBT023"
+        | "BBT024" | "BBT025" | "BBT026" | "BBT027" | "BBT028" | "BBT029" | "BBT030" | "BBT031"
+        | "BBT032" | "BBT033" | "BBT034" | "BBT035" | "BBT036" | "BBT037" | "BBT038" => {
+            &[Essential, Recommended, Strict, All]
+        }
+        // This is useful, but remains opt-in until its corpus review clears
+        // the recommended-profile actionability gate. BBT016 is intentionally
+        // kept strict-only because it is one of the measured high-volume rules.
+        "BBT020" => &[Recommended, Strict, All],
+        "BBT016" => &[Strict, All],
+        // High-volume maintainability and naming policies stay strict-only
+        // while the quality report gathers per-shape review evidence.
+        "BBT003" | "BBT011" | "BBT012" | "BBT013" | "BBT021" => &[Strict, All],
+        _ => &[],
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LintSeverity {
@@ -428,18 +510,64 @@ impl LintRule {
     pub const fn is_fixable(&self) -> bool {
         self.fixable()
     }
+
+    /// Returns the explicitly declared profiles containing this rule.
+    pub fn profiles(&self) -> Vec<LintProfile> {
+        profile_membership(self.id).to_vec()
+    }
 }
 
 /// Configuration for selecting lint rules, overriding their severities, and
 /// deciding which findings fail a lint command.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LintOptions {
+    profile: LintProfile,
+    enabled_rules: BTreeSet<String>,
     disabled_rules: BTreeSet<String>,
     severity_overrides: BTreeMap<String, LintSeverity>,
     fail_on: LintFailurePolicy,
+    show_suppressed: bool,
+    baseline: Option<std::path::PathBuf>,
+}
+
+impl Default for LintOptions {
+    fn default() -> Self {
+        Self {
+            profile: LintProfile::All,
+            enabled_rules: BTreeSet::new(),
+            disabled_rules: BTreeSet::new(),
+            severity_overrides: BTreeMap::new(),
+            fail_on: LintFailurePolicy::default(),
+            show_suppressed: false,
+            baseline: None,
+        }
+    }
 }
 
 impl LintOptions {
+    /// Selects the evidence-driven set of rules used by this invocation.
+    pub fn set_profile(&mut self, profile: LintProfile) {
+        self.profile = profile;
+    }
+
+    /// Returns the selected base profile.
+    pub const fn profile(&self) -> LintProfile {
+        self.profile
+    }
+
+    /// Enables a rule in addition to the selected profile.
+    pub fn enable_rule(&mut self, rule_id: impl Into<String>) {
+        self.enabled_rules.insert(rule_id.into());
+    }
+
+    pub fn is_explicitly_enabled(&self, rule_id: &str) -> bool {
+        self.enabled_rules.contains(rule_id)
+    }
+
+    pub fn is_explicitly_disabled(&self, rule_id: &str) -> bool {
+        self.disabled_rules.contains(rule_id)
+    }
+
     /// Disables diagnostics for a stable lint rule ID.
     pub fn disable_rule(&mut self, rule_id: impl Into<String>) {
         self.disabled_rules.insert(rule_id.into());
@@ -460,27 +588,54 @@ impl LintOptions {
         self.fail_on
     }
 
-    /// Returns whether any diagnostic meets this options' failure threshold.
-    pub fn has_blocking_findings(&self, diagnostics: &[LintDiagnostic]) -> bool {
-        diagnostics
-            .iter()
-            .any(|diagnostic| self.fail_on.is_blocking(diagnostic.severity()))
+    /// Includes suppressed source diagnostics in the returned result.
+    pub fn set_show_suppressed(&mut self, show: bool) {
+        self.show_suppressed = show;
     }
 
-    pub(crate) fn from_parts(
+    pub const fn show_suppressed(&self) -> bool {
+        self.show_suppressed
+    }
+
+    /// Configures the adoption baseline path used by the CLI.
+    pub fn set_baseline(&mut self, path: impl Into<std::path::PathBuf>) {
+        self.baseline = Some(path.into());
+    }
+
+    pub fn baseline(&self) -> Option<&std::path::Path> {
+        self.baseline.as_deref()
+    }
+
+    /// Returns whether any diagnostic meets this options' failure threshold.
+    pub fn has_blocking_findings(&self, diagnostics: &[LintDiagnostic]) -> bool {
+        diagnostics.iter().any(|diagnostic| {
+            diagnostic.rule_id() == "BBT038"
+                || (!diagnostic.is_suppressed() && self.fail_on.is_blocking(diagnostic.severity()))
+        })
+    }
+
+    pub(crate) fn from_parts_with_profile(
+        profile: LintProfile,
+        enabled_rules: BTreeSet<String>,
         disabled_rules: BTreeSet<String>,
         severity_overrides: BTreeMap<String, LintSeverity>,
         fail_on: LintFailurePolicy,
+        baseline: Option<std::path::PathBuf>,
     ) -> Self {
         Self {
+            profile,
+            enabled_rules,
             disabled_rules,
             severity_overrides,
             fail_on,
+            show_suppressed: false,
+            baseline,
         }
     }
 
     fn is_enabled(&self, rule_id: &str) -> bool {
-        !self.disabled_rules.contains(rule_id)
+        (self.profile.includes(rule_id) || self.enabled_rules.contains(rule_id))
+            && !self.disabled_rules.contains(rule_id)
     }
 
     fn severity_for(&self, diagnostic: &LintDiagnostic) -> LintSeverity {
@@ -566,6 +721,8 @@ pub struct LintDiagnostic {
     message: String,
     help: Option<String>,
     fixes: Vec<LintFix>,
+    suppressed: bool,
+    suppression_reason: Option<String>,
 }
 
 impl LintDiagnostic {
@@ -588,6 +745,8 @@ impl LintDiagnostic {
             message: message.into(),
             help: None,
             fixes: Vec::new(),
+            suppressed: false,
+            suppression_reason: None,
         }
     }
 
@@ -617,6 +776,8 @@ impl LintDiagnostic {
             message: message.into(),
             help: None,
             fixes: Vec::new(),
+            suppressed: false,
+            suppression_reason: None,
         }
     }
 
@@ -669,6 +830,174 @@ impl LintDiagnostic {
     pub fn is_fixable(&self) -> bool {
         !self.fixes.is_empty()
     }
+
+    /// Returns whether this finding was matched by an inline suppression.
+    pub const fn is_suppressed(&self) -> bool {
+        self.suppressed
+    }
+
+    /// Returns the reason attached to the matching inline suppression.
+    pub fn suppression_reason(&self) -> Option<&str> {
+        self.suppression_reason.as_deref()
+    }
+}
+
+/// Counts and classifies inline suppression directives found in source.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct LintSuppressionSummary {
+    pub directives: usize,
+    pub malformed: usize,
+    pub unknown_rules: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SuppressionKind {
+    SameLine,
+    NextLine,
+    File,
+}
+
+#[derive(Clone, Debug)]
+struct SuppressionDirective {
+    kind: SuppressionKind,
+    line: usize,
+    rule_id: Option<String>,
+    reason: Option<String>,
+    span: TextRange,
+    used: bool,
+    error: Option<String>,
+}
+
+fn parse_suppression_directives(
+    source: &str,
+) -> (Vec<SuppressionDirective>, LintSuppressionSummary) {
+    let mut directives = Vec::new();
+    let mut summary = LintSuppressionSummary::default();
+    let known_rules = LINT_RULES
+        .iter()
+        .map(|rule| rule.id())
+        .collect::<BTreeSet<_>>();
+    let mut offset = 0;
+
+    for (line_index, raw_line) in source.split_inclusive('\n').enumerate() {
+        let line_number = line_index + 1;
+        let line = raw_line.strip_suffix('\n').unwrap_or(raw_line);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        let Some(hash) = line.find('#') else {
+            offset += raw_line.len();
+            continue;
+        };
+        let comment = &line[hash..];
+        let Some(payload) = comment.strip_prefix("# bbtidy:") else {
+            offset += raw_line.len();
+            continue;
+        };
+        summary.directives += 1;
+        let span = TextRange::new(offset + hash, offset + line.len());
+        let Some((command, remainder)) = payload.trim().split_once('[') else {
+            summary.malformed += 1;
+            directives.push(SuppressionDirective {
+                kind: SuppressionKind::SameLine,
+                line: line_number,
+                rule_id: None,
+                reason: None,
+                span,
+                used: false,
+                error: Some("malformed suppression; expected ignore[BBTxxx], ignore-next-line[BBTxxx], or disable-file[BBTxxx] -- reason".to_owned()),
+            });
+            offset += raw_line.len();
+            continue;
+        };
+        let kind = match command.trim() {
+            "ignore" => SuppressionKind::SameLine,
+            "ignore-next-line" => SuppressionKind::NextLine,
+            "disable-file" if line_number == 1 => SuppressionKind::File,
+            "disable-file" => {
+                summary.malformed += 1;
+                directives.push(SuppressionDirective {
+                    kind: SuppressionKind::File,
+                    line: line_number,
+                    rule_id: None,
+                    reason: None,
+                    span,
+                    used: false,
+                    error: Some("disable-file suppression must be on the first line".to_owned()),
+                });
+                offset += raw_line.len();
+                continue;
+            }
+            _ => {
+                summary.malformed += 1;
+                directives.push(SuppressionDirective {
+                    kind: SuppressionKind::SameLine,
+                    line: line_number,
+                    rule_id: None,
+                    reason: None,
+                    span,
+                    used: false,
+                    error: Some(format!("unknown suppression command '{}'; expected ignore, ignore-next-line, or disable-file", command.trim())),
+                });
+                offset += raw_line.len();
+                continue;
+            }
+        };
+        let Some((rule_id, after_id)) = remainder.split_once(']') else {
+            summary.malformed += 1;
+            directives.push(SuppressionDirective {
+                kind,
+                line: line_number,
+                rule_id: None,
+                reason: None,
+                span,
+                used: false,
+                error: Some("malformed suppression; missing closing ]".to_owned()),
+            });
+            offset += raw_line.len();
+            continue;
+        };
+        let rule_id = rule_id.trim().to_owned();
+        let suffix = after_id.trim();
+        let reason = suffix
+            .strip_prefix("--")
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned);
+        let error = if !known_rules.contains(rule_id.as_str()) {
+            summary.unknown_rules += 1;
+            Some(format!(
+                "unknown suppression rule '{}'; use a registered BBT rule",
+                rule_id
+            ))
+        } else if rule_id == "BBT038" {
+            Some("the suppression diagnostic itself cannot be suppressed".to_owned())
+        } else if reason.is_none() {
+            summary.malformed += 1;
+            Some("suppression requires a non-empty reason after '--'".to_owned())
+        } else {
+            None
+        };
+        directives.push(SuppressionDirective {
+            kind,
+            line: line_number,
+            rule_id: Some(rule_id),
+            reason,
+            span,
+            used: false,
+            error,
+        });
+        offset += raw_line.len();
+    }
+
+    if !source.is_empty() && !source.ends_with('\n') && !source.contains('\n') {
+        // split_inclusive already covers this case; this branch documents that
+        // a one-line file is still eligible for a first-line file directive.
+    }
+    (directives, summary)
+}
+
+/// Returns deterministic syntax-level suppression counts without linting.
+pub fn lint_suppression_summary(source: &str) -> LintSuppressionSummary {
+    parse_suppression_directives(source).1
 }
 
 pub fn lint_rules() -> &'static [LintRule] {
@@ -1376,7 +1705,7 @@ pub fn lint_syntax_with_options(
     tree: &SyntaxTree<'_>,
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
-    finalize_diagnostics(collect_lint_diagnostics(tree), options)
+    finalize_diagnostics(collect_lint_diagnostics(tree), tree.source(), options)
 }
 
 /// Checks a previously parsed syntax tree with an indexed workspace.
@@ -1408,7 +1737,7 @@ pub fn lint_syntax_with_workspace(
             check_layer_qa(tree, workspace, &mut diagnostics);
         }
     }
-    finalize_diagnostics(diagnostics, options)
+    finalize_diagnostics(diagnostics, tree.source(), options)
 }
 
 fn collect_lint_diagnostics(tree: &SyntaxTree<'_>) -> Vec<LintDiagnostic> {
@@ -1510,12 +1839,57 @@ fn check_body_diagnostics(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagn
 
 fn finalize_diagnostics(
     mut diagnostics: Vec<LintDiagnostic>,
+    source: &str,
     options: &LintOptions,
 ) -> Vec<LintDiagnostic> {
     diagnostics.retain(|diagnostic| options.is_enabled(diagnostic.rule_id()));
     for diagnostic in &mut diagnostics {
         diagnostic.severity = options.severity_for(diagnostic);
     }
+
+    let (mut suppressions, _) = parse_suppression_directives(source);
+    for diagnostic in &mut diagnostics {
+        let Some(suppression) = suppressions.iter_mut().find(|suppression| {
+            suppression.error.is_none()
+                && suppression.rule_id.as_deref() == Some(diagnostic.rule_id())
+                && match suppression.kind {
+                    SuppressionKind::SameLine => suppression.line == diagnostic.line(),
+                    SuppressionKind::NextLine => suppression.line + 1 == diagnostic.line(),
+                    SuppressionKind::File => true,
+                }
+        }) else {
+            continue;
+        };
+        suppression.used = true;
+        diagnostic.suppressed = true;
+        diagnostic.suppression_reason = suppression.reason.clone();
+    }
+
+    let mut suppression_diagnostics = Vec::new();
+    for suppression in &suppressions {
+        if let Some(error) = &suppression.error {
+            suppression_diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_SUPPRESSION],
+                source,
+                suppression.span,
+                error.clone(),
+            ));
+        } else if !suppression.used {
+            suppression_diagnostics.push(LintDiagnostic::at(
+                &LINT_RULES[RULE_SUPPRESSION],
+                source,
+                suppression.span,
+                format!(
+                    "unused suppression for {}; remove it or attach it to a matching finding",
+                    suppression.rule_id.as_deref().unwrap_or("unknown rule")
+                ),
+            ));
+        }
+    }
+    // Suppression diagnostics are operational and cannot themselves be
+    // hidden by a profile, disable list, or suppression directive.
+    diagnostics.retain(|diagnostic| !diagnostic.suppressed || options.show_suppressed);
+    diagnostics.extend(suppression_diagnostics);
 
     diagnostics.sort_by(|left, right| {
         (left.line, left.column, left.rule_id).cmp(&(right.line, right.column, right.rule_id))
@@ -2528,7 +2902,8 @@ fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic
         if matches!(
             assignment.operator(),
             AssignmentOperator::Assign | AssignmentOperator::Immediate
-        ) && !direct_assignments.insert(assignment.name())
+        ) && is_duplicate_assignment_candidate(assignment.name())
+            && !direct_assignments.insert(assignment.name())
         {
             let rule = &LINT_RULES[15];
             diagnostics.push(LintDiagnostic::at(
@@ -2542,6 +2917,16 @@ fn check_assignments(tree: &SyntaxTree<'_>, diagnostics: &mut Vec<LintDiagnostic
             ));
         }
     }
+}
+
+fn is_duplicate_assignment_candidate(name: &str) -> bool {
+    // Override-scoped and legacy suffix operators compose values by design;
+    // treating them as duplicate direct assignments created most of the
+    // high-volume BBT016 noise in real layers.
+    !name.contains(':')
+        && !name.ends_with("_append")
+        && !name.ends_with("_prepend")
+        && !name.ends_with("_remove")
 }
 
 fn check_file_paths(
@@ -2829,7 +3214,7 @@ mod tests {
                 "BBT009", "BBT010", "BBT011", "BBT012", "BBT013", "BBT014", "BBT015", "BBT016",
                 "BBT017", "BBT018", "BBT019", "BBT020", "BBT021", "BBT022", "BBT023", "BBT024",
                 "BBT025", "BBT026", "BBT027", "BBT028", "BBT029", "BBT030", "BBT031", "BBT032",
-                "BBT033", "BBT034", "BBT035", "BBT036", "BBT037",
+                "BBT033", "BBT034", "BBT035", "BBT036", "BBT037", "BBT038",
             ]
         );
         assert!(
@@ -2903,6 +3288,39 @@ mod tests {
                 .iter()
                 .any(|item| item.rule_id() == "BBT016" && item.line() == 5)
         );
+    }
+
+    #[test]
+    fn inline_suppressions_are_reasoned_and_never_hide_suppression_errors() {
+        let source = "# bbtidy: ignore-next-line[BBT004] -- release branch is intentionally floating\nSRCREV = \"${AUTOREV}\"\n";
+        let diagnostics = lint(source).unwrap();
+        assert!(diagnostics.is_empty());
+
+        let mut options = LintOptions::default();
+        options.set_show_suppressed(true);
+        let shown = lint_with_options(source, &options).unwrap();
+        assert_eq!(shown.len(), 1);
+        assert_eq!(shown[0].rule_id(), "BBT004");
+        assert!(shown[0].is_suppressed());
+
+        let malformed =
+            lint("# bbtidy: ignore[BBT999] -- bad rule\nSRCREV = \"${AUTOREV}\"\n").unwrap();
+        assert!(
+            malformed
+                .iter()
+                .any(|diagnostic| diagnostic.rule_id() == "BBT038")
+        );
+    }
+
+    #[test]
+    fn profiles_select_rules_without_relying_on_catalog_indices() {
+        let essential = LintProfile::Essential.rules();
+        let recommended = LintProfile::Recommended.rules();
+        let strict = LintProfile::Strict.rules();
+        assert!(!essential.iter().any(|rule| rule.id() == "BBT012"));
+        assert!(!recommended.iter().any(|rule| rule.id() == "BBT016"));
+        assert!(strict.iter().any(|rule| rule.id() == "BBT012"));
+        assert!(lint_rules().iter().all(|rule| !rule.profiles().is_empty()));
     }
 
     #[test]

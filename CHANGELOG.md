@@ -23,6 +23,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Evidence-driven lint adoption profiles (`essential`, `recommended`, `strict`,
+  and compatibility-preserving `all`), deterministic per-rule quality reports,
+  stratified review fingerprints, reasoned inline suppressions, and validated
+  finding baselines with explicit refresh controls. JSON/SARIF reports expose
+  profile, catalog, origin, suppression, and baseline metadata.
+
 - A single tag-driven blocking release orchestrator with supported Yocto 5.0
   and 6.0, pinned-community lint, strict evidence verification, safe rehearsal
   dispatch, and durable checksum-protected release evidence.

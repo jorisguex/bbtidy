@@ -1,17 +1,17 @@
 use bbtidy::{
     BitBakeCancellationToken, BitBakeExecutionLimits, BitBakeExecutionStats, BitBakeRunner,
     BuildContext, BuildContextDiscoveryOptions, Config, LintDiagnostic, LintFailurePolicy,
-    LintSeverity, SafetyOptions, SemanticAnalysisOptions, SemanticOptions, SemanticReport,
-    SyntaxKind, Token, WorkspaceIndex, analyze_bitbake_with_limits, analyze_bitbake_with_runner,
-    apply_lint_fixes, discover_build_context_with_options, format, format_with_options,
-    get_line_col, lint_rules, lint_with_options, lint_with_workspace, load_config, parse,
-    semantic_lint_diagnostics,
+    LintProfile, LintSeverity, LintSuppressionSummary, SafetyOptions, SemanticAnalysisOptions,
+    SemanticOptions, SemanticReport, SyntaxKind, Token, WorkspaceIndex,
+    analyze_bitbake_with_limits, analyze_bitbake_with_runner, apply_lint_fixes,
+    discover_build_context_with_options, format, format_with_options, get_line_col, lint_rules,
+    lint_with_options, lint_with_workspace, load_config, parse, semantic_lint_diagnostics,
 };
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use logos::Logos;
 use serde_json::{Value, json};
 use similar::TextDiff;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
@@ -95,6 +95,18 @@ struct LintArgs {
     #[arg(long, value_enum, default_value_t = LintOutput::Text, value_name = "FORMAT")]
     output: LintOutput,
 
+    /// Select an evidence-driven lint profile.
+    #[arg(long, value_enum, value_name = "PROFILE")]
+    profile: Option<LintProfileArg>,
+
+    /// Enable one or more rules in addition to the selected profile.
+    #[arg(long = "enable", value_name = "RULE")]
+    enable: Vec<String>,
+
+    /// Disable one or more rules after profile and enable selection.
+    #[arg(long = "disable", value_name = "RULE")]
+    disable: Vec<String>,
+
     /// Set the minimum diagnostic severity that fails the command.
     #[arg(long, value_enum, value_name = "SEVERITY")]
     fail_on: Option<LintFailureArg>,
@@ -106,6 +118,30 @@ struct LintArgs {
     /// Include help and edit details in human-readable diagnostics.
     #[arg(long)]
     show_fixes: bool,
+
+    /// Include findings matched by inline suppressions in machine output.
+    #[arg(long)]
+    show_suppressed: bool,
+
+    /// Emit the versioned machine-readable output schema.
+    #[arg(long, default_value_t = 1, value_name = "N")]
+    output_version: u8,
+
+    /// Write the current findings as an adoption baseline.
+    #[arg(long, value_name = "PATH", conflicts_with = "refresh_baseline")]
+    write_baseline: Option<PathBuf>,
+
+    /// Compare findings with an adoption baseline.
+    #[arg(long, value_name = "PATH")]
+    baseline: Option<PathBuf>,
+
+    /// Include findings already present in the baseline in the blocking set.
+    #[arg(long)]
+    show_existing: bool,
+
+    /// Explicitly replace a baseline with the current findings.
+    #[arg(long, value_name = "PATH")]
+    refresh_baseline: Option<PathBuf>,
 
     /// Override the configured maximum number of files for this invocation.
     #[arg(long, value_name = "N")]
@@ -264,6 +300,25 @@ enum LintOutput {
     Text,
     Json,
     Sarif,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum LintProfileArg {
+    Essential,
+    Recommended,
+    Strict,
+    All,
+}
+
+impl From<LintProfileArg> for LintProfile {
+    fn from(value: LintProfileArg) -> Self {
+        match value {
+            LintProfileArg::Essential => Self::Essential,
+            LintProfileArg::Recommended => Self::Recommended,
+            LintProfileArg::Strict => Self::Strict,
+            LintProfileArg::All => Self::All,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -696,7 +751,49 @@ fn check_formatted_inputs(formatted_inputs: &[FormattedInput]) -> i32 {
 
 fn run_lint(args: LintArgs, config: &Config) -> i32 {
     install_cli_cancellation_handler();
+    if !matches!(args.output_version, 1 | 2) {
+        eprintln!(
+            "error: unsupported lint output version {}; expected 1 or 2",
+            args.output_version
+        );
+        return EXIT_ERROR;
+    }
     let mut lint_options = config.lint.clone();
+    if let Some(profile) = args.profile {
+        lint_options.set_profile(profile.into());
+    }
+    let known_rules = lint_rules()
+        .iter()
+        .map(|rule| rule.id())
+        .collect::<BTreeSet<_>>();
+    for rule_id in args.enable.iter().chain(args.disable.iter()) {
+        if !known_rules.contains(rule_id.as_str()) {
+            eprintln!("error: unknown lint rule '{rule_id}'");
+            return EXIT_ERROR;
+        }
+    }
+    if let Some(rule_id) = args.enable.iter().find(|rule_id| {
+        args.disable.iter().any(|disabled| disabled == *rule_id)
+            || lint_options.is_explicitly_disabled(rule_id)
+    }) {
+        eprintln!("error: lint rule '{rule_id}' cannot be both enabled and disabled");
+        return EXIT_ERROR;
+    }
+    if let Some(rule_id) = args
+        .disable
+        .iter()
+        .find(|rule_id| lint_options.is_explicitly_enabled(rule_id))
+    {
+        eprintln!("error: lint rule '{rule_id}' cannot be both enabled and disabled");
+        return EXIT_ERROR;
+    }
+    for rule_id in &args.enable {
+        lint_options.enable_rule(rule_id.clone());
+    }
+    for rule_id in &args.disable {
+        lint_options.disable_rule(rule_id.clone());
+    }
+    lint_options.set_show_suppressed(args.show_suppressed);
     if let Some(fail_on) = args.fail_on {
         lint_options.set_fail_on(fail_on.into());
     }
@@ -954,6 +1051,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
                 .map(|diagnostic| ReportedDiagnostic {
                     label: input.label.clone(),
                     diagnostic,
+                    baseline_status: BaselineFindingStatus::New,
                 })
         })
         .collect::<Vec<_>>();
@@ -964,6 +1062,7 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             .map(|finding| ReportedDiagnostic {
                 label: finding.label.clone(),
                 diagnostic: finding.diagnostic.clone(),
+                baseline_status: BaselineFindingStatus::New,
             }),
     );
     collected.sort_by(|left, right| {
@@ -989,12 +1088,101 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         })
         .collect::<Vec<_>>();
 
+    let sources = analyzed
+        .iter()
+        .map(|input| (input.label.clone(), input.fixed.clone()))
+        .collect::<BTreeMap<_, _>>();
+    let current_baseline_entries = baseline_entries(&collected, &sources);
+    let suppression_summary =
+        analyzed
+            .iter()
+            .fold(LintSuppressionSummary::default(), |mut total, input| {
+                let current = bbtidy::lint_suppression_summary(&input.fixed);
+                total.directives += current.directives;
+                total.malformed += current.malformed;
+                total.unknown_rules += current.unknown_rules;
+                total
+            });
+    let configured_baseline = args
+        .baseline
+        .clone()
+        .or_else(|| config.lint.baseline().map(Path::to_path_buf));
+    if let Some(path) = args.write_baseline.as_deref() {
+        if let Err(error) =
+            write_baseline_file(path, lint_options.profile(), &current_baseline_entries)
+        {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
+        }
+    }
+    let comparison_path = args
+        .refresh_baseline
+        .clone()
+        .or(configured_baseline.clone());
+    let mut baseline_summary = None;
+    if let Some(path) = comparison_path.as_deref() {
+        let previous = if path.is_file() {
+            match read_baseline_file(path, lint_options.profile()) {
+                Ok(entries) => entries,
+                Err(error) => {
+                    eprintln!("error: {error}");
+                    return EXIT_ERROR;
+                }
+            }
+        } else if args.refresh_baseline.is_some() {
+            Vec::new()
+        } else {
+            eprintln!("error: baseline {} does not exist", path.display());
+            return EXIT_ERROR;
+        };
+        let previous_ids = previous
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect::<BTreeSet<_>>();
+        let current_ids = current_baseline_entries
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect::<BTreeSet<_>>();
+        for (entry, finding) in current_baseline_entries.iter().zip(collected.iter_mut()) {
+            if previous_ids.contains(entry.id.as_str()) {
+                finding.baseline_status = BaselineFindingStatus::Existing;
+            }
+        }
+        let stale = previous_ids.difference(&current_ids).count();
+        baseline_summary = Some(BaselineSummary {
+            path: path.display().to_string(),
+            existing: collected
+                .iter()
+                .filter(|entry| entry.baseline_status == BaselineFindingStatus::Existing)
+                .count(),
+            new: collected
+                .iter()
+                .filter(|entry| entry.baseline_status == BaselineFindingStatus::New)
+                .count(),
+            stale,
+            profile: lint_options.profile().to_string(),
+            refreshed: args.refresh_baseline.is_some(),
+        });
+        if args.refresh_baseline.is_some() {
+            if let Err(error) =
+                write_baseline_file(path, lint_options.profile(), &current_baseline_entries)
+            {
+                eprintln!("error: {error}");
+                return EXIT_ERROR;
+            }
+        }
+    }
+
     let mut stdout = io::stdout().lock();
     if machine_output {
         if let Err(error) = write_lint_report(
             args.output,
+            args.output_version,
+            lint_options.profile(),
             &collected,
             &applied_fixes,
+            baseline_summary.as_ref(),
+            suppression_summary,
             semantic_report.as_ref(),
             bitbake_runner.as_ref().map(BitBakeRunner::stats),
             &mut stdout,
@@ -1056,12 +1244,16 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         );
     }
 
-    if lint_options.has_blocking_findings(
-        &collected
-            .iter()
-            .map(|entry| entry.diagnostic.clone())
-            .collect::<Vec<_>>(),
-    ) {
+    if collected.iter().any(|entry| {
+        (entry.diagnostic.rule_id() == "BBT038"
+            || args.show_existing
+            || entry.baseline_status == BaselineFindingStatus::New)
+            && !entry.diagnostic.is_suppressed()
+            && (entry.diagnostic.rule_id() == "BBT038"
+                || lint_options
+                    .fail_on()
+                    .is_blocking(entry.diagnostic.severity()))
+    }) {
         EXIT_DIFFERENCES
     } else {
         0
@@ -1085,11 +1277,314 @@ struct SemanticLintAnalysis {
 struct ReportedDiagnostic {
     label: String,
     diagnostic: LintDiagnostic,
+    baseline_status: BaselineFindingStatus,
 }
 
 struct AppliedFixSummary {
     path: String,
     count: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum BaselineFindingStatus {
+    New,
+    Existing,
+}
+
+#[derive(Clone, Debug)]
+struct BaselineEntry {
+    id: String,
+    rule_id: String,
+    path: String,
+    shape: String,
+    source_digest: String,
+    occurrence: usize,
+}
+
+#[derive(Clone, Debug, Default)]
+struct BaselineSummary {
+    path: String,
+    existing: usize,
+    new: usize,
+    stale: usize,
+    profile: String,
+    refreshed: bool,
+}
+
+const BASELINE_SCHEMA: u64 = 1;
+const BASELINE_MAX_BYTES: u64 = 10 * 1024 * 1024;
+
+fn rule_fingerprints() -> BTreeMap<String, String> {
+    lint_rules()
+        .iter()
+        .map(|rule| {
+            let profile_text = rule
+                .profiles()
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(",");
+            (
+                rule.id().to_owned(),
+                stable_digest(&format!(
+                    "{}\0{}\0{}\0{}\0{}",
+                    rule.id(),
+                    rule.name(),
+                    rule.description(),
+                    rule.severity(),
+                    profile_text
+                )),
+            )
+        })
+        .collect()
+}
+
+fn stable_digest(value: &str) -> String {
+    // Four independent FNV-1a lanes provide a deterministic, fixed-width
+    // identity without making the lint binary depend on a crypto runtime.
+    let mut lanes = [
+        0xcbf29ce484222325u64,
+        0x84222325cbf29ce4u64,
+        0x9e3779b185ebca87u64,
+        0xd6e8feb86659fd93u64,
+    ];
+    for byte in value.as_bytes() {
+        for (index, lane) in lanes.iter_mut().enumerate() {
+            *lane ^= u64::from(*byte).wrapping_add((index as u64) * 17);
+            *lane = lane.wrapping_mul(0x100000001b3);
+            *lane ^= *lane >> 29;
+        }
+    }
+    format!(
+        "{:016x}{:016x}{:016x}{:016x}",
+        lanes[0], lanes[1], lanes[2], lanes[3]
+    )
+}
+
+fn normalized_path_identity(label: &str) -> String {
+    let path = Path::new(label);
+    let path = if path.is_absolute() {
+        std::env::current_dir()
+            .ok()
+            .and_then(|current| path.strip_prefix(current).ok().map(Path::to_path_buf))
+            .unwrap_or_else(|| path.to_path_buf())
+    } else {
+        path.to_path_buf()
+    };
+    path.components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(value) => value.to_str(),
+            std::path::Component::CurDir => None,
+            _ => Some("<external>"),
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn diagnostic_shape(diagnostic: &LintDiagnostic) -> String {
+    let mut shape = String::new();
+    let mut previous_space = false;
+    for character in diagnostic.message().chars() {
+        if character.is_ascii_digit() {
+            if !shape.ends_with('#') {
+                shape.push('#');
+            }
+        } else if character.is_ascii_alphanumeric() || character == '_' {
+            shape.push(character.to_ascii_lowercase());
+            previous_space = false;
+        } else if !previous_space && !shape.is_empty() {
+            shape.push(' ');
+            previous_space = true;
+        }
+    }
+    format!("{}:{}", diagnostic.rule_id(), shape.trim())
+}
+
+fn source_anchor(source: Option<&str>, line: usize) -> String {
+    source
+        .and_then(|source| source.lines().nth(line.saturating_sub(1)))
+        .map(|value| value.split_whitespace().collect::<Vec<_>>().join(" "))
+        .unwrap_or_default()
+}
+
+fn baseline_entries(
+    diagnostics: &[ReportedDiagnostic],
+    sources: &BTreeMap<String, String>,
+) -> Vec<BaselineEntry> {
+    let mut occurrences = BTreeMap::<String, usize>::new();
+    let mut entries = Vec::with_capacity(diagnostics.len());
+    for entry in diagnostics {
+        let path = normalized_path_identity(&entry.label);
+        let shape = diagnostic_shape(&entry.diagnostic);
+        let anchor = source_anchor(
+            sources.get(&entry.label).map(String::as_str),
+            entry.diagnostic.line(),
+        );
+        let source_digest = stable_digest(&anchor);
+        let key = format!(
+            "{}\0{}\0{}\0{}",
+            entry.diagnostic.rule_id(),
+            path,
+            shape,
+            source_digest
+        );
+        let occurrence = occurrences.entry(key.clone()).or_default();
+        let current_occurrence = *occurrence;
+        *occurrence += 1;
+        let id = stable_digest(&format!(
+            "bbtidy-finding-v1\0{}\0{}\0{}\0{}\0{}",
+            entry.diagnostic.rule_id(),
+            path,
+            shape,
+            source_digest,
+            current_occurrence
+        ));
+        entries.push(BaselineEntry {
+            id,
+            rule_id: entry.diagnostic.rule_id().to_owned(),
+            path,
+            shape,
+            source_digest,
+            occurrence: current_occurrence,
+        });
+    }
+    entries
+}
+
+fn baseline_entry_json(entry: &BaselineEntry) -> Value {
+    json!({
+        "id": entry.id,
+        "rule_id": entry.rule_id,
+        "path": entry.path,
+        "shape": entry.shape,
+        "source_digest": entry.source_digest,
+        "occurrence": entry.occurrence,
+    })
+}
+
+fn write_baseline_file(
+    path: &Path,
+    profile: LintProfile,
+    entries: &[BaselineEntry],
+) -> Result<(), String> {
+    let value = json!({
+        "schema": BASELINE_SCHEMA,
+        "profile": profile.to_string(),
+        "catalog_version": 1,
+        "fingerprint_version": 1,
+        "rule_fingerprints": rule_fingerprints(),
+        "findings": entries.iter().map(baseline_entry_json).collect::<Vec<_>>(),
+    });
+    let serialized = serde_json::to_vec_pretty(&value).map_err(|error| error.to_string())?;
+    if serialized.len() as u64 > BASELINE_MAX_BYTES {
+        return Err("baseline exceeds the 10 MiB safety limit".to_owned());
+    }
+    fs::write(path, serialized)
+        .map_err(|error| format!("could not write baseline {}: {error}", path.display()))
+}
+
+fn read_baseline_file(path: &Path, profile: LintProfile) -> Result<Vec<BaselineEntry>, String> {
+    let metadata = fs::metadata(path)
+        .map_err(|error| format!("could not read baseline {}: {error}", path.display()))?;
+    if metadata.len() > BASELINE_MAX_BYTES {
+        return Err("baseline exceeds the 10 MiB safety limit".to_owned());
+    }
+    let bytes = fs::read(path)
+        .map_err(|error| format!("could not read baseline {}: {error}", path.display()))?;
+    let value: Value = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("invalid baseline JSON: {error}"))?;
+    let object = value
+        .as_object()
+        .ok_or_else(|| "baseline must be a JSON object".to_owned())?;
+    if object.get("schema").and_then(Value::as_u64) != Some(BASELINE_SCHEMA) {
+        return Err("unsupported baseline schema".to_owned());
+    }
+    if object.get("profile").and_then(Value::as_str) != Some(&profile.to_string()) {
+        return Err(
+            "baseline profile differs; refresh it explicitly for the selected profile".to_owned(),
+        );
+    }
+    let fingerprints = object
+        .get("rule_fingerprints")
+        .and_then(Value::as_object)
+        .ok_or_else(|| "baseline is missing rule_fingerprints".to_owned())?;
+    let current_fingerprints = rule_fingerprints();
+    for (rule_id, expected) in &current_fingerprints {
+        if fingerprints.get(rule_id).and_then(Value::as_str) != Some(expected.as_str()) {
+            return Err(format!(
+                "baseline rule fingerprint changed for {rule_id}; refresh it explicitly"
+            ));
+        }
+    }
+    if fingerprints.len() != current_fingerprints.len() {
+        return Err("baseline rule catalog is incomplete; refresh it explicitly".to_owned());
+    }
+    let findings = object
+        .get("findings")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "baseline is missing findings".to_owned())?;
+    let mut ids = BTreeSet::new();
+    let mut entries = Vec::with_capacity(findings.len());
+    for finding in findings {
+        let item = finding
+            .as_object()
+            .ok_or_else(|| "baseline finding must be an object".to_owned())?;
+        let string_field = |name: &str| {
+            item.get(name)
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("baseline finding field '{name}' must be a string"))
+        };
+        let id = string_field("id")?.to_owned();
+        if id.len() != 64
+            || !id.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || !ids.insert(id.clone())
+        {
+            return Err(
+                "baseline finding IDs must be unique 64-character hexadecimal strings".to_owned(),
+            );
+        }
+        let path_value = string_field("path")?;
+        let path = Path::new(path_value);
+        if path.is_absolute()
+            || path.components().any(|component| {
+                matches!(
+                    component,
+                    std::path::Component::ParentDir
+                        | std::path::Component::RootDir
+                        | std::path::Component::Prefix(_)
+                )
+            })
+        {
+            return Err(
+                "baseline paths must be repository-relative and cannot contain '..'".to_owned(),
+            );
+        }
+        let source_digest = string_field("source_digest")?.to_owned();
+        if source_digest.len() != 64 || !source_digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(
+                "baseline source digests must be 64-character hexadecimal strings".to_owned(),
+            );
+        }
+        let occurrence = item
+            .get("occurrence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| "baseline occurrence must be an integer".to_owned())?
+            as usize;
+        let rule_id = string_field("rule_id")?.to_owned();
+        if !lint_rules().iter().any(|rule| rule.id() == rule_id) {
+            return Err(format!("baseline finding contains unknown rule {rule_id}"));
+        }
+        entries.push(BaselineEntry {
+            id,
+            rule_id,
+            path: path_value.to_owned(),
+            shape: string_field("shape")?.to_owned(),
+            source_digest,
+            occurrence,
+        });
+    }
+    Ok(entries)
 }
 
 fn write_text_diagnostic(
@@ -1100,12 +1595,17 @@ fn write_text_diagnostic(
 ) -> io::Result<()> {
     writeln!(
         stdout,
-        "{}:{}:{}: {}[{}]: {}",
+        "{}:{}:{}: {}[{}]{}: {}",
         label,
         diagnostic.line(),
         diagnostic.column(),
         diagnostic.severity(),
         diagnostic.rule_id(),
+        if diagnostic.is_suppressed() {
+            " (suppressed)"
+        } else {
+            ""
+        },
         diagnostic.message()
     )?;
     if show_fixes {
@@ -1127,16 +1627,37 @@ fn write_text_diagnostic(
 
 fn write_lint_report(
     output: LintOutput,
+    output_version: u8,
+    profile: LintProfile,
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
+    baseline: Option<&BaselineSummary>,
+    suppression: LintSuppressionSummary,
     semantic_report: Option<&SemanticLintAnalysis>,
     execution: Option<&BitBakeExecutionStats>,
     stdout: &mut impl Write,
 ) -> io::Result<()> {
     let report = match output {
         LintOutput::Text => unreachable!("text reports are streamed directly"),
-        LintOutput::Json => json_report(diagnostics, applied_fixes, semantic_report, execution),
-        LintOutput::Sarif => sarif_report(diagnostics, applied_fixes, semantic_report, execution),
+        LintOutput::Json => json_report(
+            output_version,
+            profile,
+            diagnostics,
+            applied_fixes,
+            baseline,
+            suppression,
+            semantic_report,
+            execution,
+        ),
+        LintOutput::Sarif => sarif_report(
+            profile,
+            diagnostics,
+            applied_fixes,
+            baseline,
+            suppression,
+            semantic_report,
+            execution,
+        ),
     };
     let serialized = serde_json::to_vec_pretty(&report)
         .map_err(|error| io::Error::other(format!("could not serialize diagnostics: {error}")))?;
@@ -1145,13 +1666,20 @@ fn write_lint_report(
 }
 
 fn json_report(
+    output_version: u8,
+    profile: LintProfile,
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
+    baseline: Option<&BaselineSummary>,
+    suppression: LintSuppressionSummary,
     semantic_report: Option<&SemanticLintAnalysis>,
     execution: Option<&BitBakeExecutionStats>,
 ) -> Value {
     let mut report = json!({
-        "version": 1,
+        "version": output_version,
+        "profile": profile.to_string(),
+        "catalog_version": 1,
+        "rules": lint_rules().iter().map(json_rule).collect::<Vec<_>>(),
         "diagnostics": diagnostics.iter().map(json_diagnostic).collect::<Vec<_>>(),
         "fixes_applied": applied_fixes.iter().map(|fix| json!({
             "path": fix.path,
@@ -1164,7 +1692,34 @@ fn json_report(
     if let Some(execution) = execution {
         report["execution"] = json!(execution);
     }
+    if let Some(baseline) = baseline {
+        report["baseline"] = json!({
+            "path": baseline.path,
+            "profile": baseline.profile,
+            "existing": baseline.existing,
+            "new": baseline.new,
+            "stale": baseline.stale,
+            "refreshed": baseline.refreshed,
+        });
+    }
+    report["suppressions"] = json!({
+        "directives": suppression.directives,
+        "malformed": suppression.malformed,
+        "unknown_rules": suppression.unknown_rules,
+        "suppressed_findings": diagnostics.iter().filter(|entry| entry.diagnostic.is_suppressed()).count(),
+    });
     report
+}
+
+fn json_rule(rule: &bbtidy::LintRule) -> Value {
+    json!({
+        "id": rule.id(),
+        "name": rule.name(),
+        "description": rule.description(),
+        "severity": rule.severity().to_string(),
+        "fixable": rule.fixable(),
+        "profiles": rule.profiles().iter().map(ToString::to_string).collect::<Vec<_>>(),
+    })
 }
 
 fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
@@ -1191,12 +1746,17 @@ fn semantic_summary(analysis: &SemanticLintAnalysis) -> Value {
 
 fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
     let diagnostic = &entry.diagnostic;
+    let rule = lint_rules()
+        .iter()
+        .find(|rule| rule.id() == diagnostic.rule_id());
     json!({
         "path": entry.label,
         "line": diagnostic.line(),
         "column": diagnostic.column(),
         "severity": diagnostic.severity().to_string(),
         "rule_id": diagnostic.rule_id(),
+        "rule_description": rule.map(|rule| rule.description()),
+        "origin": if diagnostic.rule_id() == "BBT019" { "authoritative" } else { "static" },
         "message": diagnostic.message(),
         "end_line": diagnostic.end_line(),
         "end_column": diagnostic.end_column(),
@@ -1206,6 +1766,12 @@ fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
         },
         "help": diagnostic.help(),
         "fixable": diagnostic.is_fixable(),
+        "suppressed": diagnostic.is_suppressed(),
+        "suppression_reason": diagnostic.suppression_reason(),
+        "baseline": match entry.baseline_status {
+            BaselineFindingStatus::New => "new",
+            BaselineFindingStatus::Existing => "existing",
+        },
         "fixes": diagnostic.fixes().iter().map(|fix| json!({
             "start_byte": fix.range().start(),
             "end_byte": fix.range().end(),
@@ -1216,8 +1782,11 @@ fn json_diagnostic(entry: &ReportedDiagnostic) -> Value {
 }
 
 fn sarif_report(
+    profile: LintProfile,
     diagnostics: &[ReportedDiagnostic],
     applied_fixes: &[AppliedFixSummary],
+    baseline: Option<&BaselineSummary>,
+    suppression: LintSuppressionSummary,
     semantic_report: Option<&SemanticLintAnalysis>,
     execution: Option<&BitBakeExecutionStats>,
 ) -> Value {
@@ -1229,7 +1798,11 @@ fn sarif_report(
                 "name": rule.name(),
                 "shortDescription": {"text": rule.description()},
                 "defaultConfiguration": {"level": sarif_level(rule.severity())},
-                "properties": {"fixable": rule.fixable()},
+                "properties": {
+                    "fixable": rule.fixable(),
+                    "profiles": rule.profiles().iter().map(ToString::to_string).collect::<Vec<_>>(),
+                },
+                "helpUri": format!("https://github.com/jorisguex/bbtidy/blob/main/README.md#{}", rule.id().to_lowercase()),
             })
         })
         .collect::<Vec<_>>();
@@ -1244,6 +1817,25 @@ fn sarif_report(
             ]);
             if let Some(help) = diagnostic.help() {
                 properties.insert("help".to_owned(), json!(help));
+            }
+            properties.insert("suppressed".to_owned(), json!(diagnostic.is_suppressed()));
+            properties.insert(
+                "origin".to_owned(),
+                json!(if diagnostic.rule_id() == "BBT019" {
+                    "authoritative"
+                } else {
+                    "static"
+                }),
+            );
+            properties.insert(
+                "baselineStatus".to_owned(),
+                json!(match entry.baseline_status {
+                    BaselineFindingStatus::New => "new",
+                    BaselineFindingStatus::Existing => "existing",
+                }),
+            );
+            if let Some(reason) = diagnostic.suppression_reason() {
+                properties.insert("suppressionReason".to_owned(), json!(reason));
             }
             json!({
                 "ruleId": diagnostic.rule_id(),
@@ -1289,6 +1881,7 @@ fn sarif_report(
                     "name": "bbtidy",
                     "version": env!("CARGO_PKG_VERSION"),
                     "informationUri": "https://github.com/jorisguex/bbtidy",
+                    "properties": {"profile": profile.to_string(), "catalogVersion": 1},
                     "rules": rules,
                 },
             },
@@ -1305,6 +1898,22 @@ fn sarif_report(
     if let Some(execution) = execution {
         report["runs"][0]["properties"]["execution"] = json!(execution);
     }
+    if let Some(baseline) = baseline {
+        report["runs"][0]["properties"]["baseline"] = json!({
+            "path": baseline.path,
+            "profile": baseline.profile,
+            "existing": baseline.existing,
+            "new": baseline.new,
+            "stale": baseline.stale,
+            "refreshed": baseline.refreshed,
+        });
+    }
+    report["runs"][0]["properties"]["suppressions"] = json!({
+        "directives": suppression.directives,
+        "malformed": suppression.malformed,
+        "unknownRules": suppression.unknown_rules,
+        "suppressedFindings": diagnostics.iter().filter(|entry| entry.diagnostic.is_suppressed()).count(),
+    });
     report
 }
 
