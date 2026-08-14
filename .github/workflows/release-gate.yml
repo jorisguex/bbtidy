@@ -136,6 +136,12 @@ jobs:
           python3-git python3-jinja2 python3-pexpect python3-subunit socat
           texinfo zstd &&
           sudo locale-gen en_US.UTF-8
+      - name: Allow BitBake user namespaces on Ubuntu 24.04
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          if sysctl -n kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
       - name: Build bbtidy
         run: cargo build --locked --release
       - name: Run complete supported compatibility corpus
