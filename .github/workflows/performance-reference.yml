@@ -164,6 +164,7 @@ jobs:
             })"
             test -f "$build_dir/conf/bblayers.conf"
             test -x "$bitbake"
+            export PATH="$(dirname "$bitbake"):$PATH"
             for run in 1 2 3; do
               warm_build_dir="$RUNNER_TEMP/bbtidy-warm-build-$run"
               cp -a "$build_dir" "$warm_build_dir"
