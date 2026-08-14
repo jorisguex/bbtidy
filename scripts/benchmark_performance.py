@@ -95,6 +95,10 @@ class ProcessSampler:
         self._thread = threading.Thread(target=self._sample, daemon=True)
 
     def start(self) -> None:
+        # Capture the process before starting the polling thread.  Very short
+        # commands can otherwise exit before the first scheduled poll, which
+        # would record an impossible zero RSS value on Linux.
+        self._sample_once()
         self._thread.start()
 
     def stop(self) -> None:

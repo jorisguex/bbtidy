@@ -185,6 +185,8 @@ class PerformanceTests(unittest.TestCase):
         self.assertGreaterEqual(measured["stdout_bytes"], 0)
         self.assertGreaterEqual(measured["stderr_bytes"], 0)
         self.assertGreaterEqual(measured["peak_rss_bytes"], 0)
+        if sys.platform == "linux":
+            self.assertGreater(measured["peak_rss_bytes"], 0)
 
     @unittest.skipUnless(sys.platform == "linux", "the process-tree RSS contract is Linux-specific")
     def test_sequential_rss_samples_do_not_inherit_a_previous_peak(self):
