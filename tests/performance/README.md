@@ -17,9 +17,9 @@ Ubuntu 24.04 is the reference image. Every record also captures `ImageOS`,
 `ImageVersion`, architecture, CPU, logical cores, RAM, kernel, Rust, and
 BitBake identities when available.
 
-The three-run campaign is dispatched by
-`.github/workflows/performance-reference.yml`; its raw artifacts are the only
-inputs intended for baseline promotion.
+The three-run campaign is dispatched by, or automatically runs on the
+candidate branch through, `.github/workflows/performance-reference.yml`; its
+raw artifacts are the only inputs intended for baseline promotion.
 
 The campaign review can also be reproduced locally after downloading the raw
 artifacts:
