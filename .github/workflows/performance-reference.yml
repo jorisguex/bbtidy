@@ -159,7 +159,7 @@ jobs:
           matches = [path for path in candidates if path.is_file()]
           if len(matches) != 1:
               raise SystemExit("expected exactly one BitBake executable")
-          print(matches[0])
+          print(matches[0].resolve())
           PY
             })"
             test -f "$build_dir/conf/bblayers.conf"
