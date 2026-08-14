@@ -76,6 +76,37 @@ class WorkflowPinTests(unittest.TestCase):
             errors = check_workflows.validate_release_topology(temporary)
         self.assertTrue(any("exactly one workflow" in error for error in errors))
 
+    def test_release_topology_requires_layer_scoped_supported_benchmarks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            source = PROJECT_ROOT / ".github" / "workflows"
+            for name in (
+                "release.yml",
+                "release-gate.yml",
+                "publish-crates.yml",
+                "publish-pypi.yml",
+            ):
+                text = (source / name).read_text(encoding="utf-8")
+                if name == "release-gate.yml":
+                    lines = []
+                    for line in text.splitlines(keepends=True):
+                        if "export BBTIDY_PERFORMANCE_SOURCE_ROOT" in line:
+                            continue
+                        lines.append(
+                            line.replace(
+                                '"$performance_root"',
+                                "compatibility-workspace/formatted",
+                            )
+                        )
+                    text = "".join(lines)
+                (temporary / name).write_text(text, encoding="utf-8")
+
+            errors = check_workflows.validate_release_topology(temporary)
+
+        self.assertTrue(
+            any("manifest-declared layers" in error for error in errors)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -137,6 +137,13 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
         errors.append("supported compatibility cannot skip BitBake")
     if "tests/upstream-corpora/community-master.json" not in community:
         errors.append("blocking compatibility must include pinned-community")
+    if (
+        "BBTIDY_PERFORMANCE_SOURCE_ROOT" not in supported
+        or '"$performance_root"' not in supported
+    ):
+        errors.append(
+            "supported performance evidence must benchmark manifest-declared layers"
+        )
     for job in ("supported-compatibility", "pinned-community"):
         if "continue-on-error" in _job_block(gate, job):
             errors.append("blocking job {} cannot continue-on-error".format(job))

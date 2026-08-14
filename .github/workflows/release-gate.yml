@@ -157,9 +157,31 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p performance-evidence
+          performance_root="$RUNNER_TEMP/bbtidy-performance-source"
+          mkdir -p "$performance_root"
+          export BBTIDY_PERFORMANCE_MANIFEST="${{ matrix.manifest }}"
+          export BBTIDY_PERFORMANCE_SOURCE_ROOT="$performance_root"
+          python3 - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          formatted_root = Path("compatibility-workspace/formatted")
+          performance_root = Path(os.environ["BBTIDY_PERFORMANCE_SOURCE_ROOT"])
+          manifest_path = Path(os.environ["BBTIDY_PERFORMANCE_MANIFEST"])
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          for layer in manifest["layers"]:
+              source = formatted_root / layer["repository"] / layer["path"]
+              destination = performance_root / layer["repository"] / layer["path"]
+              if not source.is_dir():
+                  raise SystemExit(f"missing formatted layer: {source}")
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copytree(source, destination, symlinks=True)
+          PY
           python3 scripts/benchmark_performance.py \
             --bbtidy target/release/bbtidy \
-            --source-root compatibility-workspace/formatted \
+            --source-root "$performance_root" \
             --operation json \
             --mode offline \
             --repetitions 3 \
