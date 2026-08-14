@@ -364,6 +364,11 @@ def _read_json_output(stdout: bytes) -> dict[str, Any] | None:
         return None
 
 
+def _failure_excerpt(value: bytes, limit: int = 4096) -> str:
+    """Retain a bounded diagnostic for failed raw samples."""
+    return value[:limit].decode("utf-8", errors="replace")
+
+
 def measure_cli(
     bbtidy: Path,
     source_root: Path,
@@ -499,6 +504,8 @@ def measure_cli(
             sample_result = {
                 key: value for key, value in prime.items() if key not in {"stdout", "stderr"}
             }
+            sample_result["stdout_excerpt"] = _failure_excerpt(prime["stdout"])
+            sample_result["stderr_excerpt"] = _failure_excerpt(prime["stderr"])
             samples.append({"result": sample_result, "bbtidy": {}})
             return {
                 "samples": samples,
@@ -547,6 +554,9 @@ def measure_cli(
             for key, value in result.items()
             if key not in {"stdout", "stderr"}
         }
+        if result["status"] != "success":
+            sample_result["stdout_excerpt"] = _failure_excerpt(result["stdout"])
+            sample_result["stderr_excerpt"] = _failure_excerpt(result["stderr"])
         sample_result["bbtidy"] = {
             "files_discovered": files_discovered,
             "files_parsed": files_discovered if result["status"] == "success" else 0,
