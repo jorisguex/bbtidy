@@ -107,6 +107,30 @@ class WorkflowPinTests(unittest.TestCase):
             any("manifest-declared layers" in error for error in errors)
         )
 
+    def test_release_topology_requires_deterministic_bitbake_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            source = PROJECT_ROOT / ".github" / "workflows"
+            for name in (
+                "release.yml",
+                "release-gate.yml",
+                "publish-crates.yml",
+                "publish-pypi.yml",
+            ):
+                text = (source / name).read_text(encoding="utf-8")
+                if name == "release-gate.yml":
+                    text = text.replace(
+                        '          build_dir="compatibility-workspace/build-original"\n',
+                        "",
+                    )
+                (temporary / name).write_text(text, encoding="utf-8")
+
+            errors = check_workflows.validate_release_topology(temporary)
+
+        self.assertTrue(
+            any("deterministic compatibility paths" in error for error in errors)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

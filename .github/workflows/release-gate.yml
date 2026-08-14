@@ -188,10 +188,37 @@ jobs:
             --runner-class github-ubuntu-24.04-x86_64 \
             --workload "${{ matrix.performance_workload }}" \
             --output "performance-evidence/${{ matrix.performance_workload }}.json"
-          build_dir="$(find compatibility-workspace -type f -path '*/build-original/conf/bblayers.conf' -print -quit | sed 's#/conf/bblayers.conf##')"
-          bitbake="$(find compatibility-workspace -type f -path '*/bitbake/bin/bitbake' -print -quit)"
-          test -n "$build_dir"
-          test -n "$bitbake"
+          build_dir="compatibility-workspace/build-original"
+          bitbake="$({
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path(os.environ["BBTIDY_PERFORMANCE_MANIFEST"]).read_text(
+                  encoding="utf-8"
+              )
+          )
+          formatted_root = Path("compatibility-workspace/formatted")
+          candidates = [
+              formatted_root / repository["name"] / suffix
+              for repository in manifest["repositories"]
+              for suffix in ("bin/bitbake", "bitbake/bin/bitbake")
+          ]
+          matches = [path for path in candidates if path.is_file()]
+          if len(matches) != 1:
+              raise SystemExit(
+                  "expected exactly one BitBake executable, found: "
+                  + ", ".join(str(path) for path in matches)
+              )
+          print(matches[0])
+          PY
+          })"
+          test -f "$build_dir/conf/bblayers.conf"
+          test -x "$bitbake"
+          echo "Using generated build directory: $build_dir"
+          echo "Using pinned BitBake executable: $bitbake"
           cold_build_dir="$RUNNER_TEMP/bbtidy-cold-build"
           cp -a "$build_dir" "$cold_build_dir"
           python3 scripts/benchmark_performance.py \

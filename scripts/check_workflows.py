@@ -144,6 +144,14 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
         errors.append(
             "supported performance evidence must benchmark manifest-declared layers"
         )
+    if (
+        'build_dir="compatibility-workspace/build-original"' not in supported
+        or 'bitbake/bin/bitbake' not in supported
+        or 'test -f "$build_dir/conf/bblayers.conf"' not in supported
+    ):
+        errors.append(
+            "supported performance evidence must use deterministic compatibility paths"
+        )
     for job in ("supported-compatibility", "pinned-community"):
         if "continue-on-error" in _job_block(gate, job):
             errors.append("blocking job {} cannot continue-on-error".format(job))
