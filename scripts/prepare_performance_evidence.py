@@ -10,9 +10,11 @@ from pathlib import Path
 
 try:
     from scripts.check_performance_budget import BudgetError, compare_record, load_budgets
+    from scripts.performance_baselines import BaselineError, load_baselines
     from scripts.performance_schema import PerformanceSchemaError, load_evidence
 except ModuleNotFoundError:  # direct script execution
     from check_performance_budget import BudgetError, compare_record, load_budgets  # type: ignore
+    from performance_baselines import BaselineError, load_baselines  # type: ignore
     from performance_schema import PerformanceSchemaError, load_evidence  # type: ignore
 
 
@@ -31,6 +33,7 @@ def consolidate(
     source_commit: str,
     version: str,
     runner_class: str,
+    baseline_path: Path | None = None,
 ) -> dict:
     budget = load_budgets(budget_path)
     if budget["runner_class"] != runner_class:
@@ -39,6 +42,12 @@ def consolidate(
         raise ValueError("at least one performance record is required")
     output.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(budget_path, output / "budgets.json")
+    baselines = None
+    if baseline_path is not None:
+        baselines = load_baselines(baseline_path)
+        if baselines["runner"]["class"] != runner_class:
+            raise ValueError("baseline runner class does not match the checked-in budget policy")
+        shutil.copyfile(baseline_path, output / "baselines.json")
     reports = []
     for source in records:
         evidence = load_evidence(source)
@@ -57,7 +66,7 @@ def consolidate(
                 raise ValueError(f"{source} has the wrong bbtidy version")
             if record["summary"]["status"] != "success":
                 raise ValueError(f"{source} contains an unsuccessful performance sample")
-            comparison = compare_record(record, budget)
+            comparison = compare_record(record, budget, baselines, strict_baseline=baselines is not None)
             reports.append(
                 {"path": relative, "workload": record["workload"], "comparison": comparison}
             )
@@ -71,6 +80,7 @@ def consolidate(
         "source_commit": source_commit,
         "version": version,
         "runner_class": runner_class,
+        "baseline": "baselines.json" if baselines is not None else None,
         "records": sorted({report["path"] for report in reports}),
     }
     summary = {
@@ -97,6 +107,7 @@ def main() -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--runner-class", required=True)
+    parser.add_argument("--baseline", type=Path)
     args = parser.parse_args()
     try:
         consolidate(
@@ -106,8 +117,9 @@ def main() -> int:
             args.source_commit,
             args.version,
             args.runner_class,
+            args.baseline,
         )
-    except (BudgetError, PerformanceSchemaError, OSError, ValueError) as error:
+    except (BaselineError, BudgetError, PerformanceSchemaError, OSError, ValueError) as error:
         parser.error(str(error))
     return 0
 

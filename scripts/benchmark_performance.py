@@ -169,10 +169,14 @@ def run_command(
     sampler.stop()
     after = resource.getrusage(resource.RUSAGE_CHILDREN)
     wall_ms = (time.perf_counter() - started) * 1000
-    max_rss = after.ru_maxrss
-    if sys.platform != "darwin":
-        max_rss *= 1024
-    sampler.peak_rss = max(sampler.peak_rss, int(max_rss))
+    # Linux RSS is sampled from the complete process tree.  ru_maxrss is a
+    # process-wide cumulative maximum for RUSAGE_CHILDREN, so merging it here
+    # would allow an earlier, unrelated command to inflate this sample.
+    if sys.platform != "linux":
+        max_rss = after.ru_maxrss
+        if sys.platform != "darwin":
+            max_rss *= 1024
+        sampler.peak_rss = max(sampler.peak_rss, int(max_rss))
     if sys.platform == "linux":
         ticks_per_second = os.sysconf("SC_CLK_TCK")
         user_cpu_ms = sampler.cpu_ticks / ticks_per_second * 1000
@@ -231,9 +235,31 @@ def _source_commit() -> str | None:
     return result.stdout.strip() or None
 
 
+def _command_version(command: Path | None, arguments: list[str]) -> str | None:
+    if command is None:
+        return None
+    try:
+        result = subprocess.run(
+            [str(command), *arguments],
+            cwd=PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() or result.stderr.strip() or None
+
+
+def _rust_version() -> str | None:
+    return _command_version(Path("rustc"), ["--version"])
+
+
 def runner_metadata(
     runner_class: str | None = None,
     bbtidy: Path | None = None,
+    bitbake: Path | None = None,
 ) -> dict[str, Any]:
     memory_bytes = 0
     if sys.platform == "linux":
@@ -244,15 +270,23 @@ def runner_metadata(
         except (OSError, ValueError):
             pass
     detected = f"{platform.system().lower()}-{platform.machine().lower()}"
+    architecture = os.environ.get("RUNNER_ARCH") or platform.machine()
+    architecture = {
+        "X64": "x86_64",
+        "ARM64": "aarch64",
+    }.get(architecture.upper(), architecture)
     return {
         "class": runner_class or detected,
         "os": platform.platform(),
-        "architecture": platform.machine(),
+        "image_os": os.environ.get("ImageOS"),
+        "image_version": os.environ.get("ImageVersion"),
+        "kernel": platform.release(),
+        "architecture": architecture,
         "cpu": platform.processor() or platform.machine(),
         "logical_cores": os.cpu_count() or 1,
         "memory_bytes": memory_bytes,
-        "rust": "unknown",
-        "bitbake": None,
+        "rust": _rust_version() or "unknown",
+        "bitbake": _command_version(bitbake, ["--version"]),
         "bbtidy_version": _binary_version(bbtidy),
         "source_commit": _source_commit(),
         "resource_backends": {
@@ -302,7 +336,15 @@ def _source_for_size(size: int) -> str:
 
 
 def synthetic_cases() -> list[tuple[str, str]]:
-    cases = [(f"recipe-{size // 1024}k", _source_for_size(size)) for size in (1024, 10 * 1024, 100 * 1024, 1024 * 1024)]
+    cases = [
+        (name, _source_for_size(size))
+        for name, size in (
+            ("recipe-1k", 1024),
+            ("recipe-10k", 10 * 1024),
+            ("recipe-100k", 100 * 1024),
+            ("recipe-1m", 1024 * 1024),
+        )
+    ]
     continued = "SRC_URI = \" \\\n" + "".join(f" file://entry-{index}.patch \\\n" for index in range(1000)) + "\"\n"
     bodies = "do_compile() {\n" + "    echo benchmark\n" * 10000 + "}\n"
     return cases + [("continued-1000", continued), ("shell-body-1m", bodies[:1024 * 1024])]
@@ -329,47 +371,64 @@ def measure_cli(
     timeout_seconds: float | None = None,
     bitbake_command: Path | None = None,
 ) -> dict[str, Any]:
-    if operation == "format-check":
-        command = [str(bbtidy), "--no-config", "format", "--check", str(source_root)]
-    elif operation == "format":
-        command = [str(bbtidy), "--no-config", "format", "--write", str(source_root)]
-    elif operation in {"lint", "json", "sarif"}:
-        output = "json" if operation == "json" else "sarif" if operation == "sarif" else "text"
-        command = [str(bbtidy), "--no-config", "check", "--profile", profile, "--fail-on", "never", "--output", output, str(source_root)]
-    elif operation in {"bitbake", "semantic"}:
-        if bitbake_command is None:
-            raise ValueError("--bitbake-command is required for BitBake-backed operations")
-        if operation == "bitbake":
-            command = [
+    def command_for(root: Path) -> list[str]:
+        if operation == "format-check":
+            return [str(bbtidy), "--no-config", "format", "--check", str(root)]
+        if operation in {"format", "format-write"}:
+            return [str(bbtidy), "--no-config", "format", "--write", str(root)]
+        if operation in {"lint", "json", "sarif"}:
+            output = (
+                "json" if operation == "json" else "sarif" if operation == "sarif" else "text"
+            )
+            return [
                 str(bbtidy),
                 "--no-config",
                 "check",
-                "--workspace",
-                str(source_root),
-                "--bitbake",
-                str(bitbake_command),
+                "--profile",
+                profile,
                 "--fail-on",
                 "never",
                 "--output",
-                "json",
+                output,
+                str(root),
             ]
-        else:
-            command = [
-                str(bbtidy),
-                "--no-config",
-                "semantic",
-                "--build-dir",
-                str(source_root),
-                "--bitbake",
-                str(bitbake_command),
-                "--full",
-                "--output",
-                "json",
+        if operation in {"bitbake", "semantic"}:
+            if bitbake_command is None:
+                raise ValueError("--bitbake-command is required for BitBake-backed operations")
+            if operation == "bitbake":
+                return [
+                    str(bbtidy),
+                    "--no-config",
+                    "check",
+                    "--workspace",
+                    str(root),
+                    "--bitbake",
+                    str(bitbake_command),
+                    "--fail-on",
+                    "never",
+                    "--output",
+                    "json",
+                ]
+            return [
+                str(bbtidy), "--no-config", "semantic", "--build-dir", str(root),
+                "--bitbake", str(bitbake_command), "--full", "--output", "json",
             ]
-    else:
+        raise ValueError(f"unsupported offline operation: {operation}")
+
+    if operation not in {
+        "format-check",
+        "format",
+        "format-write",
+        "lint",
+        "json",
+        "sarif",
+        "bitbake",
+        "semantic",
+    }:
         raise ValueError(f"unsupported offline operation: {operation}")
     samples = []
     last_output: dict[str, Any] | None = None
+    preparation: dict[str, Any] = {}
     phase_measurement: dict[str, Any] = {
         "config_ms": 0,
         "exclusion_ms": 0,
@@ -403,7 +462,11 @@ def measure_cli(
         timeout_seconds=timeout_seconds,
     )
     phase_measurement["parse_ms"] = syntax_result["wall_ms"]
-    syntax_output = _read_json_output(syntax_result["stdout"]) if syntax_result["status"] == "success" else None
+    syntax_output = (
+        _read_json_output(syntax_result["stdout"])
+        if syntax_result["status"] == "success"
+        else None
+    )
     structural = {
         key: syntax_output.get(key, 0)
         for key in (
@@ -418,12 +481,51 @@ def measure_cli(
     total_wall_ms = 0.0
     target_repetitions = max(1, repetitions)
     maximum_repetitions = max(target_repetitions, 256)
+
+    # Warm BitBake measurements include one unrecorded priming invocation.
+    # The recorded samples therefore represent repeated execution over the
+    # already-primed workspace, rather than mixing priming cost into the
+    # reference statistic.
+    if mode == "warm" and operation in {"bitbake", "semantic"}:
+        prime = run_command(command_for(source_root), timeout_seconds=timeout_seconds)
+        preparation["warm_prime"] = {
+            key: value for key, value in prime.items() if key not in {"stdout", "stderr"}
+        }
+        if prime["status"] != "success":
+            sample_result = {
+                key: value for key, value in prime.items() if key not in {"stdout", "stderr"}
+            }
+            samples.append({"result": sample_result, "bbtidy": {}})
+            return {
+                "samples": samples,
+                "mode": mode,
+                "phase_timings": phase_measurement,
+                "structural": structural,
+                "preparation": preparation,
+            }
+
     while len(samples) < target_repetitions or (
         minimum_duration_ms > 0 and total_wall_ms < minimum_duration_ms
     ):
         if len(samples) >= maximum_repetitions:
             break
-        result = run_command(command, timeout_seconds=timeout_seconds)
+        isolated_temporary = None
+        sample_root = source_root
+        isolated = (
+            operation in {"format", "format-write"}
+            or (operation in {"bitbake", "semantic"} and mode == "cold")
+        )
+        if isolated:
+            isolated_temporary = tempfile.TemporaryDirectory(
+                prefix="bbtidy-performance-sample-"
+            )
+            sample_root = Path(isolated_temporary.name) / source_root.name
+            shutil.copytree(source_root, sample_root, symlinks=True)
+        try:
+            result = run_command(command_for(sample_root), timeout_seconds=timeout_seconds)
+        finally:
+            if isolated_temporary is not None:
+                isolated_temporary.cleanup()
         total_wall_ms += result["wall_ms"]
         last_output = _read_json_output(result["stdout"])
         files_discovered = sum(
@@ -460,6 +562,7 @@ def measure_cli(
         "mode": mode,
         "phase_timings": phase_measurement,
         "structural": structural,
+        "preparation": preparation,
     }
 
 
@@ -470,6 +573,7 @@ def build_record(
     runner_class: str | None = None,
     corpus: dict[str, Any] | None = None,
     bbtidy: Path | None = None,
+    bitbake_command: Path | None = None,
 ) -> dict[str, Any]:
     record_samples = []
     for sample in samples:
@@ -478,7 +582,7 @@ def build_record(
         else:
             record_samples.append(sample)
     summary = aggregate_results(record_samples)
-    runner = runner_metadata(runner_class, bbtidy)
+    runner = runner_metadata(runner_class, bbtidy, bitbake_command)
     counters = {}
     nested_counters: dict[str, dict[str, Any]] = {}
     phases = [
@@ -490,6 +594,11 @@ def build_record(
         sample["structural"]
         for sample in samples
         if isinstance(sample.get("structural"), dict)
+    ]
+    preparations = [
+        sample["preparation"]
+        for sample in samples
+        if isinstance(sample.get("preparation"), dict)
     ]
     for sample in record_samples:
         for key, value in sample.get("bbtidy", {}).items():
@@ -554,7 +663,13 @@ def build_record(
             ),
             {},
         ),
-        "aggregation": {"method": "median", "p90": "nearest-rank"},
+        "aggregation": {
+            "method": "selected-statistics",
+            "wall_ms": "median",
+            "peak_rss_bytes": "p90",
+            "p90": "nearest-rank",
+        },
+        "preparation": preparations[0] if preparations else {},
     }
 
 
@@ -579,12 +694,20 @@ def run_synthetic(args: argparse.Namespace) -> list[dict[str, Any]]:
             )
             records.append(
                 build_record(
-                    name + "-" + args.operation,
+                    "synthetic."
+                    + name
+                    + "."
+                    + (
+                        "format-write"
+                        if args.operation in {"format", "format-write"}
+                        else args.operation
+                    ),
                     args.mode,
                     [measured],
                     args.runner_class,
                     corpus_metadata(root),
                     Path(args.bbtidy),
+                    args.bitbake_command,
                 )
             )
     return records
@@ -596,16 +719,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--operation",
-        choices=("format-check", "format", "lint", "json", "sarif", "bitbake", "semantic"),
+        choices=(
+            "format-check",
+            "format",
+            "format-write",
+            "lint",
+            "json",
+            "sarif",
+            "bitbake",
+            "semantic",
+        ),
         default="json",
     )
     parser.add_argument("--mode", choices=("cold", "warm", "offline"), default="offline")
-    parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--repetitions", type=int, default=7)
     parser.add_argument("--profile", choices=("essential", "recommended", "strict", "all"), default="all")
     parser.add_argument("--runner-class")
     parser.add_argument("--workload")
     parser.add_argument("--bitbake-command", type=Path)
-    parser.add_argument("--minimum-duration-ms", type=float, default=0)
+    parser.add_argument("--minimum-duration-ms", type=float, default=1000)
     parser.add_argument("--timeout-seconds", type=float)
     parser.add_argument("--synthetic", action="store_true")
     parser.add_argument("--source-root", type=Path)
@@ -621,7 +753,21 @@ def main() -> int:
         records = run_synthetic(args)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
-            json.dumps({"schema": 1, "kind": "bbtidy-performance-suite", "runner": runner_metadata(args.runner_class, Path(args.bbtidy)), "records": records}, indent=2, sort_keys=True) + "\n",
+            json.dumps(
+                {
+                    "schema": 1,
+                    "kind": "bbtidy-performance-suite",
+                    "runner": runner_metadata(
+                        args.runner_class,
+                        Path(args.bbtidy),
+                        args.bitbake_command,
+                    ),
+                    "records": records,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
             encoding="utf-8",
         )
         return 0 if all(record["summary"]["status"] == "success" for record in records) else 1
@@ -645,6 +791,7 @@ def main() -> int:
         args.runner_class,
         corpus_metadata(args.source_root),
         args.bbtidy,
+        args.bitbake_command,
     )
     write_record(args.output, record)
     return 0 if record["summary"]["status"] == "success" else 1

@@ -103,7 +103,7 @@ jobs:
   supported-compatibility:
     name: ${{ matrix.name }}
     needs: validate-source
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -184,7 +184,7 @@ jobs:
             --source-root "$performance_root" \
             --operation json \
             --mode offline \
-            --repetitions 3 \
+            --repetitions 5 \
             --runner-class github-ubuntu-24.04-x86_64 \
             --workload "${{ matrix.performance_workload }}" \
             --output "performance-evidence/${{ matrix.performance_workload }}.json"
@@ -237,7 +237,7 @@ jobs:
             --source-root "$cold_build_dir" \
             --operation bitbake \
             --mode warm \
-            --repetitions 2 \
+            --repetitions 5 \
             --runner-class github-ubuntu-24.04-x86_64 \
             --workload "${{ matrix.bitbake_prefix }}-bitbake-warm" \
             --bitbake-command "$bitbake" \
@@ -265,7 +265,7 @@ jobs:
   pinned-community:
     name: Pinned community lint gate
     needs: validate-source
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Check out exact source commit
@@ -299,7 +299,7 @@ jobs:
           --source-root compatibility-workspace/formatted
           --operation json
           --mode offline
-          --repetitions 3
+          --repetitions 5
           --runner-class github-ubuntu-24.04-x86_64
           --workload yocto-community-offline
           --output performance-community.json
@@ -336,8 +336,8 @@ jobs:
             --synthetic \
             --operation json \
             --mode offline \
-            --repetitions 3 \
-            --minimum-duration-ms 100 \
+            --repetitions 7 \
+            --minimum-duration-ms 1000 \
             --runner-class github-ubuntu-24.04-x86_64 \
             --output synthetic-performance.json
       - name: Consolidate and validate performance evidence
@@ -354,6 +354,7 @@ jobs:
           python3 scripts/prepare_performance_evidence.py \
             --output performance-release \
             --budget tests/performance/budgets.json \
+            --baseline tests/performance/baselines/github-ubuntu-24.04-x86_64.json \
             --source-commit "$SOURCE_COMMIT" \
             --version "$RELEASE_VERSION" \
             --runner-class github-ubuntu-24.04-x86_64 \
@@ -408,6 +409,7 @@ jobs:
           --version "$RELEASE_VERSION"
           --performance-root performance-release
           --performance-budget tests/performance/budgets.json
+          --performance-baseline tests/performance/baselines/github-ubuntu-24.04-x86_64.json
           --require-performance
           --output release-evidence.tar.gz
           --checksums release-evidence.sha256

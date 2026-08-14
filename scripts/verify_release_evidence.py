@@ -24,6 +24,7 @@ try:
         load_lint_baseline,
     )
     from scripts.check_performance_budget import BudgetError, compare_record, load_budgets
+    from scripts.performance_baselines import BaselineError, load_baselines, missing_required_workloads
     from scripts.performance_schema import PerformanceSchemaError, load_evidence
 except ImportError:  # pragma: no cover - direct script execution
     from check_upstream_corpus import load_manifest  # type: ignore
@@ -33,6 +34,7 @@ except ImportError:  # pragma: no cover - direct script execution
         load_lint_baseline,
     )
     from check_performance_budget import BudgetError, compare_record, load_budgets  # type: ignore
+    from performance_baselines import BaselineError, load_baselines, missing_required_workloads  # type: ignore
     from performance_schema import PerformanceSchemaError, load_evidence  # type: ignore
 
 
@@ -184,7 +186,9 @@ def _assert_lint(bundle, manifest):
                 raise EvidenceError("lint fingerprint does not match checked-in baseline: {}".format(field))
 
 
-def validate_performance_evidence(performance_root, budget_path, source_commit, version):
+def validate_performance_evidence(
+    performance_root, budget_path, source_commit, version, baseline_path=None
+):
     """Validate the consolidated performance evidence alongside release evidence."""
 
     root = Path(performance_root).resolve()
@@ -194,6 +198,8 @@ def validate_performance_evidence(performance_root, budget_path, source_commit, 
         if path.is_file():
             _safe_relative(path.relative_to(root).as_posix(), "performance member")
     required = ("manifest.json", "budgets.json", "summary.json")
+    if baseline_path is not None:
+        required += ("baselines.json",)
     for relative in required:
         _required_file(root, relative)
     manifest = _json(root / "manifest.json")
@@ -204,6 +210,21 @@ def validate_performance_evidence(performance_root, budget_path, source_commit, 
     budget = load_budgets(root / "budgets.json")
     if Path(budget_path).read_bytes() != (root / "budgets.json").read_bytes():
         raise EvidenceError("performance evidence does not contain the checked-in budget policy")
+    baselines = None
+    if baseline_path is not None:
+        if manifest.get("baseline") != "baselines.json":
+            raise EvidenceError("performance manifest does not identify the checked-in baseline manifest")
+        try:
+            baselines = load_baselines(root / "baselines.json")
+        except (BaselineError, OSError, UnicodeError, ValueError) as error:
+            raise EvidenceError("invalid performance baseline manifest: {}".format(error)) from error
+        if Path(baseline_path).read_bytes() != (root / "baselines.json").read_bytes():
+            raise EvidenceError("performance evidence does not contain the checked-in baseline manifest")
+        if baselines["runner"]["class"] != budget["runner_class"]:
+            raise EvidenceError("performance baseline runner class does not match the budget policy")
+        missing = missing_required_workloads(baselines, budget)
+        if missing:
+            raise EvidenceError("performance baseline is missing required workloads: {}".format(", ".join(missing)))
     summary = _json(root / "summary.json")
     if summary.get("schema") != 1 or summary.get("status") != "passed":
         raise EvidenceError("performance summary is not passed")
@@ -233,8 +254,8 @@ def validate_performance_evidence(performance_root, budget_path, source_commit, 
             if record["summary"]["status"] != "success":
                 raise EvidenceError("performance record did not complete successfully")
             try:
-                comparison = compare_record(record, budget)
-            except (BudgetError, KeyError, TypeError, ValueError) as error:
+                comparison = compare_record(record, budget, baselines, strict_baseline=baselines is not None)
+            except (BaselineError, BudgetError, KeyError, TypeError, ValueError) as error:
                 raise EvidenceError("performance budget comparison failed: {}".format(error)) from error
             if comparison["failures"]:
                 raise EvidenceError("performance budget has blocking failures")
@@ -436,6 +457,7 @@ def verify_release_evidence(
     performance_root=None,
     performance_budget=None,
     require_performance=False,
+    performance_baseline=None,
 ):
     """Verify all blocking corpora exactly once and optionally archive them."""
 
@@ -490,8 +512,10 @@ def verify_release_evidence(
     if performance_root is not None:
         if performance_budget is None:
             raise EvidenceError("performance budget path is required with performance evidence")
+        if require_performance and performance_baseline is None:
+            raise EvidenceError("performance baseline path is required with required performance evidence")
         index["performance"] = validate_performance_evidence(
-            performance_root, performance_budget, source_commit, version
+            performance_root, performance_budget, source_commit, version, performance_baseline
         )
     if output is not None:
         if checksums is None:
@@ -516,6 +540,7 @@ def main(argv=None):
     parser.add_argument("--checksums", type=Path)
     parser.add_argument("--performance-root", type=Path)
     parser.add_argument("--performance-budget", type=Path)
+    parser.add_argument("--performance-baseline", type=Path)
     parser.add_argument("--require-performance", action="store_true")
     arguments = parser.parse_args(argv)
     try:
@@ -529,6 +554,7 @@ def main(argv=None):
             arguments.performance_root,
             arguments.performance_budget,
             arguments.require_performance,
+            arguments.performance_baseline,
         )
     except (EvidenceError, OSError, UnicodeError, ValueError) as error:
         print("error: {}".format(error), file=sys.stderr)

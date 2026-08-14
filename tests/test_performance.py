@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.benchmark_performance import run_command
+from scripts.benchmark_performance import measure_cli, run_command
 from scripts.check_performance_budget import (
     BudgetError,
     compare_candidate_to_baseline,
@@ -14,12 +14,15 @@ from scripts.check_performance_budget import (
     update_budget,
 )
 from scripts.prepare_performance_evidence import consolidate
+from scripts.review_performance_campaign import review as review_campaign
 from scripts.performance_schema import (
     PerformanceSchemaError,
     aggregate_results,
     load_evidence,
     validate_record,
 )
+from scripts.performance_baselines import BaselineError, canonical_baseline_bytes, reference_key
+from scripts.promote_performance_baselines import _validate_reference_runner
 
 
 def result(wall_ms=100, status="success"):
@@ -53,6 +56,17 @@ def record(workload="synthetic-scaling", wall_ms=100, runner_class="test-runner"
 
 
 class PerformanceTests(unittest.TestCase):
+    def test_wall_uses_median_and_rss_uses_p90(self):
+        samples = []
+        for wall_ms, rss in zip(range(1, 11), range(10, 20)):
+            measured = result(wall_ms)
+            measured["peak_rss_bytes"] = rss
+            samples.append({"result": measured})
+        aggregate = aggregate_results(samples)
+        self.assertEqual(aggregate["wall_ms"], 5.5)
+        self.assertEqual(aggregate["peak_rss_bytes"], 18)
+        self.assertEqual(aggregate["statistics"]["peak_rss_bytes"], "p90")
+
     def test_schema_aggregates_repetitions_and_rejects_bad_status(self):
         aggregate = aggregate_results([{"result": result(100)}, {"result": result(200)}])
         self.assertEqual(aggregate["wall_ms"], 150)
@@ -72,14 +86,16 @@ class PerformanceTests(unittest.TestCase):
                     "wall_ms": {
                         "baseline": 100,
                         "max_ratio": 1.15,
-                        "min_absolute_regression": 10,
+                        "min_absolute_regression": 50,
                         "blocking": True,
                     }
                 }
             },
         }
         self.assertEqual(compare_record(record(wall_ms=115), budget)["status"], "matched")
-        comparison = compare_record(record(wall_ms=130), budget)
+        self.assertEqual(compare_record(record(wall_ms=114), budget)["status"], "matched")
+        self.assertEqual(compare_record(record(wall_ms=120), budget)["status"], "matched")
+        comparison = compare_record(record(wall_ms=160), budget)
         self.assertEqual(comparison["status"], "failed")
         self.assertEqual(len(comparison["failures"]), 1)
         with self.assertRaises(BudgetError):
@@ -170,6 +186,86 @@ class PerformanceTests(unittest.TestCase):
         self.assertGreaterEqual(measured["stderr_bytes"], 0)
         self.assertGreaterEqual(measured["peak_rss_bytes"], 0)
 
+    @unittest.skipUnless(sys.platform == "linux", "the process-tree RSS contract is Linux-specific")
+    def test_sequential_rss_samples_do_not_inherit_a_previous_peak(self):
+        large = run_command(
+            [
+                sys.executable,
+                "-c",
+                "import time; value=bytearray(96 * 1024 * 1024); value[0]=1; time.sleep(.2)",
+            ]
+        )
+        small = run_command(
+            [sys.executable, "-c", "import time; time.sleep(.2)"]
+        )
+        self.assertGreater(large["peak_rss_bytes"], small["peak_rss_bytes"] * 2)
+
+    def test_format_write_restores_the_fixture_for_every_sample(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "layer"
+            root.mkdir()
+            fixture = root / "recipe.bb"
+            original = 'SUMMARY = "fixture"\n'
+            fixture.write_text(original, encoding="utf-8")
+            fake = Path(directory) / "fake-bbtidy.py"
+            fake.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, pathlib, sys\n"
+                "args = sys.argv[1:]\n"
+                "root = pathlib.Path(args[-1])\n"
+                "if 'syntax-stats' in args:\n"
+                "    print(json.dumps({'files': 1, 'total_nodes': 1, 'structured_nodes': 1, 'trivia_nodes': 0, 'unknown_nodes': 0, 'unknown_bytes': 0}))\n"
+                "elif '--write' in args:\n"
+                "    path = next(root.rglob('*.bb'))\n"
+                "    path.write_text(path.read_text() + '# changed\\n')\n",
+                encoding="utf-8",
+            )
+            fake.chmod(0o755)
+            measured = measure_cli(fake, root, "format-write", "offline", 3)
+            self.assertEqual(len(measured["samples"]), 3)
+            self.assertEqual(fixture.read_text(encoding="utf-8"), original)
+
+    def test_strict_baseline_comparison_rejects_a_missing_or_stale_corpus(self):
+        candidate = record(workload="synthetic.recipe-1k.json")
+        budget = {
+            "schema": 1,
+            "runner_class": "test-runner",
+            "policy": {"relative_and_absolute_required": True},
+            "workloads": {
+                "synthetic.recipe-1k.json": {
+                    "wall_ms": {
+                        "max_ratio": 1.15,
+                        "min_absolute_regression": 10,
+                        "statistic": "median",
+                        "blocking": True,
+                    }
+                }
+            },
+        }
+        baselines = {
+            "schema": 1,
+            "kind": "bbtidy-performance-baselines",
+            "runner": {"class": "test-runner"},
+            "required_workloads": [],
+            "references": {},
+        }
+        with self.assertRaises(BudgetError):
+            compare_record(candidate, budget, baselines, strict_baseline=True)
+        baselines["references"][reference_key(
+            "test-runner", "synthetic.recipe-1k.json", "offline", "b" * 64, "wall_ms", "median"
+        )] = {
+            "workload": "synthetic.recipe-1k.json",
+            "mode": "offline",
+            "corpus_id": "test",
+            "corpus_digest": "b" * 64,
+            "metric": "wall_ms",
+            "statistic": "median",
+            "value": 100,
+            "source_commit": "a" * 40,
+        }
+        with self.assertRaises(BudgetError):
+            compare_record(candidate, budget, baselines, strict_baseline=True)
+
     def test_checked_in_budgets_have_structural_limits(self):
         budgets = load_budgets(Path("tests/performance/budgets.json"))
         self.assertTrue(budgets["policy"]["relative_and_absolute_required"])
@@ -234,6 +330,121 @@ class PerformanceTests(unittest.TestCase):
             output = root / "release-performance"
             consolidate(output, budget_path, [record_path], "a" * 40, "test", "test-runner")
             self.assertEqual(json.loads((output / "summary.json").read_text())["status"], "passed")
+
+    def test_release_consolidation_copies_and_uses_a_corpus_bound_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record_path = root / "record.json"
+            record_path.write_text(json.dumps(record()), encoding="utf-8")
+            budget_path = root / "budgets.json"
+            budget = {
+                "schema": 1,
+                "runner_class": "test-runner",
+                "policy": {"relative_and_absolute_required": True},
+                "workloads": {
+                    "synthetic-scaling": {
+                        "wall_ms": {
+                            "max_ratio": 1.15,
+                            "min_absolute_regression": 50,
+                            "statistic": "median",
+                            "blocking": True,
+                        }
+                    }
+                },
+            }
+            budget_path.write_text(json.dumps(budget), encoding="utf-8")
+            baseline = {
+                "schema": 1,
+                "kind": "bbtidy-performance-baselines",
+                "runner": {"class": "test-runner"},
+                "required_workloads": ["synthetic-scaling"],
+                "references": {},
+            }
+            key = reference_key(
+                "test-runner", "synthetic-scaling", "offline", "a" * 64, "wall_ms", "median"
+            )
+            baseline["references"][key] = {
+                "workload": "synthetic-scaling",
+                "mode": "offline",
+                "corpus_id": "test",
+                "corpus_digest": "a" * 64,
+                "metric": "wall_ms",
+                "statistic": "median",
+                "value": 100,
+                "source_commit": "a" * 40,
+            }
+            baseline_path = root / "baselines.json"
+            baseline_path.write_bytes(canonical_baseline_bytes(baseline))
+            output = root / "release-performance"
+            consolidate(
+                output,
+                budget_path,
+                [record_path],
+                "a" * 40,
+                "test",
+                "test-runner",
+                baseline_path,
+            )
+            self.assertTrue((output / "baselines.json").is_file())
+            self.assertEqual(json.loads((output / "summary.json").read_text())["status"], "passed")
+
+    def test_campaign_review_requires_three_runs_and_reports_variance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = []
+            for index in range(1, 4):
+                path = root / f"run-{index}.json"
+                path.write_text(json.dumps(record()), encoding="utf-8")
+                evidence.append(path)
+            budget = {
+                "schema": 1,
+                "runner_class": "test-runner",
+                "policy": {"relative_and_absolute_required": True},
+                "workloads": {
+                    "synthetic-scaling": {
+                        "wall_ms": {"max_ratio": 1.15, "min_absolute_regression": 10, "statistic": "median", "blocking": True},
+                        "peak_rss_bytes": {"max_ratio": 1.15, "min_absolute_regression": 10, "statistic": "p90", "blocking": True},
+                    }
+                },
+            }
+            budget_path = root / "budgets.json"
+            budget_path.write_text(json.dumps(budget), encoding="utf-8")
+            report = review_campaign(budget_path, evidence)
+            self.assertEqual(report["run_count"], 3)
+            self.assertEqual(report["workload_count"], 1)
+            self.assertIn("coefficient_of_variation", next(iter(report["reports"].values()))["metrics"]["wall_ms"])
+
+    def test_campaign_review_rejects_missing_required_workloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = []
+            for index in range(1, 4):
+                path = root / f"run-{index}.json"
+                path.write_text(json.dumps(record()), encoding="utf-8")
+                evidence.append(path)
+            budget_path = root / "budgets.json"
+            budget_path.write_text(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "runner_class": "test-runner",
+                        "policy": {"relative_and_absolute_required": True},
+                        "workloads": {
+                            "synthetic-scaling": {"wall_ms": {"max_ratio": 1.15, "min_absolute_regression": 10}},
+                            "missing-workload": {"wall_ms": {"max_ratio": 1.15, "min_absolute_regression": 10}},
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError):
+                review_campaign(budget_path, evidence)
+
+    def test_ubuntu_reference_promotion_rejects_untruthful_runner_metadata(self):
+        candidate = record(workload="synthetic.recipe-1k.json")
+        candidate["runner"] = {"class": "github-ubuntu-24.04-x86_64"}
+        with self.assertRaises(BaselineError):
+            _validate_reference_runner(candidate, Path("evidence.json"))
 
 
 if __name__ == "__main__":

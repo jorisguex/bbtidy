@@ -79,23 +79,56 @@ def _aggregate_numeric(samples: Iterable[Mapping[str, Any]], field: str) -> dict
     }
 
 
-def aggregate_results(samples: Iterable[Mapping[str, Any]]) -> dict:
+def aggregate_results(
+    samples: Iterable[Mapping[str, Any]],
+    statistic_by_field: Mapping[str, str] | None = None,
+) -> dict:
+    """Aggregate samples using an explicit statistic for every metric.
+
+    Wall time is intentionally summarized by its median while RSS uses the
+    nearest-rank p90.  Callers may override either choice, but the selected
+    statistic is recorded by the caller in the evidence manifest so a
+    baseline cannot silently change meaning.
+    """
+
+    statistic_by_field = dict(
+        statistic_by_field
+        or {
+            "wall_ms": "median",
+            "user_cpu_ms": "median",
+            "system_cpu_ms": "median",
+            "peak_rss_bytes": "p90",
+            "read_bytes": "median",
+            "written_bytes": "median",
+        }
+    )
     checked = [
         validate_result(sample.get("result", sample), "sample.result")
         for sample in samples
     ]
     statuses = {sample["status"] for sample in checked}
     status = "success" if statuses == {"success"} else "failed"
+    aggregates = {
+        field: _aggregate_numeric(checked, field)
+        for field in RESULT_FIELDS[1:]
+    }
+    selected = {}
+    for field in RESULT_FIELDS[1:]:
+        statistic = statistic_by_field.get(field, "median")
+        if statistic not in {"median", "p90", "min", "max"}:
+            raise PerformanceSchemaError(
+                f"aggregation statistic for {field} is unsupported: {statistic!r}"
+            )
+        selected[field] = aggregates[field][statistic]
     return {
         "status": status,
-        "wall_ms": _aggregate_numeric(checked, "wall_ms")["median"],
-        "user_cpu_ms": _aggregate_numeric(checked, "user_cpu_ms")["median"],
-        "system_cpu_ms": _aggregate_numeric(checked, "system_cpu_ms")["median"],
-        "peak_rss_bytes": _aggregate_numeric(checked, "peak_rss_bytes")["median"],
-        "read_bytes": _aggregate_numeric(checked, "read_bytes")["median"],
-        "written_bytes": _aggregate_numeric(checked, "written_bytes")["median"],
+        **selected,
         "sample_ranges": {
-            field: _aggregate_numeric(checked, field)
+            field: aggregates[field]
+            for field in RESULT_FIELDS[1:]
+        },
+        "statistics": {
+            field: statistic_by_field.get(field, "median")
             for field in RESULT_FIELDS[1:]
         },
     }

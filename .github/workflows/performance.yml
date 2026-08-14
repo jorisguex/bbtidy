@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        operation: [format-check, format, json, sarif]
+        operation: [format-check, format-write, json, sarif]
     steps:
       - name: Check out exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -37,14 +37,15 @@ jobs:
           --synthetic
           --operation "${{ matrix.operation }}"
           --mode offline
-          --repetitions 3
-          --minimum-duration-ms 100
+          --repetitions 7
+          --minimum-duration-ms 1000
           --runner-class github-ubuntu-24.04-x86_64
           --output "performance-${{ matrix.operation }}.json"
       - name: Check synthetic budgets
         run: >-
           python3 scripts/check_performance_budget.py
           --budgets tests/performance/budgets.json
+          --baselines tests/performance/baselines/github-ubuntu-24.04-x86_64.json
           --evidence "performance-${{ matrix.operation }}.json"
       - name: Upload raw synthetic evidence
         if: always()
@@ -85,3 +86,4 @@ jobs:
           python3 scripts/benchmark_performance.py --help
           test -s tests/performance/README.md
           test -s tests/performance/budgets.json
+          test -s tests/performance/baselines/github-ubuntu-24.04-x86_64.json

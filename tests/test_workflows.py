@@ -15,6 +15,27 @@ class WorkflowPinTests(unittest.TestCase):
             PROJECT_ROOT / ".github" / "workflows"
         )
         self.assertEqual(errors, [])
+        self.assertEqual(
+            check_workflows.validate_runner_identity(
+                PROJECT_ROOT / ".github" / "workflows"
+            ),
+            [],
+        )
+
+    def test_rejects_runner_class_that_disagrees_with_runs_on(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workflow = Path(temporary) / "performance.yml"
+            workflow.write_text(
+                "jobs:\n"
+                "  measure:\n"
+                "    runs-on: ubuntu-22.04\n"
+                "    steps:\n"
+                "      - run: python3 scripts/benchmark_performance.py --runner-class github-ubuntu-24.04-x86_64\n",
+                encoding="utf-8",
+            )
+            errors = check_workflows.validate_runner_identity(Path(temporary))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("disagrees", errors[0])
 
     def test_rejects_tag_and_short_sha_references(self):
         with tempfile.TemporaryDirectory() as temporary:

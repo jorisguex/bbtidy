@@ -12,8 +12,10 @@ from typing import Any, Mapping
 
 try:
     from scripts.performance_schema import PerformanceSchemaError, load_evidence, load_record
+    from scripts.performance_baselines import BaselineError, baseline_for, load_baselines, statistic_for
 except ModuleNotFoundError:  # direct script execution
     from performance_schema import PerformanceSchemaError, load_evidence, load_record  # type: ignore[no-redef]
+    from performance_baselines import BaselineError, baseline_for, load_baselines, statistic_for  # type: ignore[no-redef]
 
 
 class BudgetError(ValueError):
@@ -29,6 +31,12 @@ def load_budgets(path: Path) -> dict:
         raise BudgetError("budgets must use schema 1 and declare runner_class")
     if not isinstance(value.get("workloads"), Mapping):
         raise BudgetError("budgets.workloads must be an object")
+    global_structural = value.get("structural_defaults", {})
+    if not isinstance(global_structural, Mapping):
+        raise BudgetError("budgets.structural_defaults must be an object")
+    for metric, rule in global_structural.items():
+        if not isinstance(rule, Mapping):
+            raise BudgetError(f"structural default for {metric} must be an object")
     policy = value.get("policy")
     if not isinstance(policy, Mapping) or policy.get("relative_and_absolute_required") is not True:
         raise BudgetError("budgets must require both relative and absolute thresholds")
@@ -68,11 +76,13 @@ def load_budgets(path: Path) -> dict:
                         f"structural budget for {workload}.{metric} needs max or baseline"
                     )
                 continue
-            if rule.get("baseline") is not None:
-                if "max_ratio" not in rule or "min_absolute_regression" not in rule:
+            if "max_ratio" in rule:
+                if "min_absolute_regression" not in rule:
                     raise BudgetError(
                         f"timing budget for {workload}.{metric} needs max_ratio and min_absolute_regression"
                     )
+            if "statistic" in rule and rule["statistic"] not in {"median", "p90", "min", "max"}:
+                raise BudgetError(f"budget for {workload}.{metric} has an unsupported statistic")
     return value
 
 
@@ -96,7 +106,12 @@ def _value(result: Mapping[str, Any], name: str) -> Any:
     return value
 
 
-def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict:
+def compare_record(
+    record: Mapping[str, Any],
+    budget: Mapping[str, Any],
+    baselines: Mapping[str, Any] | None = None,
+    strict_baseline: bool = False,
+) -> dict:
     runner_class = record.get("runner", {}).get("class")
     if runner_class != budget.get("runner_class"):
         raise BudgetError(
@@ -104,15 +119,6 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
         )
     workload = record.get("workload")
     workload_budget = budget.get("workloads", {}).get(workload)
-    if not isinstance(workload_budget, Mapping) and isinstance(workload, str):
-        if workload.endswith("-json"):
-            workload_budget = budget.get("workloads", {}).get("synthetic-serialization")
-        elif workload.startswith(("recipe-", "continued-", "shell-body-")):
-            workload_budget = budget.get("workloads", {}).get("synthetic-scaling")
-        elif workload.startswith(
-            ("yocto-5.0-bitbake-", "yocto-6.0-bitbake-", "yocto-5.0-semantic-", "yocto-6.0-semantic-")
-        ):
-            workload_budget = budget.get("workloads", {}).get("bitbake-common")
     if not isinstance(workload_budget, Mapping):
         raise BudgetError(f"no budget exists for workload {workload!r}")
     current = record["summary"]
@@ -127,10 +133,33 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
         if ("max" in rule or "max_delta" in rule) and "max_ratio" not in rule:
             continue
         baseline = rule.get("baseline")
+        baseline_reference = None
+        statistic = statistic_for(metric, rule)
+        if baselines is not None:
+            try:
+                baseline_reference = baseline_for(baselines, record, metric, statistic)
+            except BaselineError as error:
+                raise BudgetError(str(error)) from error
+            if baseline_reference is not None:
+                baseline = baseline_reference["value"]
+            else:
+                message = (
+                    f"{workload}.{metric} has no reference for corpus "
+                    f"{record.get('corpus', {}).get('revision_digest')!r} and statistic {statistic}"
+                )
+                if strict_baseline:
+                    raise BudgetError(message)
+                advisory.append(message)
         current_value = _metric(current, metric)
-        measurements[metric] = {"current": current_value, "baseline": baseline}
+        measurements[metric] = {
+            "current": current_value,
+            "baseline": baseline,
+            "statistic": statistic,
+            "reference": baseline_reference,
+        }
         if baseline is None:
-            advisory.append(f"{workload}.{metric} has no populated baseline")
+            if baselines is None:
+                advisory.append(f"{workload}.{metric} has no populated baseline")
             continue
         if isinstance(baseline, bool) or not isinstance(baseline, (int, float)) or baseline < 0:
             raise BudgetError(f"baseline for {workload}.{metric} is invalid")
@@ -153,7 +182,8 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
             else:
                 advisory.append(message)
 
-    structural_rules = dict(workload_budget.get("structural", {}) or {})
+    structural_rules = dict(budget.get("structural_defaults", {}) or {})
+    structural_rules.update(dict(workload_budget.get("structural", {}) or {}))
     structural_rules.update(
         {
             metric: rule
@@ -236,15 +266,6 @@ def compare_candidate_to_baseline(
     workload = candidate["workload"]
     rules = budget.get("workloads", {}).get(workload)
     if not isinstance(rules, Mapping):
-        if workload.endswith("-json"):
-            rules = budget["workloads"]["synthetic-serialization"]
-        elif workload.startswith(("recipe-", "continued-", "shell-body-")):
-            rules = budget["workloads"]["synthetic-scaling"]
-        elif workload.startswith(
-            ("yocto-5.0-bitbake-", "yocto-6.0-bitbake-", "yocto-5.0-semantic-", "yocto-6.0-semantic-")
-        ):
-            rules = budget["workloads"]["bitbake-common"]
-    if not isinstance(rules, Mapping):
         raise BudgetError(f"no budget exists for workload {workload!r}")
     derived = json.loads(json.dumps(budget))
     derived_rules = derived["workloads"].setdefault(workload, dict(rules))
@@ -263,6 +284,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--update", action="store_true")
     parser.add_argument("--reason", default="")
     parser.add_argument("--baseline-evidence", type=Path)
+    parser.add_argument("--baselines", type=Path)
     return parser.parse_args()
 
 
@@ -271,18 +293,18 @@ def main() -> int:
     try:
         budget = load_budgets(args.budgets)
         evidence = load_evidence(args.evidence)
+        baselines = load_baselines(args.baselines) if args.baselines else None
         if args.update:
-            if evidence.get("kind") != "bbtidy-performance":
-                raise BudgetError("--update requires one performance record, not a suite")
-            update_budget(args.budgets, evidence, args.reason)
-            return 0
+            raise BudgetError(
+                "direct budget updates are disabled; use scripts/promote_performance_baselines.py"
+            )
         if args.baseline_evidence:
             baseline_evidence = load_record(args.baseline_evidence)
             if evidence.get("kind") != "bbtidy-performance":
                 raise BudgetError("--baseline-evidence requires one candidate record")
             comparison = compare_candidate_to_baseline(evidence, baseline_evidence, budget)
         elif evidence.get("kind") == "bbtidy-performance-suite":
-            comparisons = [compare_record(record, budget) for record in evidence["records"]]
+            comparisons = [compare_record(record, budget, baselines) for record in evidence["records"]]
             comparison = {
                 "status": (
                     "failed"
@@ -297,8 +319,8 @@ def main() -> int:
                 "advisory": [message for item in comparisons for message in item["advisory"]],
             }
         else:
-            comparison = compare_record(evidence, budget)
-    except (BudgetError, PerformanceSchemaError) as error:
+            comparison = compare_record(evidence, budget, baselines)
+    except (BudgetError, BaselineError, PerformanceSchemaError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     if args.output:

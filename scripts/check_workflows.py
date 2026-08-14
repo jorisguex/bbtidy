@@ -13,6 +13,13 @@ WORKFLOW_SUFFIXES = {".yaml", ".yml"}
 USES = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<value>.+?)\s*$")
 COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE_DIGEST = re.compile(r"^docker://[^@\s]+@sha256:[0-9a-f]{64}$")
+RUNS_ON = re.compile(r"^\s*runs-on:\s*(?P<value>[^\s#]+)")
+RUNNER_CLASS = re.compile(r"--runner-class\s+(?P<value>[^\s\\]+)")
+RUNNER_CLASS_INPUT = re.compile(r"runner-class:\s*(?P<value>[^\s#]+)")
+RUNNER_CLASS_BY_IMAGE = {
+    "ubuntu-22.04": "github-ubuntu-22.04-x86_64",
+    "ubuntu-24.04": "github-ubuntu-24.04-x86_64",
+}
 
 
 def action_reference_error(value):
@@ -62,6 +69,37 @@ def validate_workflow_directory(directory):
     return errors
 
 
+def validate_runner_identity(directory=DEFAULT_WORKFLOW_DIRECTORY):
+    """Reject performance evidence labelled for a different GitHub image."""
+
+    errors = []
+    if not directory.is_dir():
+        return ["workflow directory does not exist: {}".format(directory)]
+    for path in sorted(directory.iterdir()):
+        if not path.is_file() or path.suffix not in WORKFLOW_SUFFIXES:
+            continue
+        text = path.read_text(encoding="utf-8")
+        jobs = list(re.finditer(r"^  (?P<job>[A-Za-z0-9_-]+):\n", text, re.MULTILINE))
+        for index, match in enumerate(jobs):
+            block = text[match.end() : jobs[index + 1].start() if index + 1 < len(jobs) else len(text)]
+            image = RUNS_ON.search(block)
+            if image is None:
+                continue
+            expected = RUNNER_CLASS_BY_IMAGE.get(image.group("value"))
+            if expected is None:
+                continue
+            labels = [item.group("value") for item in RUNNER_CLASS.finditer(block)]
+            labels.extend(item.group("value") for item in RUNNER_CLASS_INPUT.finditer(block))
+            for label in labels:
+                if label != expected:
+                    errors.append(
+                        "{} job {} uses {} but disagrees with evidence label {}; expected {}".format(
+                            path, match.group("job"), image.group("value"), label, expected
+                        )
+                    )
+    return errors
+
+
 def _workflow_text(directory, name):
     path = Path(directory) / name
     if not path.is_file():
@@ -87,7 +125,7 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
     actionlint remains responsible for GitHub Actions expression semantics.
     """
 
-    errors = []
+    errors = validate_runner_identity(directory)
     try:
         release = _workflow_text(directory, "release.yml")
         gate = _workflow_text(directory, "release-gate.yml")

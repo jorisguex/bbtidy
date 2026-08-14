@@ -762,7 +762,8 @@ cargo bench --locked --bench layer_analysis
 The benchmark reports workspace index construction, single-file formatting,
 and batch workspace-aware linting. Versioned process/resource evidence,
 synthetic workload scaling, offline corpus records, BitBake cold/warm/full
-semantic records, and release budget policy are documented in
+semantic records, the Ubuntu 24.04 corpus-bound reference manifest, promotion
+workflow, and release budget policy are documented in
 [tests/performance/README.md](tests/performance/README.md). The performance
 runner records process-tree RSS, CPU, read/write bytes, status, structural
 counters, and corpus/runner identity; it never treats a safety-limit failure as
