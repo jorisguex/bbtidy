@@ -166,11 +166,28 @@ jobs:
             test -x "$bitbake"
             export PATH="$(dirname "$bitbake"):$PATH"
             for run in 1 2 3; do
+              cold_build_dir="$RUNNER_TEMP/bbtidy-cold-build-$run"
               warm_build_dir="$RUNNER_TEMP/bbtidy-warm-build-$run"
-              cp -a "$build_dir" "$warm_build_dir"
+              semantic_build_dir="$RUNNER_TEMP/bbtidy-semantic-build-$run"
+              for fixture in "$cold_build_dir" "$warm_build_dir" "$semantic_build_dir"; do
+                python3 - "$build_dir" "$fixture" <<'PY'
+          import shutil
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1]) / "conf"
+          destination = Path(sys.argv[2]) / "conf"
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copytree(
+              source,
+              destination,
+              ignore=shutil.ignore_patterns("sanity_info"),
+          )
+          PY
+              done
               python3 scripts/benchmark_performance.py \
                 --bbtidy target/release/bbtidy \
-                --source-root "$warm_build_dir" \
+                --source-root "$cold_build_dir" \
                 --operation bitbake \
                 --mode cold \
                 --repetitions 1 \
@@ -181,7 +198,7 @@ jobs:
                 --output "performance-reference/${{ matrix.name }}-run-$run-bitbake-cold.json"
               python3 scripts/benchmark_performance.py \
                 --bbtidy target/release/bbtidy \
-                --source-root "$build_dir" \
+                --source-root "$warm_build_dir" \
                 --operation bitbake \
                 --mode warm \
                 --repetitions 5 \
@@ -192,7 +209,7 @@ jobs:
                 --output "performance-reference/${{ matrix.name }}-run-$run-bitbake-warm.json"
               python3 scripts/benchmark_performance.py \
                 --bbtidy target/release/bbtidy \
-                --source-root "$build_dir" \
+                --source-root "$semantic_build_dir" \
                 --operation semantic \
                 --mode cold \
                 --repetitions 1 \
