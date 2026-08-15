@@ -147,6 +147,8 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
     if (
         'build_dir="compatibility-workspace/build-original"' not in supported
         or 'bitbake/bin/bitbake' not in supported
+        or 'print(matches[0].resolve())' not in supported
+        or '--bitbake-target "$bitbake_target"' not in supported
         or 'test -f "$build_dir/conf/bblayers.conf"' not in supported
     ):
         errors.append(
