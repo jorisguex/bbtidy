@@ -718,6 +718,7 @@ pub fn analyze_bitbake_with_runner(
     runner: &mut BitBakeRunner,
 ) -> Result<SemanticReport, SemanticError> {
     validate_build_dir(&options.build_dir)?;
+    runner.stats_mut().set_strategy("semantic-analysis");
     if options.analysis.dependency_graph && options.targets.is_empty() {
         return Err(SemanticError::AnalysisTargetsRequired {
             mode: "dependency graph".to_owned(),

@@ -30,6 +30,10 @@ fn authoritative_analysis_returns_resolved_environment_and_diagnostics() {
         "BitBake Build Tool Core version 2.8.1"
     );
     assert!(report.parse_succeeded());
+    assert_eq!(
+        report.execution().strategy.as_deref(),
+        Some("semantic-analysis")
+    );
     assert_eq!(report.requested_targets(), &[String::from("demo")]);
     assert_eq!(
         report.requested_variables(),

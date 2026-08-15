@@ -105,7 +105,8 @@
           "allowed": [
             "tinfoil-batch",
             "tinfoil-batch+bounded-buildfile-fallback",
-            "bounded-buildfile-fallback"
+            "bounded-buildfile-fallback",
+            "semantic-analysis"
           ]
         },
         "bitbake.cache_state": {"allowed": ["cold", "warm"]},
