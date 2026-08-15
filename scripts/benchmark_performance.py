@@ -379,6 +379,7 @@ def measure_cli(
     minimum_duration_ms: float = 0,
     timeout_seconds: float | None = None,
     bitbake_command: Path | None = None,
+    bitbake_target: str | None = None,
 ) -> dict[str, Any]:
     def command_for(root: Path) -> list[str]:
         if operation == "format-check":
@@ -418,10 +419,16 @@ def measure_cli(
                     "--output",
                     "json",
                 ]
-            return [
+            command = [
                 str(bbtidy), "--no-config", "semantic", "--build-dir", str(root),
                 "--bitbake", str(bitbake_command), "--full", "--output", "json",
             ]
+            if bitbake_target:
+                command[command.index("--full") + 1:command.index("--full") + 1] = [
+                    "--target",
+                    bitbake_target,
+                ]
+            return command
         raise ValueError(f"unsupported offline operation: {operation}")
 
     if operation not in {
@@ -705,6 +712,7 @@ def run_synthetic(args: argparse.Namespace) -> list[dict[str, Any]]:
                 minimum_duration_ms=args.minimum_duration_ms,
                 timeout_seconds=args.timeout_seconds,
                 bitbake_command=args.bitbake_command,
+                bitbake_target=args.bitbake_target,
             )
             records.append(
                 build_record(
@@ -751,6 +759,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runner-class")
     parser.add_argument("--workload")
     parser.add_argument("--bitbake-command", type=Path)
+    parser.add_argument("--bitbake-target")
     parser.add_argument("--minimum-duration-ms", type=float, default=1000)
     parser.add_argument("--timeout-seconds", type=float)
     parser.add_argument("--synthetic", action="store_true")
@@ -797,6 +806,7 @@ def main() -> int:
         args.profile,
         timeout_seconds=args.timeout_seconds,
         bitbake_command=args.bitbake_command,
+        bitbake_target=args.bitbake_target,
     )
     record = build_record(
         args.workload or args.source_root.name + "-" + args.operation,

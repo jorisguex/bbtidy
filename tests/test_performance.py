@@ -227,6 +227,44 @@ class PerformanceTests(unittest.TestCase):
             self.assertEqual(len(measured["samples"]), 3)
             self.assertEqual(fixture.read_text(encoding="utf-8"), original)
 
+    def test_semantic_target_is_passed_to_bbtidy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "build"
+            (root / "conf").mkdir(parents=True)
+            (root / "conf" / "local.conf").write_text("MACHINE = \"qemux86-64\"\n")
+            (root / "conf" / "bblayers.conf").write_text("BBLAYERS = \"/layer\"\n")
+            arguments = Path(directory) / "arguments.json"
+            fake = Path(directory) / "fake-bbtidy.py"
+            fake.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, os, pathlib, sys\n"
+                "pathlib.Path(os.environ['ARGS_LOG']).write_text(json.dumps(sys.argv[1:]))\n"
+                "if 'syntax-stats' in sys.argv:\n"
+                "    print(json.dumps({'files': 2, 'total_nodes': 2, 'structured_nodes': 2, 'trivia_nodes': 0, 'unknown_nodes': 0, 'unknown_bytes': 0}))\n"
+                "else:\n"
+                "    print(json.dumps({'parse_succeeded': True}))\n",
+                encoding="utf-8",
+            )
+            fake.chmod(0o755)
+            os.environ["ARGS_LOG"] = str(arguments)
+            try:
+                measured = measure_cli(
+                    fake,
+                    root,
+                    "semantic",
+                    "cold",
+                    1,
+                    timeout_seconds=2,
+                    bitbake_command=fake,
+                    bitbake_target="core-image-minimal",
+                )
+            finally:
+                os.environ.pop("ARGS_LOG", None)
+            self.assertEqual(measured["samples"][0]["result"]["status"], "success")
+            command = json.loads(arguments.read_text(encoding="utf-8"))
+            self.assertIn("--target", command)
+            self.assertEqual(command[command.index("--target") + 1], "core-image-minimal")
+
     def test_strict_baseline_comparison_rejects_a_missing_or_stale_corpus(self):
         candidate = record(workload="synthetic.recipe-1k.json")
         budget = {

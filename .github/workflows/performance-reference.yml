@@ -59,7 +59,7 @@ jobs:
   offline-corpus-reference:
     name: ${{ matrix.name }} offline reference run
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -162,6 +162,18 @@ jobs:
           print(matches[0].resolve())
           PY
             })"
+            bitbake_target="$({
+              python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path(os.environ["PERFORMANCE_MANIFEST"]).read_text(encoding="utf-8")
+          )
+          print(manifest["bitbake"]["target"])
+          PY
+            })"
             test -f "$build_dir/conf/bblayers.conf"
             test -x "$bitbake"
             export PATH="$(dirname "$bitbake"):$PATH"
@@ -194,6 +206,7 @@ jobs:
                 --runner-class github-ubuntu-24.04-x86_64 \
                 --workload "${{ matrix.name }}-bitbake-cold" \
                 --bitbake-command "$bitbake" \
+                --bitbake-target "$bitbake_target" \
                 --timeout-seconds 3600 \
                 --output "performance-reference/${{ matrix.name }}-run-$run-bitbake-cold.json"
               python3 scripts/benchmark_performance.py \
@@ -205,6 +218,7 @@ jobs:
                 --runner-class github-ubuntu-24.04-x86_64 \
                 --workload "${{ matrix.name }}-bitbake-warm" \
                 --bitbake-command "$bitbake" \
+                --bitbake-target "$bitbake_target" \
                 --timeout-seconds 3600 \
                 --output "performance-reference/${{ matrix.name }}-run-$run-bitbake-warm.json"
               python3 scripts/benchmark_performance.py \
@@ -216,6 +230,7 @@ jobs:
                 --runner-class github-ubuntu-24.04-x86_64 \
                 --workload "${{ matrix.name }}-semantic-full" \
                 --bitbake-command "$bitbake" \
+                --bitbake-target "$bitbake_target" \
                 --timeout-seconds 3600 \
                 --output "performance-reference/${{ matrix.name }}-run-$run-semantic-full.json"
             done
