@@ -236,7 +236,24 @@ jobs:
           echo "Using generated build directory: $build_dir"
           echo "Using pinned BitBake executable: $bitbake"
           cold_build_dir="$RUNNER_TEMP/bbtidy-cold-build"
-          cp -a "$build_dir" "$cold_build_dir"
+          warm_build_dir="$RUNNER_TEMP/bbtidy-warm-build"
+          semantic_build_dir="$RUNNER_TEMP/bbtidy-semantic-build"
+          for fixture in "$cold_build_dir" "$warm_build_dir" "$semantic_build_dir"; do
+            python3 - "$build_dir" "$fixture" <<'PY'
+          import shutil
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1]) / "conf"
+          destination = Path(sys.argv[2]) / "conf"
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copytree(
+              source,
+              destination,
+              ignore=shutil.ignore_patterns("sanity_info"),
+          )
+          PY
+          done
           python3 scripts/benchmark_performance.py \
             --bbtidy target/release/bbtidy \
             --source-root "$cold_build_dir" \
@@ -251,7 +268,7 @@ jobs:
             --output "performance-evidence/${{ matrix.bitbake_prefix }}-bitbake-cold.json"
           python3 scripts/benchmark_performance.py \
             --bbtidy target/release/bbtidy \
-            --source-root "$cold_build_dir" \
+            --source-root "$warm_build_dir" \
             --operation bitbake \
             --mode warm \
             --repetitions 2 \
@@ -263,7 +280,7 @@ jobs:
             --output "performance-evidence/${{ matrix.bitbake_prefix }}-bitbake-warm.json"
           python3 scripts/benchmark_performance.py \
             --bbtidy target/release/bbtidy \
-            --source-root "$build_dir" \
+            --source-root "$semantic_build_dir" \
             --operation semantic \
             --mode cold \
             --repetitions 1 \
