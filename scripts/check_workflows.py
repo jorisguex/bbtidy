@@ -150,6 +150,8 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
         or 'print(matches[0].resolve())' not in supported
         or '--bitbake-target "$bitbake_target"' not in supported
         or 'test -f "$build_dir/conf/bblayers.conf"' not in supported
+        or supported.count('--source-root "$cold_build_dir"') < 2
+        or 'warm_build_dir=' in supported
     ):
         errors.append(
             "supported performance evidence must use deterministic compatibility paths"

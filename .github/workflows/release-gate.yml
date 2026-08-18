@@ -236,9 +236,8 @@ jobs:
           echo "Using generated build directory: $build_dir"
           echo "Using pinned BitBake executable: $bitbake"
           cold_build_dir="$RUNNER_TEMP/bbtidy-cold-build"
-          warm_build_dir="$RUNNER_TEMP/bbtidy-warm-build"
           semantic_build_dir="$RUNNER_TEMP/bbtidy-semantic-build"
-          for fixture in "$cold_build_dir" "$warm_build_dir" "$semantic_build_dir"; do
+          for fixture in "$cold_build_dir" "$semantic_build_dir"; do
             python3 - "$build_dir" "$fixture" <<'PY'
           import shutil
           import sys
@@ -268,7 +267,7 @@ jobs:
             --output "performance-evidence/${{ matrix.bitbake_prefix }}-bitbake-cold.json"
           python3 scripts/benchmark_performance.py \
             --bbtidy target/release/bbtidy \
-            --source-root "$warm_build_dir" \
+            --source-root "$cold_build_dir" \
             --operation bitbake \
             --mode warm \
             --repetitions 2 \

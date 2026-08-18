@@ -105,6 +105,8 @@
           "allowed": [
             "tinfoil-batch",
             "tinfoil-batch+bounded-buildfile-fallback",
+            "tinfoil-cache-batch",
+            "tinfoil-cache-batch+bounded-buildfile-fallback",
             "bounded-buildfile-fallback",
             "semantic-analysis"
           ]

@@ -278,28 +278,48 @@ fn bitbake_index_uses_one_tinfoil_batch_for_recipe_includes() {
         python.join("tinfoil.py"),
         format!(
             r#"import os
+import pickle
 
 class DataStore:
     def getVar(self, name):
-        if name == "BBINCLUDED":
-            return "{layer}/conf/layer.conf {dynamic}"
-        return ""
+        return {{
+            "BBLAYERS": "{layer}",
+            "BBPATH": "{layer}",
+            "BBFILES": "{layer}/recipes-demo/*.bb",
+            "BBINCLUDED": "{build}/conf/local.conf {build}/conf/bblayers.conf {layer}/conf/layer.conf",
+            "BBFILE_COLLECTIONS": "batch",
+            "BBFILE_PATTERN_batch": "^{layer}/",
+            "BBFILE_PRIORITY_batch": "7",
+            "CACHE": "{cache}",
+        }}.get(name, "")
+
+class CacheInfo:
+    def __init__(self):
+        self.file_depends = [
+            ("{layer}/conf/layer.conf", 1),
+            ("{dynamic}", 1),
+        ]
 
 class Tinfoil:
     def __init__(self, output=None):
-        pass
+        self.config_data = DataStore()
     def __enter__(self):
         return self
     def __exit__(self, *args):
         pass
-    def prepare(self, quiet=0):
-        pass
-    def all_recipe_files(self, variants=False):
-        return ["{recipe}", "{recipe_two}", "{recipe_three}"]
-    def parse_recipe_file(self, recipe):
-        return DataStore()
+    def prepare(self, config_only=False, quiet=0):
+        os.makedirs("{cache}", exist_ok=True)
+        with open("{cache}/bb_cache.dat", "wb") as cache:
+            pickler = pickle.Pickler(cache)
+            pickler.dump(1)
+            pickler.dump("fake")
+            for recipe in ["{recipe}", "{recipe_two}", "{recipe_three}"]:
+                pickler.dump(recipe)
+                pickler.dump(CacheInfo())
 "#,
             layer = layer.display(),
+            build = build.display(),
+            cache = build.join("cache").display(),
             dynamic = dynamic.display(),
             recipe = recipe.display(),
             recipe_two = recipe_two.display(),
@@ -351,9 +371,12 @@ exit 1
             .unwrap();
 
     assert!(index.is_workspace_file(&dynamic));
-    assert_eq!(runner.stats().strategy.as_deref(), Some("tinfoil-batch"));
+    assert_eq!(
+        runner.stats().strategy.as_deref(),
+        Some("tinfoil-cache-batch")
+    );
     assert_eq!(runner.stats().recipe_queries_completed, 3);
-    assert_eq!(runner.stats().total_commands, 4);
+    assert_eq!(runner.stats().total_commands, 3);
 }
 
 #[cfg(unix)]

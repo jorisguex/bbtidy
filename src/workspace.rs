@@ -226,8 +226,10 @@ impl WorkspaceIndex {
     /// reconstructing the build context from source-level assignments.
     ///
     /// BitBake first parses the complete build, then exposes its expanded
-    /// `BBFILES`, `BBPATH`, and `BBINCLUDED` values through `-e`. The latter
-    /// is queried once for every discovered recipe using `--buildfile`, which
+    /// `BBFILES`, `BBPATH`, and `BBINCLUDED` values through Tinfoil. Recipe
+    /// include dependencies are recovered from the parse cache created by
+    /// that same authoritative parse; any recipe absent from the cache is
+    /// queried with the bounded `--environment --buildfile` fallback. This
     /// captures dynamic includes, inherited classes, anonymous-Python-driven
     /// metadata, and external files that are not statically discoverable.
     pub fn from_bitbake(path: impl AsRef<Path>, bitbake: impl AsRef<Path>) -> io::Result<Self> {
@@ -288,14 +290,28 @@ impl WorkspaceIndex {
             ["--parse-only"],
         )?;
 
-        let global_output = run_bitbake_command(
-            runner,
-            &build_dir,
-            bitbake,
-            BitBakePhase::GlobalEnvironment,
-            ["--environment"],
-        )?;
-        let global = parse_workspace_environment_recorded(runner, &global_output.stdout);
+        let tinfoil_batch = query_workspace_with_tinfoil(runner, &build_dir, bitbake)?;
+        let global = if let Some(environment) = tinfoil_batch
+            .as_ref()
+            .map(|batch| &batch.environment)
+            .filter(|environment| {
+                ["BBLAYERS", "BBFILES", "BBPATH"].iter().all(|variable| {
+                    environment
+                        .get(*variable)
+                        .is_some_and(|value| !value.trim().is_empty())
+                })
+            }) {
+            environment.clone()
+        } else {
+            let global_output = run_bitbake_command(
+                runner,
+                &build_dir,
+                bitbake,
+                BitBakePhase::GlobalEnvironment,
+                ["--environment"],
+            )?;
+            parse_workspace_environment_recorded(runner, &global_output.stdout)
+        };
         for variable in ["BBLAYERS", "BBFILES", "BBPATH"] {
             if !global.contains_key(variable) {
                 return Err(invalid_data(format!(
@@ -338,13 +354,17 @@ impl WorkspaceIndex {
             .cloned()
             .collect::<Vec<_>>();
         if !recipes.is_empty() {
-            if let Some(batch) =
-                query_recipe_includes_with_tinfoil(runner, &build_dir, bitbake, &recipes)?
+            if let Some(batch) = tinfoil_batch
+                .as_ref()
+                .map(|batch| batch.select_recipes(&recipes))
             {
-                let strategy = if batch.missing_recipes.is_empty() {
-                    "tinfoil-batch"
-                } else {
-                    "tinfoil-batch+bounded-buildfile-fallback"
+                let used_cache = batch.cache_recipe_count == batch.helper_recipe_count
+                    && batch.helper_recipe_count != 0;
+                let strategy = match (used_cache, batch.missing_recipes.is_empty()) {
+                    (true, true) => "tinfoil-cache-batch",
+                    (true, false) => "tinfoil-cache-batch+bounded-buildfile-fallback",
+                    (false, true) => "tinfoil-batch",
+                    (false, false) => "tinfoil-batch+bounded-buildfile-fallback",
                 };
                 runner.stats_mut().set_strategy(strategy);
                 runner
@@ -1286,26 +1306,23 @@ where
         .map_err(|error| invalid_data(format!("{error}")))
 }
 
-/// Uses BitBake's version-compatible Tinfoil API to parse all recipes from one
-/// long-lived BitBake-backed process. The API is intentionally kept inside a
-/// tiny helper: Tinfoil is stable across the supported 2.8/2.18 releases, but
-/// its Python objects are not a library ABI that Rust should link against.
-/// `None` means that the executable cannot expose its adjacent BitBake Python
-/// library, so the caller may use the explicit bounded CLI fallback.
-fn query_recipe_includes_with_tinfoil(
+/// Uses BitBake's version-compatible Tinfoil API to read resolved workspace
+/// metadata and the recipe dependency cache produced by the preceding
+/// parse-only check. The API is intentionally kept inside a tiny helper:
+/// Tinfoil and BitBake's cache schema are pinned by each supported release,
+/// but their Python objects are not a library ABI that Rust should link
+/// against. `None` means that the executable cannot expose its adjacent
+/// BitBake Python library, so the caller may use the explicit bounded CLI
+/// fallback.
+fn query_workspace_with_tinfoil(
     runner: &mut BitBakeRunner,
     build_dir: &Path,
     bitbake: &Path,
-    recipes: &[PathBuf],
 ) -> io::Result<Option<TinfoilBatchResult>> {
     let Some(bitbake_lib) = bitbake_python_lib(bitbake) else {
         return Ok(None);
     };
 
-    let recipe_set = recipes
-        .iter()
-        .map(|path| fs::canonicalize(path).unwrap_or_else(|_| path.clone()))
-        .collect::<BTreeSet<_>>();
     let invocation = BitBakeInvocation::new(
         "python3",
         build_dir,
@@ -1322,8 +1339,8 @@ fn query_recipe_includes_with_tinfoil(
         Err(BitBakeError::Spawn { .. }) => return Ok(None),
         Err(error) => return Err(invalid_data(format!("{error}"))),
     };
-    let mut included_files = BTreeSet::new();
-    let mut returned_recipes = BTreeSet::new();
+    let mut environment = BTreeMap::new();
+    let mut recipe_includes = BTreeMap::new();
     let mut query_count = 0;
     let mut prepare_ms = 0;
     let mut parse_ms = 0;
@@ -1333,16 +1350,29 @@ fn query_recipe_includes_with_tinfoil(
                 "BitBake Tinfoil helper returned invalid output: {error}"
             ))
         })?;
-        if raw.get("kind").and_then(serde_json::Value::as_str) == Some("metrics") {
-            prepare_ms = raw
-                .get("prepare_ms")
-                .and_then(serde_json::Value::as_u64)
-                .unwrap_or_default() as u128;
-            parse_ms = raw
-                .get("parse_ms")
-                .and_then(serde_json::Value::as_u64)
-                .unwrap_or_default() as u128;
-            continue;
+        match raw.get("kind").and_then(serde_json::Value::as_str) {
+            Some("metrics") => {
+                prepare_ms = raw
+                    .get("prepare_ms")
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or_default() as u128;
+                parse_ms = raw
+                    .get("parse_ms")
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or_default() as u128;
+                continue;
+            }
+            Some("workspace") => {
+                let value: TinfoilWorkspaceOutput =
+                    serde_json::from_value(raw).map_err(|error| {
+                        invalid_data(format!(
+                            "BitBake Tinfoil helper returned invalid workspace output: {error}"
+                        ))
+                    })?;
+                environment = value.variables;
+                continue;
+            }
+            _ => {}
         }
         query_count += 1;
         let value: TinfoilRecipeOutput = serde_json::from_value(raw).map_err(|error| {
@@ -1351,10 +1381,7 @@ fn query_recipe_includes_with_tinfoil(
             ))
         })?;
         let recipe = fs::canonicalize(&value.recipe).unwrap_or(value.recipe);
-        if !recipe_set.contains(&recipe) {
-            continue;
-        }
-        returned_recipes.insert(recipe);
+        let mut included_files = BTreeSet::new();
         for included in split_bitbake_words(Some(&value.included)) {
             let path = PathBuf::from(included);
             let path = if path.is_absolute() {
@@ -1368,26 +1395,66 @@ fn query_recipe_includes_with_tinfoil(
                 }
             }
         }
+        recipe_includes.insert(
+            recipe,
+            TinfoilRecipeDependencies {
+                included_files,
+                from_cache: value.source.as_deref() == Some("cache"),
+            },
+        );
     }
-    // Some BitBake configurations omit recipes that are skipped during
-    // global cache construction from `all_recipe_files()`, even though a
-    // direct --environment --buildfile query still resolves them. Keep the
-    // authoritative workspace scope by returning those recipes to the
-    // explicitly bounded compatibility fallback below.
     runner
         .record_recipe_queries(query_count)
         .map_err(|error| invalid_data(format!("{error}")))?;
     runner.stats_mut().set_tinfoil_timings(prepare_ms, parse_ms);
     Ok(Some(TinfoilBatchResult {
-        included_files,
-        helper_recipe_count: returned_recipes.len(),
-        missing_recipes: recipe_set.difference(&returned_recipes).cloned().collect(),
+        environment,
+        recipe_includes,
     }))
 }
 
 struct TinfoilBatchResult {
+    environment: BTreeMap<String, String>,
+    recipe_includes: BTreeMap<PathBuf, TinfoilRecipeDependencies>,
+}
+
+impl TinfoilBatchResult {
+    fn select_recipes(&self, recipes: &[PathBuf]) -> SelectedTinfoilRecipes {
+        let recipe_set = recipes
+            .iter()
+            .map(|path| fs::canonicalize(path).unwrap_or_else(|_| path.clone()))
+            .collect::<BTreeSet<_>>();
+        let mut included_files = BTreeSet::new();
+        let mut returned_recipes = BTreeSet::new();
+        let mut cache_recipe_count = 0;
+        for recipe in &recipe_set {
+            let Some(dependencies) = self.recipe_includes.get(recipe) else {
+                continue;
+            };
+            returned_recipes.insert(recipe.clone());
+            if dependencies.from_cache {
+                cache_recipe_count += 1;
+            }
+            included_files.extend(dependencies.included_files.iter().cloned());
+        }
+        SelectedTinfoilRecipes {
+            included_files,
+            helper_recipe_count: returned_recipes.len(),
+            cache_recipe_count,
+            missing_recipes: recipe_set.difference(&returned_recipes).cloned().collect(),
+        }
+    }
+}
+
+struct TinfoilRecipeDependencies {
+    included_files: BTreeSet<PathBuf>,
+    from_cache: bool,
+}
+
+struct SelectedTinfoilRecipes {
     included_files: BTreeSet<PathBuf>,
     helper_recipe_count: usize,
+    cache_recipe_count: usize,
     missing_recipes: Vec<PathBuf>,
 }
 
@@ -1409,12 +1476,20 @@ fn bitbake_python_lib(bitbake: &Path) -> Option<PathBuf> {
 struct TinfoilRecipeOutput {
     recipe: PathBuf,
     included: String,
+    #[serde(default)]
+    source: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct TinfoilWorkspaceOutput {
+    variables: BTreeMap<String, String>,
 }
 
 const TINFOIL_BATCH_HELPER: &str = r#"
 import contextlib
 import json
 import os
+import pickle
 import sys
 import time
 
@@ -1422,25 +1497,102 @@ import bb.tinfoil
 
 limit = int(os.environ.get("BBTIDY_RECIPE_LIMIT", "0"))
 protocol = sys.stdout
+
+def cached_recipe_dependencies(cache_directory):
+    dependencies = {}
+    cache_path = os.path.join(cache_directory or "", "bb_cache.dat")
+    try:
+        with open(cache_path, "rb") as cache_file:
+            unpickler = pickle.Unpickler(cache_file)
+            unpickler.load()
+            unpickler.load()
+            while True:
+                try:
+                    recipe = unpickler.load()
+                    info = unpickler.load()
+                except EOFError:
+                    break
+                file_depends = getattr(info, "file_depends", None)
+                if (not file_depends or not isinstance(recipe, str)
+                        or getattr(info, "skipped", False)):
+                    continue
+                recipe = os.path.realpath(recipe)
+                if not recipe.endswith(".bb") or not os.path.isfile(recipe):
+                    continue
+                included = [
+                    path
+                    for path, _stamp in file_depends
+                    if os.path.isfile(path)
+                ]
+                dependencies[recipe] = " ".join(included)
+    except (OSError, EOFError, pickle.PickleError, AttributeError, ValueError):
+        return {}
+    return dependencies
+
 try:
     with contextlib.redirect_stdout(sys.stderr):
         with bb.tinfoil.Tinfoil(output=sys.stderr) as tinfoil:
             prepare_started = time.monotonic()
-            tinfoil.prepare(quiet=2)
+            try:
+                tinfoil.prepare(config_only=True, quiet=2)
+            except TypeError:
+                tinfoil.prepare(quiet=2)
             prepare_ms = int((time.monotonic() - prepare_started) * 1000)
             parse_started = time.monotonic()
-            for index, recipe in enumerate(tinfoil.all_recipe_files(variants=False)):
+            config_data = getattr(tinfoil, "config_data", None)
+            variables = {}
+            if config_data:
+                variable_names = [
+                    "BBLAYERS",
+                    "BBFILES",
+                    "BBPATH",
+                    "BBINCLUDED",
+                    "BBFILE_COLLECTIONS",
+                ]
+                collections = (config_data.getVar("BBFILE_COLLECTIONS") or "").split()
+                for collection in collections:
+                    variable_names.extend([
+                        "BBFILE_PATTERN_" + collection,
+                        "BBFILE_PRIORITY_" + collection,
+                        "LAYERDEPENDS_" + collection,
+                        "LAYERSERIES_COMPAT_" + collection,
+                    ])
+                variables = {
+                    name: config_data.getVar(name) or ""
+                    for name in variable_names
+                }
+            print(json.dumps({
+                "kind": "workspace",
+                "variables": variables,
+            }, separators=(",", ":")), file=protocol)
+            cache_directory = config_data.getVar("CACHE") if config_data else None
+            cached = cached_recipe_dependencies(cache_directory)
+            if cached:
+                recipe_dependencies = sorted(cached.items())
+            else:
+                if hasattr(tinfoil, "parse_recipes"):
+                    tinfoil.parse_recipes()
+                recipe_dependencies = []
+                for recipe in tinfoil.all_recipe_files(variants=False):
+                    try:
+                        datastore = tinfoil.parse_recipe_file(recipe)
+                    except Exception as error:
+                        raise RuntimeError("recipe %s: %s" % (recipe, error))
+                    if datastore is None:
+                        raise RuntimeError("could not parse recipe %s" % recipe)
+                    recipe_dependencies.append((
+                        os.path.realpath(recipe),
+                        datastore.getVar("BBINCLUDED") or "",
+                    ))
+            for index, (recipe, included) in enumerate(recipe_dependencies):
                 if limit and index >= limit:
                     raise RuntimeError("recipe-query budget exceeded")
-                try:
-                    datastore = tinfoil.parse_recipe_file(recipe)
-                except Exception as error:
-                    raise RuntimeError("recipe %s: %s" % (recipe, error))
-                if datastore is None:
-                    raise RuntimeError("could not parse recipe %s" % recipe)
+                canonical_recipe = os.path.realpath(recipe)
                 print(json.dumps({
-                    "recipe": os.path.realpath(recipe),
-                    "included": datastore.getVar("BBINCLUDED") or "",
+                    "kind": "recipe",
+                    "recipe": canonical_recipe,
+                    "included": included,
+                    "source": "cache" if cached else "tinfoil-parse",
                 }, separators=(",", ":")), file=protocol)
             parse_ms = int((time.monotonic() - parse_started) * 1000)
             print(json.dumps({
