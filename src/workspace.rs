@@ -1513,8 +1513,7 @@ def cached_recipe_dependencies(cache_directory):
                 except EOFError:
                     break
                 file_depends = getattr(info, "file_depends", None)
-                if (not file_depends or not isinstance(recipe, str)
-                        or getattr(info, "skipped", False)):
+                if not file_depends or not isinstance(recipe, str):
                     continue
                 recipe = os.path.realpath(recipe)
                 if not recipe.endswith(".bb") or not os.path.isfile(recipe):

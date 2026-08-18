@@ -294,7 +294,8 @@ class DataStore:
         }}.get(name, "")
 
 class CacheInfo:
-    def __init__(self):
+    def __init__(self, skipped=False):
+        self.skipped = skipped
         self.file_depends = [
             ("{layer}/conf/layer.conf", 1),
             ("{dynamic}", 1),
@@ -313,9 +314,9 @@ class Tinfoil:
             pickler = pickle.Pickler(cache)
             pickler.dump(1)
             pickler.dump("fake")
-            for recipe in ["{recipe}", "{recipe_two}", "{recipe_three}"]:
+            for index, recipe in enumerate(["{recipe}", "{recipe_two}", "{recipe_three}"]):
                 pickler.dump(recipe)
-                pickler.dump(CacheInfo())
+                pickler.dump(CacheInfo(skipped=index == 1))
 "#,
             layer = layer.display(),
             build = build.display(),
