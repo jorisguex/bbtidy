@@ -1,0 +1,46 @@
+# Copy this file to .github/workflows/bbtidy.yml and replace meta-my-layer/.
+name: bbtidy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned bbtidy
+        run: python3 -m pip install --pre "bbtidy==0.1.0a4"
+      - name: Record bbtidy version
+        run: bbtidy --version
+      - name: Check formatting
+        run: bbtidy format --check meta-my-layer/
+      - name: Lint metadata and create SARIF
+        id: bbtidy_lint
+        shell: bash
+        run: |
+          set +e
+          bbtidy check --profile recommended --output sarif meta-my-layer/ > bbtidy.sarif
+          lint_status=$?
+          set -e
+          echo "status=$lint_status" >> "$GITHUB_OUTPUT"
+      - name: Upload SARIF
+        if: always() && (steps.bbtidy_lint.outputs.status == '0' || steps.bbtidy_lint.outputs.status == '1')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bbtidy-sarif
+          path: bbtidy.sarif
+          if-no-files-found: error
+      - name: Enforce lint result
+        if: always() && steps.bbtidy_lint.outputs.status != ''
+        env:
+          BBTIDY_EXIT_STATUS: ${{ steps.bbtidy_lint.outputs.status }}
+        run: exit "$BBTIDY_EXIT_STATUS"

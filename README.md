@@ -93,6 +93,8 @@ examples.
 
 ## Production and advanced documentation
 
+- [Copyable starter assets](examples/README.md): minimal configuration,
+  generic CI, GitHub Actions, pre-commit, and existing-repository migration.
 - [Getting started](docs/getting-started.md): one linear adoption workflow.
 - [Beta user guide](docs/beta-user-guide.md): production rollout, validation,
   release rehearsal, and issue reporting.

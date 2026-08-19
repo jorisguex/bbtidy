@@ -63,6 +63,8 @@ fail_on = "never"
 exclude = ["vendor/**"]
 ```
 
+The same configuration is available as the copyable
+[`examples/bbtidy.toml`](../examples/bbtidy.toml) starter file.
 Adjust the exclusion to match generated or externally maintained metadata in
 your repository. The [configuration reference](configuration.md) documents
 the complete schema when you need additional settings.

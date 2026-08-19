@@ -1,0 +1,14 @@
+# Install bbtidy==0.1.0a4 before enabling these local system hooks.
+repos:
+  - repo: local
+    hooks:
+      - id: bbtidy-format
+        name: bbtidy format
+        entry: bbtidy format --check
+        language: system
+        files: '\.(bb|bbappend|bbclass|conf|inc)$'
+      - id: bbtidy-check
+        name: bbtidy check
+        entry: bbtidy check --profile recommended
+        language: system
+        files: '\.(bb|bbappend|bbclass|conf|inc)$'

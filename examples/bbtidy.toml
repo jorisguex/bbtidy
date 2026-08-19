@@ -1,0 +1,6 @@
+[lint]
+profile = "recommended"
+fail_on = "never"
+
+[paths]
+exclude = ["vendor/**"]

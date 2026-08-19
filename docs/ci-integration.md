@@ -2,6 +2,8 @@
 
 CI should install an exact bbtidy version, print it in the log, and begin with
 offline read-only checks. The examples below pin the current evaluation build.
+The copyable [generic CI command file](../examples/generic-ci.txt) contains the
+pinned install and the three platform-neutral commands as one sequence.
 
 ## Generic CI
 
@@ -88,6 +90,9 @@ jobs:
         run: bbtidy check --profile recommended meta-my-layer/
 ```
 
+For a complete copyable workflow that retains SARIF before enforcing the saved
+lint status, use [`examples/github-actions.yml`](../examples/github-actions.yml).
+
 Use a reviewed baseline option in the final command when adopting bbtidy in a
 repository that already has findings.
 
@@ -115,21 +120,20 @@ the SARIF as an artifact and enforces the saved status afterward:
           set +e
           bbtidy check --profile recommended --output sarif meta-my-layer/ > bbtidy.sarif
           status=$?
+          set -e
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          if [ "$status" -eq 2 ]; then
-            exit 2
-          fi
-          exit 0
       - name: Retain SARIF
-        if: always()
+        if: always() && (steps.bbtidy_sarif.outputs.status == '0' || steps.bbtidy_sarif.outputs.status == '1')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bbtidy-sarif
           path: bbtidy.sarif
           if-no-files-found: error
       - name: Enforce bbtidy result
-        if: always() && steps.bbtidy_sarif.outputs.status == '1'
-        run: exit 1
+        if: always() && steps.bbtidy_sarif.outputs.status != ''
+        env:
+          BBTIDY_EXIT_STATUS: ${{ steps.bbtidy_sarif.outputs.status }}
+        run: exit "$BBTIDY_EXIT_STATUS"
 ```
 
 Replace artifact retention with the CI provider's SARIF ingestion step when
@@ -179,6 +183,23 @@ repos:
 
 The hooks receive staged file paths from pre-commit. Keep repository-wide
 workspace checking in CI rather than invoking BitBake from a local hook.
+The copyable
+[`examples/pre-commit-config.yaml`](../examples/pre-commit-config.yaml) uses
+these local `language: system` hooks and assumes the pinned executable is
+already installed; bbtidy does not publish a dedicated pre-commit package.
+
+## Existing repository migration
+
+Use the copyable [existing-repository
+guide](../examples/existing-repository.md) to adopt bbtidy in this order:
+
+1. preview formatting with `format --diff`;
+2. land formatting as a dedicated review;
+3. enable `format --check`;
+4. start recommended linting with `--fail-on never`;
+5. write and review an explicit baseline;
+6. fail on new findings while retaining that baseline; and
+7. reduce the baseline through reviewed fixes over time.
 
 ## Machine output guarantees
 

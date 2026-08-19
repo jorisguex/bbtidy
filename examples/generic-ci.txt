@@ -1,0 +1,4 @@
+python -m pip install --pre "bbtidy==0.1.0a4"
+bbtidy --version
+bbtidy format --check meta-my-layer/
+bbtidy check --profile recommended meta-my-layer/
