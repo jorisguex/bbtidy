@@ -5,6 +5,36 @@ Yocto repository. The [beta support contract](beta-support-contract.md) is the
 authoritative document for supported versions, guarantees, limitations, and
 release evidence; this guide turns that contract into an operational workflow.
 
+## Adoption contract
+
+The adoption experience is deliberately divided into three paths so that
+advanced BitBake-backed analysis does not obscure the safe first steps:
+
+| Path | Intended use | Primary interface | Invokes BitBake |
+| --- | --- | --- | --- |
+| Quick start | First evaluation and ordinary CI | `format` and offline `check` | No |
+| Production | Complete build-aware linting | `check --workspace BUILD_DIR` | Yes |
+| Advanced | Target-specific linting and metadata inspection | `check --semantic` and `semantic` | Yes |
+
+The following product decisions are frozen for the adoption-simplification
+work:
+
+- `format` and offline `check` are the primary interface.
+- `check --workspace` is the preferred authoritative production check.
+- `check --semantic` is an optional target-specific overlay.
+- `semantic` is an inspection and reporting tool, not part of basic adoption.
+- The quickstart is entirely read-only: it does not use `format --write` or
+  `check --fix`, and it does not invoke BitBake.
+- Every CI example must install or select an exact bbtidy version rather than a
+  floating package name, branch, or tag.
+- Until pilot evidence supports changing the built-in default, adoption
+  documentation and CI examples use `--profile recommended` explicitly.
+- This work does not add lint rules, parser features, editor integration, or an
+  initialization command.
+
+These decisions govern the adoption documentation and interface; they do not
+expand the compatibility promises in the beta support contract.
+
 ## Before you adopt it
 
 The beta contract covers Yocto Project 5.0 LTS (Scarthgap) with BitBake 2.8
