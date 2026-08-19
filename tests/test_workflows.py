@@ -49,6 +49,54 @@ class WorkflowPinTests(unittest.TestCase):
 
         self.assertEqual(errors, [])
 
+    def test_starter_workflow_has_safe_exit_handling_and_no_writes(self):
+        self.assertEqual(
+            check_workflows.validate_starter_workflow(
+                PROJECT_ROOT / "examples" / "github-actions.yml"
+            ),
+            [],
+        )
+
+    def test_starter_workflow_rejects_a_fabricated_lint_status(self):
+        source = (
+            PROJECT_ROOT / "examples" / "github-actions.yml"
+        ).read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            workflow = Path(temporary) / "github-actions.yml"
+            workflow.write_text(
+                source.replace("lint_status=$?", "lint_status=0"),
+                encoding="utf-8",
+            )
+
+            errors = check_workflows.validate_starter_workflow(workflow)
+
+        self.assertTrue(any("real lint exit status" in error for error in errors))
+
+    def test_starter_workflow_rejects_writing_commands(self):
+        source = (
+            PROJECT_ROOT / "examples" / "github-actions.yml"
+        ).read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            workflow = Path(temporary) / "github-actions.yml"
+            workflow.write_text(
+                source.replace("format --check", "format --write"),
+                encoding="utf-8",
+            )
+
+            errors = check_workflows.validate_starter_workflow(workflow)
+
+        self.assertTrue(any("must not write or fix" in error for error in errors))
+
+    def test_security_workflow_actionlints_the_starter_example(self):
+        workflow = (
+            PROJECT_ROOT / ".github" / "workflows" / "security.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('- "examples/github-actions.yml"', workflow)
+        self.assertIn(
+            '"$actionlint_path" -color examples/github-actions.yml', workflow
+        )
+
     def test_release_topology_has_one_tag_orchestrator_and_blocking_gates(self):
         self.assertEqual(
             check_workflows.validate_release_topology(

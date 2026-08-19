@@ -10,7 +10,10 @@ on:
       - "Cargo.toml"
       - "fuzz/Cargo.lock"
       - "fuzz/Cargo.toml"
+      - "examples/github-actions.yml"
       - "scripts/check_workflows.py"
+      - "tests/test_starter_assets.py"
+      - "tests/test_workflows.py"
   pull_request:
     paths:
       - ".github/dependabot.yml"
@@ -19,7 +22,10 @@ on:
       - "Cargo.toml"
       - "fuzz/Cargo.lock"
       - "fuzz/Cargo.toml"
+      - "examples/github-actions.yml"
       - "scripts/check_workflows.py"
+      - "tests/test_starter_assets.py"
+      - "tests/test_workflows.py"
   schedule:
     - cron: "17 3 * * 1"
   workflow_dispatch:
@@ -41,6 +47,7 @@ jobs:
         run: |
           actionlint_path="$(go env GOPATH)/bin/actionlint"
           "$actionlint_path" -color
+          "$actionlint_path" -color examples/github-actions.yml
 
   dependency-audit:
     name: Audit Rust dependencies

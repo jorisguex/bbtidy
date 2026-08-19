@@ -182,6 +182,62 @@ fn check_without_inputs_returns_actionable_guidance_on_stderr() {
 }
 
 #[test]
+fn documented_quickstart_is_read_only_on_a_fixture_layer() {
+    let directory = TemporaryDirectory::new("documented-quickstart");
+    let layer = directory.path().join("meta-my-layer");
+    let layer_configuration = directory.write(
+        "meta-my-layer/conf/layer.conf",
+        concat!(
+            "BBPATH .= \":${LAYERDIR}\"\n",
+            "BBFILE_COLLECTIONS += \"quickstart\"\n",
+            "BBFILE_PATTERN_quickstart = \"^${LAYERDIR}/\"\n",
+            "BBFILE_PRIORITY_quickstart = \"1\"\n",
+            "LAYERSERIES_COMPAT_quickstart = \"test\"\n",
+        ),
+    );
+    let recipe = directory.write(
+        "meta-my-layer/recipes-example/demo/demo_1.0.bb",
+        concat!(
+            "SUMMARY=\"Quickstart fixture\"\n",
+            "DESCRIPTION = \"Exercises the documented offline path\"\n",
+            "LICENSE = \"CLOSED\"\n",
+        ),
+    );
+    let original_configuration = fs::read(&layer_configuration).unwrap();
+    let original_recipe = fs::read(&recipe).unwrap();
+
+    let version = run(["--version"]);
+    assert_success(&version);
+    assert_eq!(
+        String::from_utf8(version.stdout).unwrap(),
+        format!("bbtidy {}\n", env!("CARGO_PKG_VERSION"))
+    );
+
+    let preview = run(["format", "--diff", layer.to_str().unwrap()]);
+    assert_success(&preview);
+    let preview = String::from_utf8(preview.stdout).unwrap();
+    assert!(preview.contains("-SUMMARY=\"Quickstart fixture\""));
+    assert!(preview.contains("+SUMMARY = \"Quickstart fixture\""));
+
+    let lint = run([
+        "check",
+        "--profile",
+        "recommended",
+        "--fail-on",
+        "never",
+        layer.to_str().unwrap(),
+    ]);
+    assert_success(&lint);
+    assert!(lint.stderr.is_empty());
+
+    assert_eq!(
+        fs::read(layer_configuration).unwrap(),
+        original_configuration
+    );
+    assert_eq!(fs::read(recipe).unwrap(), original_recipe);
+}
+
+#[test]
 fn syntax_stats_reports_machine_readable_cst_coverage() {
     let directory = TemporaryDirectory::new("syntax-stats");
     let file = directory.write(
@@ -863,6 +919,8 @@ fn lint_profiles_suppressions_and_baselines_are_incremental() {
     fs::write(&file, "SRCREV = \"${AUTOREV}\"\n").unwrap();
     let written = run([
         "check",
+        "--profile",
+        "recommended",
         "--fail-on",
         "never",
         "--write-baseline",
@@ -873,8 +931,12 @@ fn lint_profiles_suppressions_and_baselines_are_incremental() {
     assert!(baseline.is_file());
     let existing = run([
         "check",
+        "--profile",
+        "recommended",
         "--output",
         "json",
+        "--fail-on",
+        "warning",
         "--baseline",
         baseline.to_str().unwrap(),
         path,
@@ -883,6 +945,36 @@ fn lint_profiles_suppressions_and_baselines_are_incremental() {
     let existing_report: Value = serde_json::from_slice(&existing.stdout).unwrap();
     assert_eq!(existing_report["baseline"]["existing"], 1);
     assert_eq!(existing_report["baseline"]["new"], 0);
+
+    fs::write(
+        &file,
+        "SRCREV = \"${AUTOREV}\"\nSUMMARY = \"new finding\"  \n",
+    )
+    .unwrap();
+    let newly_introduced = run([
+        "check",
+        "--profile",
+        "recommended",
+        "--output",
+        "json",
+        "--fail-on",
+        "warning",
+        "--baseline",
+        baseline.to_str().unwrap(),
+        path,
+    ]);
+    assert_eq!(newly_introduced.status.code(), Some(1));
+    assert!(newly_introduced.stderr.is_empty());
+    let new_report: Value = serde_json::from_slice(&newly_introduced.stdout).unwrap();
+    assert_eq!(new_report["baseline"]["existing"], 1);
+    assert_eq!(new_report["baseline"]["new"], 1);
+    assert!(
+        new_report["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|diagnostic| diagnostic["rule_id"] == "BBT001" && diagnostic["baseline"] == "new")
+    );
 }
 
 #[test]
@@ -1471,7 +1563,7 @@ exit 0
 
 #[cfg(unix)]
 #[test]
-fn semantic_full_analysis_emits_build_sections_in_json() {
+fn semantic_full_and_individual_advanced_flags_remain_backward_compatible() {
     use std::os::unix::fs::PermissionsExt;
 
     let directory = TemporaryDirectory::new("semantic-full-cli");
@@ -1538,6 +1630,42 @@ exit 0
         report["build_analysis"]["packages"][0]["runtime_dependencies"]["demo"][0],
         "lib"
     );
+
+    let individual = run([
+        "semantic",
+        "--build-dir",
+        directory.path().join("build").to_str().unwrap(),
+        "--bitbake",
+        bitbake.to_str().unwrap(),
+        "--target",
+        "demo",
+        "--graph",
+        "--dry-run",
+        "--inventory",
+        "--packages",
+        "--bitbake-command-timeout-seconds",
+        "30",
+        "--bitbake-total-timeout-seconds",
+        "60",
+        "--bitbake-max-stdout-bytes",
+        "1048576",
+        "--bitbake-max-stderr-bytes",
+        "1048576",
+        "--bitbake-max-commands",
+        "20",
+        "--bitbake-max-recipe-queries",
+        "10",
+        "--output",
+        "json",
+    ]);
+
+    assert_success(&individual);
+    let individual: Value = serde_json::from_slice(&individual.stdout).unwrap();
+    assert_eq!(individual["build_analysis"]["succeeded"], true);
+    assert_eq!(individual["build_analysis"]["graphs"][0]["succeeded"], true);
+    assert!(individual["build_analysis"]["dry_run"].is_object());
+    assert!(individual["build_analysis"]["inventory"].is_object());
+    assert!(individual["build_analysis"]["packages"][0].is_object());
 }
 
 #[cfg(unix)]

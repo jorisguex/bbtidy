@@ -19,7 +19,7 @@ from scripts.release_metadata import (
     validate_release_metadata,
     wheel_entries,
 )
-from scripts.smoke_test_package import select_distribution
+from scripts.smoke_test_package import onboarding_commands, select_distribution
 from scripts.verify_release_artifacts import verify_distributions
 
 
@@ -106,6 +106,25 @@ class DistributionSelectionTests(unittest.TestCase):
 
             with self.assertRaises(RuntimeError):
                 select_distribution(directory, "wheel")
+
+    def test_package_smoke_runs_the_documented_onboarding_commands(self):
+        executable = Path("/venv/bin/bbtidy")
+        fixture = Path("/tmp/formatted-fixture.bb")
+
+        self.assertEqual(
+            onboarding_commands(executable, fixture),
+            [
+                [str(executable), "--version"],
+                [str(executable), "format", "--check", str(fixture)],
+                [
+                    str(executable),
+                    "check",
+                    "--profile",
+                    "recommended",
+                    str(fixture),
+                ],
+            ],
+        )
 
 
 class ReleaseBinaryTests(unittest.TestCase):
@@ -348,9 +367,20 @@ class ReleaseWorkflowTests(unittest.TestCase):
     def test_release_workflows_run_packaging_and_workflow_validation(self):
         root = Path(__file__).resolve().parents[1] / ".github" / "workflows"
         crates = (root / "publish-crates.yml").read_text(encoding="utf-8")
+        python_package = (root / "python-package.yml").read_text(encoding="utf-8")
+        pypi = (root / "publish-pypi.yml").read_text(encoding="utf-8")
 
         self.assertIn('python3 -m unittest discover -s tests -p "test_*.py"', crates)
         self.assertIn("python3 scripts/check_workflows.py", crates)
+        for workflow in (python_package, pypi):
+            self.assertIn(
+                "scripts/smoke_test_package.py --kind wheel",
+                workflow,
+            )
+            self.assertIn(
+                "scripts/smoke_test_package.py --kind sdist",
+                workflow,
+            )
 
 
 if __name__ == "__main__":

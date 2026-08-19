@@ -78,7 +78,7 @@ exclude = ["vendor/**"]
         workflow = path.read_text(encoding="utf-8")
         package_version = current_package_version()
 
-        self.assertEqual(check_workflows.validate_workflow(path), [])
+        self.assertEqual(check_workflows.validate_starter_workflow(path), [])
         self.assertIn(
             'permissions:\n  contents: read\n\njobs:',
             workflow,

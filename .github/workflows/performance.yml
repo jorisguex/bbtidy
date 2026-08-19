@@ -55,21 +55,50 @@ jobs:
           if-no-files-found: error
 
   scaling:
-    name: Parameterized Rust scaling benchmark
-    if: github.event_name != 'pull_request'
+    name: Criterion scaling benchmark
     runs-on: ubuntu-24.04
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/bbtidy-performance-target
     steps:
       - name: Check out exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - name: Run scaling benchmark
-        run: cargo bench --locked --bench layer_analysis
-      - name: Upload benchmark log
+      - name: Check out pull-request baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: performance-baseline-source
+      - name: Use the candidate benchmark contract for the baseline
+        if: github.event_name == 'pull_request'
+        run: |
+          cp benches/layer_analysis.rs performance-baseline-source/benches/layer_analysis.rs
+          if ! grep -q '^criterion = ' performance-baseline-source/Cargo.toml; then
+            cp Cargo.toml Cargo.lock performance-baseline-source/
+          fi
+      - name: Measure pull-request baseline
+        if: github.event_name == 'pull_request'
+        working-directory: performance-baseline-source
+        run: >-
+          cargo bench --locked --bench layer_analysis --
+          --save-baseline pull-request-base
+      - name: Compare pull request with baseline
+        if: github.event_name == 'pull_request'
+        run: >-
+          cargo bench --locked --bench layer_analysis --
+          --baseline pull-request-base
+      - name: Measure non-pull-request baseline
+        if: github.event_name != 'pull_request'
+        run: >-
+          cargo bench --locked --bench layer_analysis --
+          --save-baseline current
+      - name: Upload Criterion evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: performance-scaling-${{ github.run_id }}
-          path: target/criterion
-          if-no-files-found: warn
+          path: ${{ runner.temp }}/bbtidy-performance-target/criterion
+          if-no-files-found: error
 
   weekly-guidance:
     name: Weekly BitBake reference guidance

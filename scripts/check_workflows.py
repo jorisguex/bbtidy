@@ -9,10 +9,20 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKFLOW_DIRECTORY = PROJECT_ROOT / ".github" / "workflows"
+DEFAULT_EXAMPLE_WORKFLOW = PROJECT_ROOT / "examples" / "github-actions.yml"
 WORKFLOW_SUFFIXES = {".yaml", ".yml"}
 USES = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<value>.+?)\s*$")
 COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE_DIGEST = re.compile(r"^docker://[^@\s]+@sha256:[0-9a-f]{64}$")
+WRITING_BBTIDY_FLAG = re.compile(r"--(?:write|fix)(?=\s|$)", re.MULTILINE)
+SAFE_LINT_STATUS_FLOW = re.compile(
+    r"set \+e\s*\n"
+    r"\s*bbtidy check --profile recommended --output sarif meta-my-layer/ "
+    r"> bbtidy\.sarif\s*\n"
+    r"\s*lint_status=\$\?\s*\n"
+    r"\s*set -e\s*\n"
+    r'\s*echo "status=\$lint_status" >> "\$GITHUB_OUTPUT"'
+)
 
 
 def action_reference_error(value):
@@ -59,6 +69,92 @@ def validate_workflow_directory(directory):
     for path in sorted(directory.iterdir()):
         if path.is_file() and path.suffix in WORKFLOW_SUFFIXES:
             errors.extend(validate_workflow(path))
+    return errors
+
+
+def validate_starter_workflow(path=DEFAULT_EXAMPLE_WORKFLOW):
+    """Validate the copyable workflow's safe exit-code and read-only contract."""
+
+    path = Path(path)
+    if not path.is_file():
+        return ["starter workflow does not exist: {}".format(path)]
+
+    errors = validate_workflow(path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return errors + [str(error)]
+
+    if WRITING_BBTIDY_FLAG.search(text):
+        errors.append("{}: starter workflow must not write or fix files".format(path))
+
+    required_fragments = (
+        (
+            "bbtidy check --profile recommended --output sarif meta-my-layer/ "
+            "> bbtidy.sarif",
+            "starter workflow must run the canonical SARIF lint command",
+        ),
+        ("lint_status=$?", "starter workflow must capture the real lint exit status"),
+        (
+            'echo "status=$lint_status" >> "$GITHUB_OUTPUT"',
+            "starter workflow must expose the captured lint status",
+        ),
+        (
+            "if: always() && (steps.bbtidy_lint.outputs.status == '0' || "
+            "steps.bbtidy_lint.outputs.status == '1')",
+            "SARIF upload must be limited to complete exit statuses 0 and 1",
+        ),
+        (
+            "if: always() && steps.bbtidy_lint.outputs.status != ''",
+            "lint enforcement must run whenever a status was captured",
+        ),
+        (
+            "BBTIDY_EXIT_STATUS: ${{ steps.bbtidy_lint.outputs.status }}",
+            "lint enforcement must consume the captured status",
+        ),
+        (
+            'run: exit "$BBTIDY_EXIT_STATUS"',
+            "lint enforcement must return the captured status",
+        ),
+    )
+    for fragment, message in required_fragments:
+        if fragment not in text:
+            errors.append("{}: {}".format(path, message))
+
+    if SAFE_LINT_STATUS_FLOW.search(text) is None:
+        errors.append(
+            "{}: starter workflow must capture lint status immediately and restore "
+            "fail-fast handling".format(path)
+        )
+
+    ordered_fragments = (
+        "set +e",
+        "bbtidy check --profile recommended --output sarif meta-my-layer/",
+        "lint_status=$?",
+        "set -e",
+        'echo "status=$lint_status" >> "$GITHUB_OUTPUT"',
+        "- name: Upload SARIF",
+        "- name: Enforce lint result",
+        'run: exit "$BBTIDY_EXIT_STATUS"',
+    )
+    positions = [text.find(fragment) for fragment in ordered_fragments]
+    if all(position >= 0 for position in positions) and positions != sorted(positions):
+        errors.append(
+            "{}: lint, status capture, upload, and enforcement steps are out of order".format(
+                path
+            )
+        )
+
+    lint_line = next(
+        (
+            line
+            for line in text.splitlines()
+            if "bbtidy check --profile recommended --output sarif" in line
+        ),
+        "",
+    )
+    if "||" in lint_line or "; exit 0" in lint_line:
+        errors.append("{}: lint command must not discard its exit status".format(path))
     return errors
 
 
@@ -182,11 +278,17 @@ def main(argv=None):
 
     errors = validate_workflow_directory(arguments.workflow_dir)
     errors.extend(validate_release_topology(arguments.workflow_dir))
+    if arguments.workflow_dir.resolve() == DEFAULT_WORKFLOW_DIRECTORY.resolve():
+        errors.extend(validate_starter_workflow())
     if errors:
         for error in errors:
             print("error: {}".format(error), file=sys.stderr)
         return 1
-    print("validated immutable action pins in {}".format(arguments.workflow_dir))
+    print(
+        "validated workflow security and starter CI behavior in {}".format(
+            arguments.workflow_dir
+        )
+    )
     return 0
 
 

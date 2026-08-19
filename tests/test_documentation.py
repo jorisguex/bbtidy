@@ -1,5 +1,10 @@
+import json
+import os
 import re
+import subprocess
+import tempfile
 import unittest
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -8,6 +13,69 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def read_document(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def documentation_paths():
+    return [
+        ROOT / "README.md",
+        *sorted((ROOT / "docs").rglob("*.md")),
+        *sorted((ROOT / "examples").rglob("*.md")),
+    ]
+
+
+@lru_cache(maxsize=1)
+def bbtidy_executable():
+    override = os.environ.get("BBTIDY_TEST_BINARY")
+    if override:
+        executable = Path(override).resolve()
+    else:
+        subprocess.run(
+            ["cargo", "build", "--quiet", "--locked", "--bin", "bbtidy"],
+            cwd=ROOT,
+            check=True,
+        )
+        target = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
+        if not target.is_absolute():
+            target = ROOT / target
+        executable = target / "debug" / (
+            "bbtidy.exe" if os.name == "nt" else "bbtidy"
+        )
+    if not executable.is_file():
+        raise AssertionError(f"bbtidy test executable does not exist: {executable}")
+    return executable
+
+
+def run_bbtidy(arguments, cwd):
+    return subprocess.run(
+        [str(bbtidy_executable()), *arguments],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def write_fixture_layer(root):
+    layer = root / "meta-my-layer"
+    (layer / "conf").mkdir(parents=True)
+    (layer / "recipes-example" / "demo").mkdir(parents=True)
+    (layer / "conf" / "layer.conf").write_text(
+        """BBPATH .= ":${LAYERDIR}"
+BBFILE_COLLECTIONS += "quickstart"
+BBFILE_PATTERN_quickstart = "^${LAYERDIR}/"
+BBFILE_PRIORITY_quickstart = "1"
+LAYERSERIES_COMPAT_quickstart = "test"
+""",
+        encoding="utf-8",
+    )
+    (layer / "recipes-example" / "demo" / "demo_1.0.bb").write_text(
+        """SUMMARY="Quickstart fixture"
+DESCRIPTION = "Exercises the documented offline path"
+LICENSE = "CLOSED"
+""",
+        encoding="utf-8",
+    )
+    return layer
 
 
 class DocumentationTests(unittest.TestCase):
@@ -289,9 +357,112 @@ bbtidy check \\
             execution_guide,
         )
 
+    def test_example_toml_is_loaded_by_the_real_cli(self):
+        with tempfile.TemporaryDirectory(prefix="bbtidy-doc-config-") as temporary:
+            root = Path(temporary)
+            recipe = root / "example.bb"
+            recipe.write_text(
+                'SUMMARY = "Example"\nSRCREV = "${AUTOREV}"\n',
+                encoding="utf-8",
+            )
+            result = run_bbtidy(
+                [
+                    "check",
+                    "--config",
+                    str(ROOT / "examples" / "bbtidy.toml"),
+                    "--output",
+                    "json",
+                    str(recipe),
+                ],
+                root,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["profile"], "recommended")
+        self.assertTrue(
+            any(item["rule_id"] == "BBT004" for item in report["diagnostics"])
+        )
+
+    def test_canonical_quickstart_executes_without_writing_fixture_files(self):
+        with tempfile.TemporaryDirectory(prefix="bbtidy-doc-quickstart-") as temporary:
+            root = Path(temporary)
+            layer = write_fixture_layer(root)
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(layer.rglob("*"))
+                if path.is_file()
+            }
+
+            version = run_bbtidy(["--version"], root)
+            preview = run_bbtidy(["format", "--diff", "meta-my-layer/"], root)
+            lint = run_bbtidy(
+                [
+                    "check",
+                    "--profile",
+                    "recommended",
+                    "--fail-on",
+                    "never",
+                    "meta-my-layer/",
+                ],
+                root,
+            )
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(layer.rglob("*"))
+                if path.is_file()
+            }
+
+        self.assertEqual(version.returncode, 0, version.stderr)
+        self.assertRegex(version.stdout, r"^bbtidy \d+\.\d+\.\d+")
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertIn('-SUMMARY="Quickstart fixture"', preview.stdout)
+        self.assertIn('+SUMMARY = "Quickstart fixture"', preview.stdout)
+        self.assertEqual(lint.returncode, 0, lint.stderr)
+        self.assertEqual(before, after)
+
+    def test_writing_examples_are_preceded_by_their_preview_commands(self):
+        fenced_block = re.compile(r"```[^\n]*\n(?P<body>.*?)```", re.DOTALL)
+        for path in documentation_paths():
+            source = path.read_text(encoding="utf-8")
+            commands = []
+            for block in fenced_block.finditer(source):
+                continued_command = ""
+                for line in block.group("body").splitlines():
+                    fragment = line.strip()
+                    if not continued_command and not fragment.startswith("bbtidy "):
+                        continue
+                    continued_command = "{} {}".format(
+                        continued_command, fragment
+                    ).strip()
+                    if continued_command.endswith("\\"):
+                        continued_command = continued_command[:-1].rstrip()
+                        continue
+                    commands.append(continued_command)
+                    continued_command = ""
+
+            for index, command in enumerate(commands):
+                earlier = commands[:index]
+                with self.subTest(document=path, command=command):
+                    if command.startswith("bbtidy format --write"):
+                        self.assertTrue(
+                            any(
+                                item.startswith("bbtidy format --diff")
+                                for item in earlier
+                            ),
+                            f"{path}: format write appears before a diff preview",
+                        )
+                    if command.startswith("bbtidy check") and "--fix" in command:
+                        self.assertTrue(
+                            any(
+                                item.startswith("bbtidy check") and "--fix" not in item
+                                for item in earlier
+                            ),
+                            f"{path}: lint fix appears before a lint preview",
+                        )
+
     def test_all_documented_relative_links_exist(self):
-        documents = [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]
-        for path in documents:
+        for path in documentation_paths():
             source = path.read_text(encoding="utf-8")
             for target in re.findall(r"\[[^]]*\]\(([^)]+)\)", source):
                 if target.startswith(("http://", "https://", "mailto:")):
@@ -302,6 +473,51 @@ bbtidy check \\
                 resolved = path.parent / relative_target
                 with self.subTest(document=path, target=target):
                     self.assertTrue(resolved.exists(), resolved)
+
+    def test_every_install_and_ci_example_has_an_explicit_version_policy(self):
+        cargo = read_document("Cargo.toml")
+        release = re.search(r'^version = "([^"]+)"$', cargo, flags=re.MULTILINE)
+        self.assertIsNotNone(release)
+        package_version = re.sub(
+            r"-(alpha|beta|rc)\.(\d+)$",
+            lambda value: {"alpha": "a", "beta": "b", "rc": "rc"}[
+                value.group(1)
+            ]
+            + value.group(2),
+            release.group(1),
+        )
+        sources = [
+            *documentation_paths(),
+            ROOT / "examples" / "generic-ci.txt",
+            ROOT / "examples" / "github-actions.yml",
+            ROOT / "examples" / "pre-commit-config.yaml",
+        ]
+
+        install_lines = []
+        for path in sources:
+            for line_number, line in enumerate(
+                path.read_text(encoding="utf-8").splitlines(), start=1
+            ):
+                if "bbtidy" in line and (
+                    "pip install" in line or "pipx install" in line
+                ):
+                    install_lines.append((path, line_number, line))
+        self.assertTrue(install_lines)
+        for path, line_number, line in install_lines:
+            with self.subTest(path=path, line=line_number):
+                self.assertIn(f"bbtidy=={package_version}", line)
+
+        for path in (
+            ROOT / "README.md",
+            ROOT / "docs" / "ci-integration.md",
+            ROOT / "examples" / "generic-ci.txt",
+            ROOT / "examples" / "github-actions.yml",
+        ):
+            with self.subTest(ci_example=path):
+                self.assertIn(
+                    f"bbtidy=={package_version}",
+                    path.read_text(encoding="utf-8"),
+                )
 
     def test_beta_support_contract_remains_the_authoritative_reference(self):
         readme = read_document("README.md")

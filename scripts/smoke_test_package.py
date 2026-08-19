@@ -14,6 +14,12 @@ except ModuleNotFoundError:
     from check_release_version import cargo_version, pep440_version
 
 
+CLEAN_ONBOARDING_FIXTURE = """SUMMARY = "bbtidy package smoke test"
+DESCRIPTION = "Exercises the installed onboarding commands"
+LICENSE = "CLOSED"
+"""
+
+
 def select_distribution(path, kind):
     path = path.resolve()
     if path.is_file():
@@ -36,6 +42,22 @@ def environment_executable(environment, name):
     scripts = "Scripts" if sys.platform == "win32" else "bin"
     suffix = ".exe" if sys.platform == "win32" else ""
     return environment / scripts / "{}{}".format(name, suffix)
+
+
+def onboarding_commands(executable, fixture):
+    """Return the documented onboarding commands for an installed artifact."""
+
+    return [
+        [str(executable), "--version"],
+        [str(executable), "format", "--check", str(fixture)],
+        [
+            str(executable),
+            "check",
+            "--profile",
+            "recommended",
+            str(fixture),
+        ],
+    ]
 
 
 def main():
@@ -88,11 +110,15 @@ def main():
             )
 
         executable = environment_executable(environment, "bbtidy")
+        fixture = Path(temporary) / "formatted-fixture.bb"
+        fixture.write_text(CLEAN_ONBOARDING_FIXTURE, encoding="utf-8")
+        commands = onboarding_commands(executable, fixture)
         output = subprocess.run(
-            [str(executable), "--version"],
+            commands[0],
             check=True,
             capture_output=True,
             text=True,
+            cwd=temporary,
         ).stdout.strip()
         expected_output = "bbtidy {}".format(version)
         if output != expected_output:
@@ -101,8 +127,20 @@ def main():
                     output, expected_output
                 )
             )
+        for command in commands[1:]:
+            subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+                cwd=temporary,
+            )
 
-    print("Installed {} and verified {}".format(distribution.name, expected_output))
+    print(
+        "Installed {} and verified {} plus format/check onboarding".format(
+            distribution.name, expected_output
+        )
+    )
     return 0
 
 

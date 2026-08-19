@@ -61,6 +61,34 @@ Release evidence should contain `performance/manifest.json`, `budgets.json`,
 records for each supported release, raw samples, and any failure artifacts.
 Hosted-runner timing is reference evidence, not a universal user guarantee.
 
+## Rust scaling baseline
+
+The `layer_analysis` Criterion suite isolates the main in-process scaling
+risks: line/column lookup, diagnostic-dense linting, chained static override
+resolution, workspace indexing, shared-include workspace linting, and
+formatting by source size. Fixture creation and correctness checks happen
+outside the timed loops; Criterion performs warm-up, iteration calibration,
+outlier analysis, and confidence-interval estimation.
+
+Capture a named baseline before changing runtime behavior:
+
+```bash
+cargo bench --locked --bench layer_analysis -- --save-baseline before
+```
+
+Compare the changed implementation against that exact baseline on the same
+machine and build environment:
+
+```bash
+cargo bench --locked --bench layer_analysis -- --baseline before
+```
+
+The raw samples, estimates, change statistics, and HTML report are written to
+`target/criterion/`. Absolute timings are meaningful only on a stable runner;
+the input-size ratios are useful for identifying algorithmic scaling changes.
+Pull-request CI measures the base commit first and then compares the candidate
+using one runner and one shared Cargo target directory.
+
 For an alternating base/candidate comparison, collect both records with the
 same runner class and corpus, then add the baseline-evidence option to the
 checker invocation. The checker rejects mismatched corpus revisions, modes,
