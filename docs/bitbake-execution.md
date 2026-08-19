@@ -84,7 +84,8 @@ python3 scripts/benchmark_bitbake.py \
   --recipe-list /path/to/recipes.txt \
   --include-recipe-queries
 
-bbtidy check --workspace /path/to/build --bitbake /path/to/bitbake --output json
+bbtidy check --workspace /path/to/build --bitbake /path/to/bitbake \
+  --profile recommended --output json
 bbtidy semantic --build-dir /path/to/build --bitbake /path/to/bitbake \
   --target core-image-minimal --output json
 ```

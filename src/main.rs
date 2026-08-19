@@ -29,7 +29,8 @@ static CLI_CANCELLED: AtomicBool = AtomicBool::new(false);
     author,
     version,
     about = "Format and inspect BitBake metadata",
-    long_about = None
+    long_about = None,
+    after_help = "Try bbtidy safely:\n  bbtidy format --diff meta-my-layer/\n  bbtidy check --profile recommended --fail-on never meta-my-layer/"
 )]
 struct Cli {
     /// Read configuration from an explicit TOML file.
@@ -56,7 +57,7 @@ enum Command {
     /// Print the lexer token stream
     Lex(InputArgs),
 
-    /// Run authoritative semantic analysis through BitBake
+    /// Produce a BitBake inspection report without running ordinary file linting
     Semantic(SemanticArgs),
 
     /// Report CST coverage metrics for the compatibility harness
@@ -65,6 +66,9 @@ enum Command {
 }
 
 #[derive(Args)]
+#[command(
+    after_help = "Examples:\n  Preview formatting without writing:\n    bbtidy format --diff meta-my-layer/\n\n  Check formatting in CI:\n    bbtidy format --check meta-my-layer/\n\n  Apply formatting after review:\n    bbtidy format --write meta-my-layer/"
+)]
 struct FormatArgs {
     /// Check whether files are formatted without writing them.
     #[arg(long, conflicts_with_all = ["write", "diff"])]
@@ -91,73 +95,110 @@ struct FormatArgs {
 }
 
 #[derive(Args)]
+#[command(
+    after_help = "Examples:\n  Observe recommended lint findings without failing:\n    bbtidy check --profile recommended --fail-on never meta-my-layer/\n\n  Enforce recommended lint findings in CI:\n    bbtidy check --profile recommended --fail-on warning meta-my-layer/\n\nBitBake-backed modes:\n  --workspace BUILD_DIR  Determines the complete file scope through BitBake.\n  --semantic             Supplements supplied files with target-expanded metadata.\n  bbtidy semantic        Produces an inspection report without running ordinary file linting."
+)]
 struct LintArgs {
-    /// Select human-readable text, JSON, or SARIF diagnostics.
-    #[arg(long, value_enum, default_value_t = LintOutput::Text, value_name = "FORMAT")]
-    output: LintOutput,
-
     /// Select an evidence-driven lint profile.
-    #[arg(long, value_enum, value_name = "PROFILE")]
+    #[arg(
+        long,
+        value_enum,
+        value_name = "PROFILE",
+        help_heading = "Core checking"
+    )]
     profile: Option<LintProfileArg>,
 
     /// Enable one or more rules in addition to the selected profile.
-    #[arg(long = "enable", value_name = "RULE")]
+    #[arg(long = "enable", value_name = "RULE", help_heading = "Core checking")]
     enable: Vec<String>,
 
     /// Disable one or more rules after profile and enable selection.
-    #[arg(long = "disable", value_name = "RULE")]
+    #[arg(long = "disable", value_name = "RULE", help_heading = "Core checking")]
     disable: Vec<String>,
 
-    /// Set the minimum diagnostic severity that fails the command.
-    #[arg(long, value_enum, value_name = "SEVERITY")]
-    fail_on: Option<LintFailureArg>,
-
     /// Apply safe, machine-generated fixes and re-lint the resulting source.
-    #[arg(long)]
+    #[arg(long, help_heading = "Core checking")]
     fix: bool,
 
     /// Include help and edit details in human-readable diagnostics.
-    #[arg(long)]
+    #[arg(long, help_heading = "Core checking")]
     show_fixes: bool,
 
     /// Include findings matched by inline suppressions in machine output.
-    #[arg(long)]
+    #[arg(long, help_heading = "Core checking")]
     show_suppressed: bool,
 
-    /// Emit the versioned machine-readable output schema.
-    #[arg(long, default_value_t = 1, value_name = "N")]
-    output_version: u8,
+    /// Set the minimum diagnostic severity that fails the command.
+    #[arg(
+        long,
+        value_enum,
+        value_name = "SEVERITY",
+        help_heading = "Adoption and baselines"
+    )]
+    fail_on: Option<LintFailureArg>,
 
     /// Write the current findings as an adoption baseline.
-    #[arg(long, value_name = "PATH", conflicts_with = "refresh_baseline")]
+    #[arg(
+        long,
+        value_name = "PATH",
+        conflicts_with = "refresh_baseline",
+        help_heading = "Adoption and baselines"
+    )]
     write_baseline: Option<PathBuf>,
 
     /// Compare findings with an adoption baseline.
-    #[arg(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH", help_heading = "Adoption and baselines")]
     baseline: Option<PathBuf>,
 
     /// Include findings already present in the baseline in the blocking set.
-    #[arg(long)]
+    #[arg(long, help_heading = "Adoption and baselines")]
     show_existing: bool,
 
     /// Explicitly replace a baseline with the current findings.
-    #[arg(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH", help_heading = "Adoption and baselines")]
     refresh_baseline: Option<PathBuf>,
 
-    /// Override the configured maximum number of files for this invocation.
-    #[arg(long, value_name = "N")]
-    max_files: Option<usize>,
+    /// Select human-readable text, JSON, or SARIF diagnostics.
+    #[arg(
+        long,
+        value_enum,
+        default_value_t = LintOutput::Text,
+        value_name = "FORMAT",
+        help_heading = "Output and CI"
+    )]
+    output: LintOutput,
 
-    /// Override the configured maximum total source size in bytes.
-    #[arg(long, value_name = "BYTES")]
-    max_bytes: Option<u64>,
+    /// Emit the versioned machine-readable output schema.
+    #[arg(
+        long,
+        default_value_t = 1,
+        value_name = "N",
+        help_heading = "Output and CI"
+    )]
+    output_version: u8,
 
-    /// Lint the complete BitBake workspace described by build/conf/bblayers.conf.
-    #[arg(long, value_name = "BUILD_DIR")]
+    /// Determine the complete file scope through BitBake using BUILD_DIR.
+    #[arg(
+        long,
+        value_name = "BUILD_DIR",
+        help_heading = "BitBake-backed checking"
+    )]
     workspace: Option<PathBuf>,
 
     #[command(flatten)]
     semantic: SemanticLintArgs,
+
+    /// Override the configured maximum number of files for this invocation.
+    #[arg(long, value_name = "N", help_heading = "Resource and safety limits")]
+    max_files: Option<usize>,
+
+    /// Override the configured maximum total source size in bytes.
+    #[arg(
+        long,
+        value_name = "BYTES",
+        help_heading = "Resource and safety limits"
+    )]
+    max_bytes: Option<u64>,
 
     #[command(flatten)]
     inputs: InputArgs,
@@ -165,48 +206,56 @@ struct LintArgs {
 
 #[derive(Args)]
 struct SemanticLintArgs {
-    /// Run BitBake-backed semantic analysis in addition to static linting.
-    #[arg(long)]
+    /// Supplement supplied files with target-expanded metadata through BitBake.
+    #[arg(long, help_heading = "BitBake-backed checking")]
     semantic: bool,
 
     /// Existing BitBake build directory containing conf/local.conf and conf/bblayers.conf.
-    #[arg(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH", help_heading = "BitBake-backed checking")]
     build_dir: Option<PathBuf>,
 
     /// Project directory from which to discover a build directory.
-    #[arg(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH", help_heading = "BitBake-backed checking")]
     project_dir: Option<PathBuf>,
 
     /// BitBake executable for semantic analysis or --workspace; defaults to project configuration or PATH.
-    #[arg(long, value_name = "PATH")]
+    #[arg(long, value_name = "PATH", help_heading = "BitBake-backed checking")]
     bitbake: Option<PathBuf>,
 
     /// Recipe or target to inspect. May be supplied more than once.
-    #[arg(long = "target", value_name = "TARGET")]
+    #[arg(
+        long = "target",
+        value_name = "TARGET",
+        help_heading = "BitBake-backed checking"
+    )]
     targets: Vec<String>,
 
     /// Fully expanded variable to include in the semantic report. May be supplied more than once.
-    #[arg(long = "variable", value_name = "NAME")]
+    #[arg(
+        long = "variable",
+        value_name = "NAME",
+        help_heading = "BitBake-backed checking"
+    )]
     variables: Vec<String>,
 
     /// Run every available BitBake build analysis section.
-    #[arg(long)]
+    #[arg(long, help_heading = "Advanced build analysis")]
     full: bool,
 
     /// Collect BitBake task, recipe, and package dependency graphs.
-    #[arg(long)]
+    #[arg(long, help_heading = "Advanced build analysis")]
     graph: bool,
 
     /// Run BitBake's scheduler in dry-run mode and report planned tasks.
-    #[arg(long)]
+    #[arg(long, help_heading = "Advanced build analysis")]
     dry_run: bool,
 
     /// Include the parsed recipe/version inventory.
-    #[arg(long)]
+    #[arg(long, help_heading = "Advanced build analysis")]
     inventory: bool,
 
     /// Include resolved package, provider, runtime dependency, and image metadata.
-    #[arg(long)]
+    #[arg(long, help_heading = "Advanced build analysis")]
     packages: bool,
 
     #[command(flatten)]
@@ -214,6 +263,9 @@ struct SemanticLintArgs {
 }
 
 #[derive(Args)]
+#[command(
+    after_help = "Example:\n  Inspect target-expanded metadata without running ordinary file linting:\n    bbtidy semantic --build-dir build --target core-image-minimal --variable IMAGE_FSTYPES --output json"
+)]
 struct SemanticArgs {
     /// Existing BitBake build directory containing conf/local.conf and conf/bblayers.conf.
     #[arg(long, value_name = "PATH")]
@@ -266,27 +318,51 @@ struct SemanticArgs {
 #[derive(Args, Clone, Default)]
 struct BitBakeLimitArgs {
     /// Maximum seconds for one BitBake command.
-    #[arg(long = "bitbake-command-timeout-seconds", value_name = "SECONDS")]
+    #[arg(
+        long = "bitbake-command-timeout-seconds",
+        value_name = "SECONDS",
+        help_heading = "Resource and safety limits"
+    )]
     command_timeout_seconds: Option<u64>,
 
     /// Maximum seconds for all BitBake commands in this operation.
-    #[arg(long = "bitbake-total-timeout-seconds", value_name = "SECONDS")]
+    #[arg(
+        long = "bitbake-total-timeout-seconds",
+        value_name = "SECONDS",
+        help_heading = "Resource and safety limits"
+    )]
     total_timeout_seconds: Option<u64>,
 
     /// Maximum captured stdout bytes per BitBake command.
-    #[arg(long = "bitbake-max-stdout-bytes", value_name = "BYTES")]
+    #[arg(
+        long = "bitbake-max-stdout-bytes",
+        value_name = "BYTES",
+        help_heading = "Resource and safety limits"
+    )]
     max_stdout_bytes: Option<u64>,
 
     /// Maximum captured stderr bytes per BitBake command.
-    #[arg(long = "bitbake-max-stderr-bytes", value_name = "BYTES")]
+    #[arg(
+        long = "bitbake-max-stderr-bytes",
+        value_name = "BYTES",
+        help_heading = "Resource and safety limits"
+    )]
     max_stderr_bytes: Option<u64>,
 
     /// Maximum BitBake process launches in this operation.
-    #[arg(long = "bitbake-max-commands", value_name = "N")]
+    #[arg(
+        long = "bitbake-max-commands",
+        value_name = "N",
+        help_heading = "Resource and safety limits"
+    )]
     max_commands: Option<usize>,
 
     /// Maximum recipe-specific environment queries in this operation.
-    #[arg(long = "bitbake-max-recipe-queries", value_name = "N")]
+    #[arg(
+        long = "bitbake-max-recipe-queries",
+        value_name = "N",
+        help_heading = "Resource and safety limits"
+    )]
     max_recipe_queries: Option<usize>,
 }
 
@@ -752,6 +828,11 @@ fn check_formatted_inputs(formatted_inputs: &[FormattedInput]) -> i32 {
 
 fn run_lint(args: LintArgs, config: &Config) -> i32 {
     install_cli_cancellation_handler();
+    if args.workspace.is_none() && args.inputs.paths.is_empty() {
+        eprintln!("error: no input paths supplied");
+        eprintln!("help: try `bbtidy check .` or `bbtidy check --workspace build`");
+        return EXIT_ERROR;
+    }
     if !matches!(args.output_version, 1 | 2) {
         eprintln!(
             "error: unsupported lint output version {}; expected 1 or 2",

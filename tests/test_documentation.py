@@ -279,6 +279,16 @@ bbtidy check \\
         readme = read_document("README.md")
         self.assertIn(release_version, readme)
 
+    def test_pilot_lint_examples_keep_the_recommended_profile_explicit(self):
+        support_contract = read_document("docs/beta-support-contract.md")
+        execution_guide = read_document("docs/bitbake-execution.md")
+
+        self.assertIn("bbtidy check --profile recommended", support_contract)
+        self.assertIn(
+            "bbtidy check --workspace /path/to/build --bitbake /path/to/bitbake \\\n  --profile recommended --output json",
+            execution_guide,
+        )
+
     def test_all_documented_relative_links_exist(self):
         documents = [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]
         for path in documents:

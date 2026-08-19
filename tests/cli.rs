@@ -9,6 +9,179 @@ const UNFORMATTED: &str = "SUMMARY=\"demo\"\n";
 const FORMATTED: &str = "SUMMARY = \"demo\"\n";
 
 #[test]
+fn help_surfaces_lead_with_task_oriented_examples_and_explain_bitbake_modes() {
+    let top_level = run(["--help"]);
+    assert_success(&top_level);
+    let top_level = String::from_utf8(top_level.stdout).unwrap();
+    for command in ["format", "check", "lex", "semantic"] {
+        assert!(
+            top_level.contains(&format!("  {command}")),
+            "missing existing command: {command}"
+        );
+    }
+    assert!(top_level.contains(concat!(
+        "Try bbtidy safely:\n",
+        "  bbtidy format --diff meta-my-layer/\n",
+        "  bbtidy check --profile recommended --fail-on never meta-my-layer/",
+    )));
+
+    let format = run(["format", "--help"]);
+    assert_success(&format);
+    let format = String::from_utf8(format.stdout).unwrap();
+    for example in [
+        "bbtidy format --diff meta-my-layer/",
+        "bbtidy format --check meta-my-layer/",
+        "bbtidy format --write meta-my-layer/",
+    ] {
+        assert!(
+            format.contains(example),
+            "missing format example: {example}"
+        );
+    }
+
+    let check = run(["check", "--help"]);
+    assert_success(&check);
+    let check = String::from_utf8(check.stdout).unwrap();
+    for explanation in [
+        "--workspace BUILD_DIR  Determines the complete file scope through BitBake.",
+        "--semantic             Supplements supplied files with target-expanded metadata.",
+        "bbtidy semantic        Produces an inspection report without running ordinary file linting.",
+    ] {
+        assert!(
+            check.contains(explanation),
+            "missing BitBake mode explanation: {explanation}"
+        );
+    }
+    assert!(check.contains("bbtidy check --profile recommended --fail-on never meta-my-layer/"));
+    assert!(check.contains("bbtidy check --profile recommended --fail-on warning meta-my-layer/"));
+
+    let semantic = run(["semantic", "--help"]);
+    assert_success(&semantic);
+    let semantic = String::from_utf8(semantic.stdout).unwrap();
+    assert!(
+        semantic.starts_with(
+            "Produce a BitBake inspection report without running ordinary file linting"
+        )
+    );
+    assert!(semantic.contains(
+        "bbtidy semantic --build-dir build --target core-image-minimal --variable IMAGE_FSTYPES --output json"
+    ));
+}
+
+#[test]
+fn check_help_groups_every_capability_by_intended_level() {
+    let output = run(["check", "--help"]);
+    assert_success(&output);
+    let help = String::from_utf8(output.stdout).unwrap();
+
+    let groups = [
+        (
+            "Core checking",
+            &[
+                "--profile",
+                "--enable",
+                "--disable",
+                "--fix",
+                "--show-fixes",
+                "--show-suppressed",
+            ][..],
+        ),
+        (
+            "Adoption and baselines",
+            &[
+                "--fail-on",
+                "--write-baseline",
+                "--baseline",
+                "--show-existing",
+                "--refresh-baseline",
+            ][..],
+        ),
+        ("Output and CI", &["--output", "--output-version"][..]),
+        (
+            "BitBake-backed checking",
+            &[
+                "--workspace",
+                "--semantic",
+                "--build-dir",
+                "--project-dir",
+                "--bitbake",
+                "--target",
+                "--variable",
+            ][..],
+        ),
+        (
+            "Advanced build analysis",
+            &[
+                "--full",
+                "--graph",
+                "--dry-run",
+                "--inventory",
+                "--packages",
+            ][..],
+        ),
+        (
+            "Resource and safety limits",
+            &[
+                "--max-files",
+                "--max-bytes",
+                "--bitbake-command-timeout-seconds",
+                "--bitbake-total-timeout-seconds",
+                "--bitbake-max-stdout-bytes",
+                "--bitbake-max-stderr-bytes",
+                "--bitbake-max-commands",
+                "--bitbake-max-recipe-queries",
+            ][..],
+        ),
+    ];
+
+    let mut previous = 0;
+    for (index, (heading, options)) in groups.iter().enumerate() {
+        let marker = format!("{heading}:\n");
+        assert_eq!(
+            help.matches(&marker).count(),
+            1,
+            "unexpected {heading} count"
+        );
+        let start = help.find(&marker).unwrap();
+        assert!(start >= previous, "{heading} is out of order");
+        let end = groups
+            .get(index + 1)
+            .and_then(|(next, _)| help.find(&format!("{next}:\n")))
+            .or_else(|| help.find("\nExamples:\n"))
+            .unwrap_or(help.len());
+        let section = &help[start..end];
+        for option in *options {
+            assert!(
+                section.contains(option),
+                "{option} is not listed under {heading}"
+            );
+        }
+        previous = start;
+    }
+    for global_option in ["--config", "--no-config"] {
+        assert!(
+            help.contains(global_option),
+            "missing global capability: {global_option}"
+        );
+    }
+}
+
+#[test]
+fn check_without_inputs_returns_actionable_guidance_on_stderr() {
+    let output = run(["check"]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        concat!(
+            "error: no input paths supplied\n",
+            "help: try `bbtidy check .` or `bbtidy check --workspace build`\n",
+        )
+    );
+}
+
+#[test]
 fn syntax_stats_reports_machine_readable_cst_coverage() {
     let directory = TemporaryDirectory::new("syntax-stats");
     let file = directory.write(

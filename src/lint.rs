@@ -3314,6 +3314,7 @@ mod tests {
 
     #[test]
     fn profiles_select_rules_without_relying_on_catalog_indices() {
+        assert_eq!(LintProfile::default(), LintProfile::All);
         let essential = LintProfile::Essential.rules();
         let recommended = LintProfile::Recommended.rules();
         let strict = LintProfile::Strict.rules();

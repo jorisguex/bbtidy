@@ -285,8 +285,8 @@ not execute BitBake variable expansion or Python expressions. The CLI's
 Before enabling bbtidy as a required repository check, users should:
 
 1. Pin the bbtidy version and record `bbtidy --version` in CI output.
-2. Run `bbtidy format --check` and `bbtidy check` on a representative layer without
-   allowing either command to write files.
+2. Run `bbtidy format --check` and `bbtidy check --profile recommended` on a
+   representative layer without allowing either command to write files.
 3. Review `bbtidy format --diff` output and confirm that only intended metadata
    boundaries change.
 4. Run the project's normal BitBake parse, build, package, and runtime tests.
