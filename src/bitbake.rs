@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
 const TERMINATION_GRACE: Duration = Duration::from_millis(250);
 const EXCERPT_BYTES: usize = 4096;
+const EXECUTABLE_BUSY_RETRIES: usize = 3;
 
 /// Conservative defaults for BitBake-backed commands. These are intentionally
 /// separate from source-file safety limits because BitBake environments and
@@ -731,7 +732,7 @@ impl BitBakeRunner {
             command.env(name, value);
         }
         configure_process_group(&mut command);
-        let mut child = match command.spawn() {
+        let mut child = match retry_executable_busy(|| command.spawn()) {
             Ok(child) => child,
             Err(source) => {
                 let error = BitBakeError::Spawn {
@@ -909,6 +910,29 @@ impl BitBakeRunner {
         }
         Ok(output)
     }
+}
+
+fn retry_executable_busy<T>(mut operation: impl FnMut() -> io::Result<T>) -> io::Result<T> {
+    let mut retries = 0;
+    loop {
+        match operation() {
+            Err(error) if is_executable_busy(&error) && retries < EXECUTABLE_BUSY_RETRIES => {
+                retries += 1;
+                thread::sleep(POLL_INTERVAL);
+            }
+            result => return result,
+        }
+    }
+}
+
+#[cfg(unix)]
+fn is_executable_busy(error: &io::Error) -> bool {
+    error.raw_os_error() == Some(libc::ETXTBSY)
+}
+
+#[cfg(not(unix))]
+fn is_executable_busy(_error: &io::Error) -> bool {
+    false
 }
 
 fn write_context(
@@ -1170,6 +1194,23 @@ mod tests {
             runner.run(invocation(&path).uncached()),
             Err(BitBakeError::CommandBudget { limit: 4, .. })
         ));
+    }
+
+    #[test]
+    fn retries_transient_executable_busy_errors() {
+        let mut attempts = 0;
+        let value = retry_executable_busy(|| {
+            attempts += 1;
+            if attempts < 3 {
+                Err(io::Error::from_raw_os_error(libc::ETXTBSY))
+            } else {
+                Ok(42)
+            }
+        })
+        .unwrap();
+
+        assert_eq!(value, 42);
+        assert_eq!(attempts, 3);
     }
 
     #[test]
