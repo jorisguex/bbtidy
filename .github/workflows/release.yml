@@ -96,6 +96,7 @@ jobs:
       tag: ${{ needs.metadata.outputs.tag }}
     permissions:
       contents: read
+      id-token: write
 
   publish-python:
     name: Build and publish Python distributions
@@ -106,6 +107,7 @@ jobs:
       tag: ${{ needs.metadata.outputs.tag }}
     permissions:
       contents: read
+      id-token: write
 
   verify-published-onboarding:
     name: Verify documented PyPI installation

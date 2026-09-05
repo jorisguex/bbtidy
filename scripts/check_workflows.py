@@ -222,6 +222,11 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
         errors.append("release.yml must call the Python publisher")
     if "needs: [metadata, release-gate]" not in release:
         errors.append("publishers must depend on metadata and release-gate")
+    for publisher in ("publish-crates", "publish-python"):
+        if "id-token: write" not in _job_block(release, publisher):
+            errors.append(
+                "{} caller must allow the nested trusted-publishing OIDC token".format(publisher)
+            )
     if "protected_confirmation" not in release or "environment:\n      name: release-publish" not in release:
         errors.append("manual publication requires an explicit protected input and environment")
 

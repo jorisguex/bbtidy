@@ -124,6 +124,22 @@ class WorkflowPinTests(unittest.TestCase):
             errors = check_workflows.validate_release_topology(temporary)
         self.assertTrue(any("exactly one workflow" in error for error in errors))
 
+    def test_release_topology_rejects_missing_caller_oidc_permission(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            source = PROJECT_ROOT / ".github" / "workflows"
+            for name in (
+                "release.yml", "release-gate.yml",
+                "publish-crates.yml", "publish-pypi.yml",
+            ):
+                text = (source / name).read_text(encoding="utf-8")
+                if name == "release.yml":
+                    text = text.replace("      id-token: write\n", "")
+                (temporary / name).write_text(text, encoding="utf-8")
+            errors = check_workflows.validate_release_topology(temporary)
+        for publisher in ("publish-crates", "publish-python"):
+            self.assertTrue(any(publisher + " caller" in error for error in errors))
+
     def test_release_topology_requires_layer_scoped_supported_benchmarks(self):
         with tempfile.TemporaryDirectory() as temporary:
             temporary = Path(temporary)

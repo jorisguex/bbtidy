@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
   CLI, update candidate installation pins, and preserve an alpha.4 quickstart.
 - Exercise documentation against installed wheels and source distributions,
   and verify the exact documented PyPI package after publication.
+- Pass the existing trusted-publishing OIDC permission through the release
+  orchestrator so GitHub can start publishing workflows and dry-run rehearsals.
 
 ### Changed
 
