@@ -152,6 +152,14 @@ concurrent source changes, and restore earlier replacements if a later commit
 step fails. The defaults cap one invocation at 10,000 files and 256 MiB of
 source.
 
+Write and fix operations refuse read-only source files. Handled failures restore
+earlier replacements without first deleting the current file. If a concurrent
+edit or filesystem error prevents restoration, the error names a retained
+original backup for manual recovery. Temporary files are cleaned up on normal
+failure paths. This is recovery from handled errors, not an atomic transaction
+across files or a power-loss recovery journal. File contents are synced before
+replacement; parent directories are additionally synced on Unix.
+
 ## Rust library
 
 The crate exposes the lossless syntax tree, formatter, lint diagnostics,
@@ -195,6 +203,13 @@ exact compiler. It runs on pull requests and `main` through the package
 workflow and blocks the release gate. `RUSTUP_TOOLCHAIN` overrides the newer
 development pin for both Cargo and the Python build backend; the installation
 disables pip's wheel cache so a cached binary cannot bypass compilation.
+
+The write-safety matrix runs the transaction and CLI suites on Linux, macOS,
+and Windows in package CI and the release gate. It covers relative paths,
+Unicode names, line endings, read-only files, injected replacement/sync
+failures, concurrent edits, and retained recovery backups. Native tests also
+cover Unix permissions and Windows file-sharing locks. Installed-package smoke
+checks exercise `format --write` and `check --fix` in disposable files.
 
 To reproduce the minimum-version checks locally:
 

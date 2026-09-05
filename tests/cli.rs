@@ -2021,6 +2021,69 @@ fn semantic_command_reports_missing_discovered_context() {
     assert!(output.stdout.is_empty());
 }
 
+#[test]
+fn relative_path_write_and_fix_round_trips_preserve_expected_bytes() {
+    for (mode, original, expected) in [
+        ("format", "SUMMARY=\"démo\"\r\n", "SUMMARY = \"démo\"\r\n"),
+        ("check", "SUMMARY = \"démo\"  ", "SUMMARY = \"démo\"\n"),
+    ] {
+        let directory = TemporaryDirectory::new("write-round-trip");
+        let name = "café sample.bb";
+        let path = directory.write(name, original);
+        for _ in 0..2 {
+            let mut command = Command::new(env!("CARGO_BIN_EXE_bbtidy"));
+            command
+                .current_dir(directory.path())
+                .args(["--no-config", mode]);
+            if mode == "format" {
+                command.arg("--write");
+            } else {
+                command.args(["--fix", "--fail-on", "never"]);
+            }
+            let output = command.arg(name).output().unwrap();
+            assert_success(&output);
+            assert_eq!(fs::read(&path).unwrap(), expected.as_bytes());
+            assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+        }
+    }
+}
+
+#[test]
+fn write_and_fix_refuse_read_only_files_without_partial_changes() {
+    for mode in ["format", "check"] {
+        let directory = TemporaryDirectory::new("readonly-batch");
+        let original = "SUMMARY=\"demo\"  ";
+        let first = directory.write("a.bb", original);
+        let second = directory.write("b.bb", original);
+        let permissions = fs::metadata(&second).unwrap().permissions();
+        let mut readonly = permissions.clone();
+        readonly.set_readonly(true);
+        fs::set_permissions(&second, readonly).unwrap();
+        let mut command = Command::new(env!("CARGO_BIN_EXE_bbtidy"));
+        command
+            .current_dir(directory.path())
+            .args(["--no-config", mode]);
+        if mode == "format" {
+            command.arg("--write");
+        } else {
+            command.args(["--fix", "--fail-on", "never"]);
+        }
+        let output = command.args(["a.bb", "b.bb"]).output().unwrap();
+        fs::set_permissions(&second, permissions).unwrap();
+        assert_eq!(
+            output.status.code(),
+            Some(2),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stderr).contains("read-only"));
+        for path in [&first, &second] {
+            assert_eq!(fs::read_to_string(path).unwrap(), original);
+        }
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
+    }
+}
+
 fn run<const N: usize>(arguments: [&str; N]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_bbtidy"))
         .args(arguments)

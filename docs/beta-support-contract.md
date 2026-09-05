@@ -141,6 +141,20 @@ replaced. The complete write set is committed transactionally with recovery
 copies; symbolic links are never replaced. Repository-wide formatting is also
 bounded by configurable file-count and source-byte limits.
 
+`format --write` and `check --fix` share the transaction module. Both refuse
+read-only sources and recheck source contents before each replacement. Earlier
+replacements are restored by renaming their recovery copies over the current
+files, without an intervening deletion. If the current file was edited after
+replacement, or restoration fails, bbtidy preserves the backup and reports its
+path instead of discarding the original or overwriting the newer edit.
+
+These guarantees cover handled errors. They are not an atomic transaction
+across all files and do not provide crash or power-loss recovery. Output and
+backup contents are synced before replacement; Unix also syncs parent
+directories. Windows does not use Unix directory-open/fsync operations. Cleanup
+is best effort if filesystem permissions prevent removal; a cleanup error after
+all replacements explicitly reports that the source changes were committed.
+
 ### `format --check`
 
 - Exit code `0` means all selected inputs already match bbtidy's configured

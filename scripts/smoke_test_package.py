@@ -87,6 +87,25 @@ def onboarding_commands(executable, fixture):
     ]
 
 
+def verify_writes(executable, directory):
+    """Exercise write/fix with the installed package in disposable files."""
+    fixture = directory / "write fixture.bb"
+    for arguments, source in (
+        (["format", "--write"], CLEAN_ONBOARDING_FIXTURE.replace("SUMMARY =", "SUMMARY=")),
+        (["check", "--profile", "recommended", "--fix"],
+         CLEAN_ONBOARDING_FIXTURE.rstrip("\n") + "  "),
+    ):
+        fixture.write_bytes(source.encode())
+        subprocess.run(
+            [str(executable), "--no-config", *arguments, fixture.name],
+            cwd=directory, check=True, capture_output=True, text=True,
+        )
+        if fixture.read_bytes() != CLEAN_ONBOARDING_FIXTURE.encode():
+            raise RuntimeError("installed write/fix did not produce the expected source")
+        if any(".bbtidy." in path.name for path in directory.iterdir()):
+            raise RuntimeError("installed write/fix left temporary transaction files")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("distribution", type=Path, nargs="?")
@@ -180,9 +199,10 @@ def main():
                 cwd=temporary,
             )
         verify_documentation(executable)
+        verify_writes(executable, Path(temporary))
 
     print(
-        "Installed {} and verified {} plus format/check onboarding".format(
+        "Installed {} and verified {} plus format/check onboarding and write/fix round trips".format(
             str(distribution), expected_output
         )
     )

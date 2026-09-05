@@ -10,6 +10,10 @@ permissions:
   contents: read
 
 jobs:
+  write-safety:
+    name: Cross-platform write safety
+    uses: ./.github/workflows/write-safety.yml
+
   minimum-rust:
     name: Minimum Rust compatibility
     uses: ./.github/workflows/minimum-rust.yml

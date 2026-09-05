@@ -144,10 +144,20 @@ class WorkflowPinTests(unittest.TestCase):
             ):
                 text = (source / name).read_text(encoding="utf-8")
                 if name == "release-gate.yml":
-                    text = text.replace("    needs: minimum-rust\n", "")
+                    text = text.replace("    needs: [minimum-rust, write-safety]\n", "")
                 (temporary / name).write_text(text, encoding="utf-8")
             errors = check_workflows.validate_release_topology(temporary)
         self.assertTrue(any("minimum-Rust gate" in error for error in errors))
+        self.assertTrue(any("cross-platform write-safety gate" in error for error in errors))
+
+    def test_write_safety_runs_native_cli_and_transaction_tests_on_supported_hosts(self):
+        workflow = (PROJECT_ROOT / ".github/workflows/write-safety.yml").read_text()
+        for host in ("ubuntu-24.04", "macos-15", "windows-2025"):
+            self.assertIn(host, workflow)
+        self.assertIn("fail-fast: false", workflow)
+        self.assertIn("cargo test --bin bbtidy --test cli --locked", workflow)
+        package = (PROJECT_ROOT / ".github/workflows/python-package.yml").read_text()
+        self.assertIn("uses: ./.github/workflows/write-safety.yml", package)
 
     def test_release_topology_rejects_a_second_tag_workflow(self):
         with tempfile.TemporaryDirectory() as temporary:

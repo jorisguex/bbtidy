@@ -34,6 +34,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  write-safety:
+    name: Cross-platform write safety
+    uses: ./.github/workflows/write-safety.yml
+    with:
+      source_commit: ${{ inputs.source_commit || github.sha }}
+
   minimum-rust:
     name: Minimum Rust compatibility
     uses: ./.github/workflows/minimum-rust.yml
@@ -42,7 +48,7 @@ jobs:
 
   validate-source:
     name: Source quality and security
-    needs: minimum-rust
+    needs: [minimum-rust, write-safety]
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}

@@ -33,6 +33,11 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Extracted shared file transactions and hardened Windows writes, relative-path
+  writes, staging cleanup, and rollback. Read-only sources are refused; failed
+  restoration retains the original backup and preserves newer concurrent edits.
+- Added native Linux, macOS, and Windows write/fix CI, fault-injection recovery
+  tests, and installed-package write/fix smoke checks.
 - Workspace class resolution now distinguishes BitBake's global and recipe
   parsing contexts, searches `classes-global` or `classes-recipe` before the
   shared `classes` fallback, and avoids false unresolved-inherit findings for

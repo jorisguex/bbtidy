@@ -222,11 +222,15 @@ def validate_release_topology(directory=DEFAULT_WORKFLOW_DIRECTORY):
         errors.append("release.yml must call the Python publisher")
     if "needs: [metadata, release-gate]" not in release:
         errors.append("publishers must depend on metadata and release-gate")
-    if (
-        "uses: ./.github/workflows/minimum-rust.yml" not in _job_block(gate, "minimum-rust")
-        or "needs: minimum-rust" not in _job_block(gate, "validate-source")
-    ):
-        errors.append("release source validation must depend on the minimum-Rust gate")
+    source_job = _job_block(gate, "validate-source")
+    needs_match = re.search(r"^    needs: (.+)$", source_job, re.MULTILINE)
+    source_needs = set(re.findall(r"[a-z][a-z-]*", needs_match.group(1))) if needs_match else set()
+    for required, label in (("minimum-rust", "minimum-Rust"), ("write-safety", "cross-platform write-safety")):
+        if (
+            "uses: ./.github/workflows/{}.yml".format(required) not in _job_block(gate, required)
+            or required not in source_needs
+        ):
+            errors.append("release source validation must depend on the {} gate".format(label))
     for publisher in ("publish-crates", "publish-python"):
         if "id-token: write" not in _job_block(release, publisher):
             errors.append(
