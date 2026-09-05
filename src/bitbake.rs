@@ -13,6 +13,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
+#[cfg(unix)]
 const TERMINATION_GRACE: Duration = Duration::from_millis(250);
 const EXCERPT_BYTES: usize = 4096;
 const EXECUTABLE_BUSY_RETRIES: usize = 3;

@@ -2140,7 +2140,8 @@ impl TemporaryDirectory {
     }
 
     fn write(&self, relative_path: &str, contents: &str) -> PathBuf {
-        let path = self.path.join(relative_path);
+        // Match directory discovery's native separators, including on Windows.
+        let path: PathBuf = self.path.join(relative_path).components().collect();
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, contents).unwrap();
         path
