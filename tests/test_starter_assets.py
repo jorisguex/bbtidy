@@ -57,6 +57,7 @@ exclude = ["vendor/**"]
         self.assertEqual(
             commands.splitlines(),
             [
+                "# Requires alpha.5 publication; see examples/README.md for source evaluation.",
                 f'python -m pip install --pre "bbtidy=={package_version}"',
                 "bbtidy --version",
                 "bbtidy format --check meta-my-layer/",

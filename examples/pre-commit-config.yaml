@@ -1,4 +1,5 @@
-# Install bbtidy==0.1.0a4 before enabling these local system hooks.
+# Requires alpha.5 publication; see examples/README.md for source evaluation.
+# Install bbtidy==0.1.0a5 before enabling these local system hooks.
 repos:
   - repo: local
     hooks:

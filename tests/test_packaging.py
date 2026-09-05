@@ -19,7 +19,10 @@ from scripts.release_metadata import (
     validate_release_metadata,
     wheel_entries,
 )
-from scripts.smoke_test_package import onboarding_commands, select_distribution
+from scripts.smoke_test_package import (
+    documented_package_version, onboarding_commands, select_distribution,
+    verify_documentation,
+)
 from scripts.verify_release_artifacts import verify_distributions
 
 
@@ -87,6 +90,24 @@ class ReleaseMetadataTests(unittest.TestCase):
 
 
 class DistributionSelectionTests(unittest.TestCase):
+    def test_documented_pin_rejects_missing_or_conflicting_install_versions(self):
+        self.assertEqual(
+            documented_package_version('pip install "bbtidy==0.1.0a5"'), "0.1.0a5"
+        )
+        for readme in ("pip install bbtidy", "bbtidy==0.1.0a4 bbtidy==0.1.0a5"):
+            with self.subTest(readme=readme), self.assertRaises(RuntimeError):
+                documented_package_version(readme)
+
+    def test_documentation_uses_installed_artifact_instead_of_source_binary(self):
+        with mock.patch("scripts.smoke_test_package.subprocess.run") as run:
+            executable = Path("installed-venv/bin/bbtidy").resolve()
+            with mock.patch.dict("os.environ", {"BBTIDY_TEST_BINARY": "/wrong/bbtidy"}):
+                verify_documentation(executable)
+            self.assertEqual(
+                run.call_args.kwargs["env"]["BBTIDY_TEST_BINARY"], str(executable)
+            )
+            self.assertTrue(run.call_args.kwargs["check"])
+
     def test_selects_exactly_one_requested_distribution(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -362,7 +383,16 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('test "$actual_version" = "$expected_version"', pypi)
         self.assertIn("SHA256SUMS", workflow)
         self.assertIn("release-evidence.tar.gz", workflow)
-        self.assertIn("needs: [metadata, release-gate, publish-python]", workflow)
+        self.assertIn(
+            "needs: [metadata, release-gate, publish-python, verify-published-onboarding]",
+            workflow,
+        )
+        verification = workflow.split("  verify-published-onboarding:\n", 1)[1].split(
+            "  github-release:\n", 1
+        )[0]
+        self.assertIn("needs: [metadata, publish-python]", verification)
+        self.assertIn("if: ${{ needs.metadata.outputs.publish == 'true' }}", verification)
+        self.assertIn("scripts/smoke_test_package.py --published", verification)
 
     def test_release_workflows_run_packaging_and_workflow_validation(self):
         root = Path(__file__).resolve().parents[1] / ".github" / "workflows"

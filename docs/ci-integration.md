@@ -1,7 +1,10 @@
 # bbtidy CI integration
 
 CI should install an exact bbtidy version, print it in the log, and begin with
-offline read-only checks. The examples below pin the current evaluation build.
+offline read-only checks. The examples below target **0.1.0-alpha.5 (unreleased)**.
+Enable the PyPI installation steps only after that version is published. For evaluation now,
+use the [source installation](../README.md#install-this-development-version).
+The [alpha.4 quickstart](releases/alpha4.md) documents its older CLI.
 The copyable [generic CI command file](../examples/generic-ci.txt) contains the
 pinned install and the three platform-neutral commands as one sequence.
 
@@ -10,7 +13,7 @@ pinned install and the three platform-neutral commands as one sequence.
 Install and record the exact version:
 
 ```bash
-python3 -m pip install --pre "bbtidy==0.1.0a4"
+python3 -m pip install --pre "bbtidy==0.1.0a5"
 bbtidy --version
 ```
 
@@ -81,7 +84,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned bbtidy
-        run: python3 -m pip install --pre "bbtidy==0.1.0a4"
+        run: python3 -m pip install --pre "bbtidy==0.1.0a5"
       - name: Record bbtidy version
         run: bbtidy --version
       - name: Check formatting
@@ -159,7 +162,7 @@ fails. See [BitBake integration](bitbake-integration.md).
 Install the same exact executable version outside pre-commit:
 
 ```bash
-pipx install "bbtidy==0.1.0a4"
+pipx install "bbtidy==0.1.0a5"
 bbtidy --version
 ```
 

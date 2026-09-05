@@ -15,8 +15,11 @@ reports findings without changing files unless `check --fix` is selected.
 
 ## Current release status and supported Yocto versions
 
-The current release is the `0.1.0-alpha.4` evaluation build. Alpha releases do
-not carry the beta support claim. The intended beta contract covers:
+This checkout prepares **`0.1.0-alpha.5` (unreleased)**. The commands below
+require this development version. The published `0.1.0-alpha.4` has an older
+CLI; use its [released quickstart](docs/releases/alpha4.md) when installing it.
+Alpha releases do not carry the beta support claim. The intended beta contract
+covers:
 
 | Yocto Project release | BitBake version | Status |
 | --- | --- | --- |
@@ -27,20 +30,29 @@ not carry the beta support claim. The intended beta contract covers:
 Read the [beta support contract](docs/beta-support-contract.md) for exact
 guarantees, unsupported boundaries, and required release evidence.
 
-## Verified installation command
+## Install this development version
 
-Pin the evaluation release so package managers do not select a different
-version:
+Before publication, build from this checkout using its pinned Rust toolchain:
 
 ```bash
-python3 -m pip install --pre "bbtidy==0.1.0a4"
+cargo install --path . --locked --force
 bbtidy --version
 ```
 
-For an isolated executable installation:
+The output must be `bbtidy 0.1.0-alpha.5`. These instructions use the checkout's
+Rust 1.91.1 toolchain. Record `git rev-parse HEAD` with your evaluation results.
+
+**After alpha.5 is published**, install the same version from PyPI:
 
 ```bash
-pipx install "bbtidy==0.1.0a4"
+python3 -m pip install --pre "bbtidy==0.1.0a5"
+bbtidy --version
+```
+
+After publication, an isolated executable installation is also available:
+
+```bash
+pipx install "bbtidy==0.1.0a5"
 bbtidy --version
 ```
 

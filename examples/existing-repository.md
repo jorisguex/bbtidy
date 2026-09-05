@@ -1,11 +1,16 @@
 # Adopt bbtidy in an existing repository
 
+These assets target **0.1.0-alpha.5 (unreleased)**. PyPI installation commands
+require publication first; use the [source installation](../README.md#install-this-development-version)
+for evaluation now. Published alpha.4 uses a different CLI; see its
+[released quickstart](../docs/releases/alpha4.md).
+
 Use this sequence when the repository already has metadata and lint findings.
 Install the exact bbtidy version selected by the project before starting.
 Replace `meta-my-layer/` with the intended metadata scope.
 
 ```bash
-python3 -m pip install --pre "bbtidy==0.1.0a4"
+python3 -m pip install --pre "bbtidy==0.1.0a5"
 bbtidy --version
 ```
 

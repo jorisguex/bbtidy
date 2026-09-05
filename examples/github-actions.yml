@@ -1,3 +1,4 @@
+# Requires alpha.5 publication; see examples/README.md for source evaluation.
 # Copy this file to .github/workflows/bbtidy.yml and replace meta-my-layer/.
 name: bbtidy
 
@@ -18,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned bbtidy
-        run: python3 -m pip install --pre "bbtidy==0.1.0a4"
+        run: python3 -m pip install --pre "bbtidy==0.1.0a5"
       - name: Record bbtidy version
         run: bbtidy --version
       - name: Check formatting

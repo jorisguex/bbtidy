@@ -128,6 +128,11 @@ After formatting a production layer:
 
 ## Release rehearsal and publication
 
+The current candidate is **0.1.0-alpha.5 (unreleased)**. Its installation pins
+are release targets, not a claim that PyPI already serves it. The published
+alpha.4 commands remain in the [released quickstart](releases/alpha4.md).
+Run a non-publishing rehearsal for this alpha candidate as described below.
+
 The release gate has three blocking corpus checks: Yocto 5.0/BitBake 2.8,
 Yocto 6.0/BitBake 2.18, and the commit-pinned community corpus. The community
 manifest uses the explicit `pinned-community` tier. It runs formatter,
@@ -140,6 +145,20 @@ same reusable gate used by pull requests and `main`. Publication jobs cannot
 start until the gate verifies every corpus and creates
 `release-evidence.tar.gz` plus `release-evidence.sha256`. The archive is
 attached to the GitHub Release with the binaries and `SHA256SUMS`.
+
+Wheel and source-distribution smoke checks run the executable documentation
+tests with `BBTIDY_TEST_BINARY` pointing to the installed artifact. After PyPI
+publication, `verify-published-onboarding` installs the exact README pin from
+PyPI and reruns those tests before creating the GitHub Release. To repeat that
+check locally after publication, run:
+
+```bash
+python3 scripts/smoke_test_package.py --published
+```
+
+The published check is skipped during a non-publishing rehearsal; local
+artifact installation and documentation checks still run. Before tagging a
+release, update the candidate notices to reflect its release status.
 
 Before a beta tag, run `release.yml` through `workflow_dispatch` from the
 candidate commit with `publish` set to false. Confirm that the full wheel,

@@ -1,5 +1,10 @@
 # bbtidy starter assets
 
+These assets target **0.1.0-alpha.5 (unreleased)**. PyPI installation commands
+require publication first; use the [source installation](../README.md#install-this-development-version)
+for evaluation now. Published alpha.4 uses a different CLI; see its
+[released quickstart](../docs/releases/alpha4.md).
+
 Replace `meta-my-layer/` with the metadata scope used by your repository.
 These files are intentionally small so they can be copied before adopting
 advanced BitBake-backed analysis.

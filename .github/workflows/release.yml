@@ -107,9 +107,35 @@ jobs:
     permissions:
       contents: read
 
+  verify-published-onboarding:
+    name: Verify documented PyPI installation
+    needs: [metadata, publish-python]
+    if: ${{ needs.metadata.outputs.publish == 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out release documentation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install exact README pin and test documented CLI
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if python3 scripts/smoke_test_package.py --published; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              sleep 15
+            fi
+          done
+          exit 1
+
   github-release:
     name: Create GitHub Release with binaries and evidence
-    needs: [metadata, release-gate, publish-python]
+    needs: [metadata, release-gate, publish-python, verify-published-onboarding]
     if: ${{ needs.metadata.outputs.publish == 'true' }}
     runs-on: ubuntu-24.04
     environment:

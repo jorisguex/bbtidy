@@ -1,4 +1,5 @@
-python -m pip install --pre "bbtidy==0.1.0a4"
+# Requires alpha.5 publication; see examples/README.md for source evaluation.
+python -m pip install --pre "bbtidy==0.1.0a5"
 bbtidy --version
 bbtidy format --check meta-my-layer/
 bbtidy check --profile recommended meta-my-layer/

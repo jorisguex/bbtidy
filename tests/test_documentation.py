@@ -115,7 +115,7 @@ class DocumentationTests(unittest.TestCase):
             [
                 "What bbtidy does",
                 "Current release status and supported Yocto versions",
-                "Verified installation command",
+                "Install this development version",
                 "Five-minute read-only trial",
                 "Two CI commands",
                 "Production and advanced documentation",
@@ -347,6 +347,31 @@ bbtidy check \\
         readme = read_document("README.md")
         self.assertIn(release_version, readme)
 
+    def test_development_and_published_instructions_are_distinct(self):
+        version = re.search(
+            r'^version = "([^"]+)"$', read_document("Cargo.toml"), re.MULTILINE
+        ).group(1)
+        unreleased = f"## [{version}] - Unreleased" in read_document("CHANGELOG.md")
+        for relative_path in (
+            "README.md", "docs/getting-started.md", "docs/ci-integration.md",
+            "examples/README.md", "examples/existing-repository.md",
+        ):
+            document = read_document(relative_path)
+            with self.subTest(document=relative_path):
+                self.assertIn("alpha4.md", document)
+                if unreleased:
+                    self.assertIn("unreleased", document)
+                    first_install = (
+                        document.index("bbtidy==") if "bbtidy==" in document
+                        else len(document)
+                    )
+                    self.assertLess(document.index("unreleased"), first_install)
+
+        released = read_document("docs/releases/alpha4.md")
+        self.assertIn('bbtidy==0.1.0a4', released)
+        self.assertIn("bbtidy check meta-my-layer/", released)
+        self.assertIn("bbtidy lint meta-my-layer/", released)
+
     def test_pilot_lint_examples_keep_the_recommended_profile_explicit(self):
         support_contract = read_document("docs/beta-support-contract.md")
         execution_guide = read_document("docs/bitbake-execution.md")
@@ -414,7 +439,10 @@ bbtidy check \\
             }
 
         self.assertEqual(version.returncode, 0, version.stderr)
-        self.assertRegex(version.stdout, r"^bbtidy \d+\.\d+\.\d+")
+        expected_version = re.search(
+            r'^version = "([^"]+)"$', read_document("Cargo.toml"), re.MULTILINE
+        ).group(1)
+        self.assertEqual(version.stdout.strip(), f"bbtidy {expected_version}")
         self.assertEqual(preview.returncode, 0, preview.stderr)
         self.assertIn('-SUMMARY="Quickstart fixture"', preview.stdout)
         self.assertIn('+SUMMARY = "Quickstart fixture"', preview.stdout)
@@ -505,7 +533,11 @@ bbtidy check \\
         self.assertTrue(install_lines)
         for path, line_number, line in install_lines:
             with self.subTest(path=path, line=line_number):
-                self.assertIn(f"bbtidy=={package_version}", line)
+                expected = (
+                    "0.1.0a4" if path == ROOT / "docs/releases/alpha4.md"
+                    else package_version
+                )
+                self.assertIn(f"bbtidy=={expected}", line)
 
         for path in (
             ROOT / "README.md",

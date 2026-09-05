@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - Unreleased
+
+### Release preparation
+
+- Separate the alpha.5 development documentation from the published alpha.4
+  CLI, update candidate installation pins, and preserve an alpha.4 quickstart.
+- Exercise documentation against installed wheels and source distributions,
+  and verify the exact documented PyPI package after publication.
+
 ### Changed
 
 - Adopted Ruff-style command names: `check` now runs linting, while

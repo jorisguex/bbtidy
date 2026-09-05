@@ -9,13 +9,18 @@ explicit write, after review in a clean branch or worktree.
 
 ## 1. Install a pinned version
 
-Install the current evaluation build by exact version:
+This tutorial targets **0.1.0-alpha.5 (unreleased)**. Before publication, use
+`cargo install --path . --locked --force` from the bbtidy checkout with its
+pinned Rust toolchain and record `git rev-parse HEAD`. For the published
+alpha.4 interface, use the [released quickstart](releases/alpha4.md).
+
+After alpha.5 is published, install it by exact version:
 
 ```bash
-python3 -m pip install --pre "bbtidy==0.1.0a4"
+python3 -m pip install --pre "bbtidy==0.1.0a5"
 ```
 
-Use `pipx install "bbtidy==0.1.0a4"` instead when you prefer an isolated
+Use `pipx install "bbtidy==0.1.0a5"` instead when you prefer an isolated
 global executable. Do not use an unversioned install in CI.
 
 ## 2. Verify the executable
@@ -26,7 +31,7 @@ Record the selected version:
 bbtidy --version
 ```
 
-The output must identify `0.1.0-alpha.4` before you continue.
+The output must identify `0.1.0-alpha.5` before you continue.
 
 ## 3. Preview formatting
 

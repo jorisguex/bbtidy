@@ -2,6 +2,8 @@
 """Install a built bbtidy distribution and execute its installed binary."""
 
 import argparse
+import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -18,6 +20,31 @@ CLEAN_ONBOARDING_FIXTURE = """SUMMARY = "bbtidy package smoke test"
 DESCRIPTION = "Exercises the installed onboarding commands"
 LICENSE = "CLOSED"
 """
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def documented_package_version(readme):
+    """Require one exact package pin in the development README."""
+    pins = set(re.findall(r"bbtidy==([A-Za-z0-9.+-]+)", readme))
+    if len(pins) != 1:
+        raise RuntimeError("README must contain one consistent exact bbtidy package pin")
+    return pins.pop()
+
+
+def verify_documentation(executable):
+    """Run executable documentation tests using only the installed artifact."""
+    environment = os.environ.copy()
+    environment["BBTIDY_TEST_BINARY"] = str(executable.resolve())
+    subprocess.run(
+        [
+            sys.executable, "-m", "unittest", "discover", "-s", "tests",
+            "-p", "test_documentation.py",
+        ],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        check=True,
+    )
 
 
 def select_distribution(path, kind):
@@ -62,7 +89,12 @@ def onboarding_commands(executable, fixture):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("distribution", type=Path)
+    parser.add_argument("distribution", type=Path, nargs="?")
+    parser.add_argument(
+        "--published",
+        action="store_true",
+        help="install the exact README pin from PyPI instead of a local artifact",
+    )
     parser.add_argument(
         "--kind",
         choices=["wheel", "sdist"],
@@ -71,26 +103,38 @@ def main():
     )
     arguments = parser.parse_args()
 
-    distribution = select_distribution(arguments.distribution, arguments.kind)
+    if arguments.published == (arguments.distribution is not None):
+        parser.error("select either a local distribution or --published")
+
     version = cargo_version()
     python_version = pep440_version(version)
+    documented_version = documented_package_version(
+        (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    )
+    if documented_version != python_version:
+        raise RuntimeError("README package pin does not match the candidate version")
+    distribution = (
+        "bbtidy=={}".format(documented_version)
+        if arguments.published
+        else select_distribution(arguments.distribution, arguments.kind)
+    )
 
     with tempfile.TemporaryDirectory(prefix="bbtidy-install-") as temporary:
         environment = Path(temporary) / "venv"
         venv.EnvBuilder(with_pip=True).create(environment)
         python = environment_executable(environment, "python")
-        subprocess.run(
-            [
-                str(python),
-                "-m",
-                "pip",
-                "--disable-pip-version-check",
-                "install",
-                "--no-deps",
-                str(distribution),
-            ],
-            check=True,
-        )
+        install_command = [
+            str(python),
+            "-m",
+            "pip",
+            "--disable-pip-version-check",
+            "install",
+            "--no-deps",
+            str(distribution),
+        ]
+        if arguments.published:
+            install_command.extend(["--index-url", "https://pypi.org/simple"])
+        subprocess.run(install_command, check=True)
 
         installed_version = subprocess.run(
             [
@@ -135,10 +179,11 @@ def main():
                 text=True,
                 cwd=temporary,
             )
+        verify_documentation(executable)
 
     print(
         "Installed {} and verified {} plus format/check onboarding".format(
-            distribution.name, expected_output
+            str(distribution), expected_output
         )
     )
     return 0
