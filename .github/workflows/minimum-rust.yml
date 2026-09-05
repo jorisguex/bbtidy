@@ -1,0 +1,56 @@
+name: Minimum Rust compatibility
+
+on:
+  workflow_call:
+    inputs:
+      source_commit:
+        description: "Exact source commit to validate"
+        required: false
+        type: string
+        default: ""
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  minimum-rust:
+    name: Test declared Rust minimum and source installation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PIP_NO_CACHE_DIR: "1"
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ inputs.source_commit || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Select the declared minimum for every build subprocess
+        run: |
+          python3 - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          version = tomllib.loads(Path("Cargo.toml").read_text())["package"]["rust-version"]
+          toolchain = version + ".0" if version.count(".") == 1 else version
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
+              environment.write(f"RUSTUP_TOOLCHAIN={toolchain}\n")
+          PY
+      - name: Install and record the minimum compiler
+        run: |
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal --no-self-update
+          rustc --version
+          cargo --version
+      - name: Compile and test every Rust target on the minimum version
+        run: cargo test --all-targets --locked
+      - name: Install the pinned source packaging tool
+        run: python3 -m pip install "maturin==1.11.5"
+      - name: Build the source distribution
+        run: python3 -m maturin sdist --out "$RUNNER_TEMP/bbtidy-msrv-dist"
+      - name: Compile and verify the installed source distribution on the minimum version
+        run: python3 scripts/smoke_test_package.py --kind sdist "$RUNNER_TEMP/bbtidy-msrv-dist"

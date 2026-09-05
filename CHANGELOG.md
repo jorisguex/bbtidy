@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Corrected the minimum source-build Rust version to 1.88, which supports the
+  let chains already used by the code. Package CI and the release gate now test
+  the declared minimum and compile an installed source distribution with it.
 - Adopted Ruff-style command names: `check` now runs linting, while
   `format --check` validates formatting. The former top-level formatting
   `check` command and `lint` command are no longer separate entry points.

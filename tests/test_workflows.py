@@ -1,5 +1,8 @@
+import os
+import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -104,6 +107,47 @@ class WorkflowPinTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_minimum_rust_selection_applies_to_source_distribution_builds(self):
+        workflow = (PROJECT_ROOT / ".github/workflows/minimum-rust.yml").read_text()
+        selector = textwrap.dedent(workflow.split("python3 - <<'PY'\n", 1)[1].split(
+            "          PY\n", 1
+        )[0])
+        for version, expected in (("1.88", "1.88.0"), ("1.89.1", "1.89.1")):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / "Cargo.toml").write_text(
+                    f'[package]\nrust-version = "{version}"\n', encoding="utf-8"
+                )
+                environment_file = root / "github-env"
+                subprocess.run(
+                    [sys.executable, "-c", selector], cwd=root, check=True,
+                    env={**os.environ, "GITHUB_ENV": str(environment_file)},
+                )
+                self.assertEqual(
+                    environment_file.read_text(), f"RUSTUP_TOOLCHAIN={expected}\n"
+                )
+        self.assertIn('PIP_NO_CACHE_DIR: "1"', workflow)
+        self.assertIn('rustup toolchain install "$RUSTUP_TOOLCHAIN"', workflow)
+        self.assertIn("cargo test --all-targets --locked", workflow)
+        self.assertIn("scripts/smoke_test_package.py --kind sdist", workflow)
+        package = (PROJECT_ROOT / ".github/workflows/python-package.yml").read_text()
+        self.assertIn("uses: ./.github/workflows/minimum-rust.yml", package)
+
+    def test_release_topology_rejects_bypassing_minimum_rust(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            source = PROJECT_ROOT / ".github/workflows"
+            for name in (
+                "release.yml", "release-gate.yml",
+                "publish-crates.yml", "publish-pypi.yml",
+            ):
+                text = (source / name).read_text(encoding="utf-8")
+                if name == "release-gate.yml":
+                    text = text.replace("    needs: minimum-rust\n", "")
+                (temporary / name).write_text(text, encoding="utf-8")
+            errors = check_workflows.validate_release_topology(temporary)
+        self.assertTrue(any("minimum-Rust gate" in error for error in errors))
 
     def test_release_topology_rejects_a_second_tag_workflow(self):
         with tempfile.TemporaryDirectory() as temporary:

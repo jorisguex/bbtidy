@@ -2,7 +2,7 @@
 name = "bbtidy"
 version = "0.1.0-alpha.5"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 license = "MIT"
 description = "Conservative formatter, linter, and lexer for BitBake metadata"
 repository = "https://github.com/jorisguex/bbtidy"

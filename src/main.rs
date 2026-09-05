@@ -1189,13 +1189,12 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
         .baseline
         .clone()
         .or_else(|| config.lint.baseline().map(Path::to_path_buf));
-    if let Some(path) = args.write_baseline.as_deref() {
-        if let Err(error) =
+    if let Some(path) = args.write_baseline.as_deref()
+        && let Err(error) =
             write_baseline_file(path, lint_options.profile(), &current_baseline_entries)
-        {
-            eprintln!("error: {error}");
-            return EXIT_ERROR;
-        }
+    {
+        eprintln!("error: {error}");
+        return EXIT_ERROR;
     }
     let comparison_path = args
         .refresh_baseline
@@ -1245,20 +1244,19 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             profile: lint_options.profile().to_string(),
             refreshed: args.refresh_baseline.is_some(),
         });
-        if args.refresh_baseline.is_some() {
-            if let Err(error) =
+        if args.refresh_baseline.is_some()
+            && let Err(error) =
                 write_baseline_file(path, lint_options.profile(), &current_baseline_entries)
-            {
-                eprintln!("error: {error}");
-                return EXIT_ERROR;
-            }
+        {
+            eprintln!("error: {error}");
+            return EXIT_ERROR;
         }
     }
 
     let bitbake_stats_snapshot = bitbake_runner.as_ref().map(BitBakeRunner::stats_snapshot);
     let mut stdout = io::stdout().lock();
-    if machine_output {
-        if let Err(error) = write_lint_report(
+    if machine_output
+        && let Err(error) = write_lint_report(
             args.output,
             args.output_version,
             lint_options.profile(),
@@ -1269,31 +1267,31 @@ fn run_lint(args: LintArgs, config: &Config) -> i32 {
             semantic_report.as_ref(),
             bitbake_stats_snapshot.as_ref(),
             &mut stdout,
-        ) {
-            if error.kind() == io::ErrorKind::BrokenPipe {
-                return 0;
-            }
-            eprintln!("error: could not write standard output: {error}");
-            return EXIT_ERROR;
+        )
+    {
+        if error.kind() == io::ErrorKind::BrokenPipe {
+            return 0;
         }
+        eprintln!("error: could not write standard output: {error}");
+        return EXIT_ERROR;
     }
 
     if !machine_output {
         for input in &analyzed {
-            if input.fixes_applied > 0 {
-                if let Err(error) = writeln!(
+            if input.fixes_applied > 0
+                && let Err(error) = writeln!(
                     stdout,
                     "fixed: {} ({} edit{})",
                     input.label,
                     input.fixes_applied,
                     if input.fixes_applied == 1 { "" } else { "s" }
-                ) {
-                    if error.kind() == io::ErrorKind::BrokenPipe {
-                        return 0;
-                    }
-                    eprintln!("error: could not write standard output: {error}");
-                    return EXIT_ERROR;
+                )
+            {
+                if error.kind() == io::ErrorKind::BrokenPipe {
+                    return 0;
                 }
+                eprintln!("error: could not write standard output: {error}");
+                return EXIT_ERROR;
             }
         }
         for entry in &collected {
@@ -2666,10 +2664,10 @@ fn rollback_writes(pending: &[PendingWrite], committed: usize) -> io::Result<()>
             fs::rename(&item.backup_path, &item.path)?;
             sync_parent(item.path.parent().unwrap_or_else(|| Path::new(".")))
         })();
-        if let Err(error) = result {
-            if first_error.is_none() {
-                first_error = Some(error);
-            }
+        if let Err(error) = result
+            && first_error.is_none()
+        {
+            first_error = Some(error);
         }
     }
     for item in &pending[committed..] {

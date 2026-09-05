@@ -10,6 +10,10 @@ permissions:
   contents: read
 
 jobs:
+  minimum-rust:
+    name: Minimum Rust compatibility
+    uses: ./.github/workflows/minimum-rust.yml
+
   wheel-smoke-test:
     name: Build and quality-check Python package
     runs-on: ubuntu-24.04

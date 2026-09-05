@@ -34,8 +34,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  minimum-rust:
+    name: Minimum Rust compatibility
+    uses: ./.github/workflows/minimum-rust.yml
+    with:
+      source_commit: ${{ inputs.source_commit || github.sha }}
+
   validate-source:
     name: Source quality and security
+    needs: minimum-rust
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}

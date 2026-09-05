@@ -1389,10 +1389,11 @@ fn query_workspace_with_tinfoil(
             } else {
                 build_dir.join(path)
             };
-            if let Ok(path) = fs::canonicalize(path) {
-                if path.is_file() && is_supported_metadata_path(&path) {
-                    included_files.insert(path);
-                }
+            if let Ok(path) = fs::canonicalize(path)
+                && path.is_file()
+                && is_supported_metadata_path(&path)
+            {
+                included_files.insert(path);
             }
         }
         recipe_includes.insert(

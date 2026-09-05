@@ -705,11 +705,11 @@ impl BitBakeRunner {
         }
 
         let key = InvocationKey::from(&invocation);
-        if invocation.cacheable {
-            if let Some(output) = self.cache.get(&key) {
-                self.stats.record_cache_hit();
-                return Ok(output.clone());
-            }
+        if invocation.cacheable
+            && let Some(output) = self.cache.get(&key)
+        {
+            self.stats.record_cache_hit();
+            return Ok(output.clone());
         }
 
         self.stats.total_commands += 1;
@@ -793,10 +793,11 @@ impl BitBakeRunner {
                     captured: self.limits.max_stderr_bytes,
                 });
             }
-            if let Some(status) = status {
-                if stdout_done.load(Ordering::SeqCst) && stderr_done.load(Ordering::SeqCst) {
-                    break Ok(status);
-                }
+            if let Some(status) = status
+                && stdout_done.load(Ordering::SeqCst)
+                && stderr_done.load(Ordering::SeqCst)
+            {
+                break Ok(status);
             }
             if elapsed >= self.limits.command_timeout {
                 terminate_child(&mut child);

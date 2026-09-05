@@ -59,7 +59,7 @@ bbtidy --version
 Published wheels support Linux glibc and musl on x86-64 and ARM64, Linux
 glibc on ARMv7, macOS on Intel and Apple silicon, and Windows on x86-64.
 Installing a wheel requires Python 3.8 or newer but does not require Rust. A
-source build requires Rust 1.85 or newer.
+source build requires Rust 1.88 or newer.
 
 ## Five-minute read-only trial
 
@@ -177,8 +177,9 @@ identical task hashes, packages, runtime behavior, or complete builds.
 
 ## Development
 
-The project uses Rust 1.91.1 for development while declaring Rust 1.85 as the
-minimum supported source-build version. Run the local quality gates with:
+The project uses Rust 1.91.1 for development and Rust 1.88 as the minimum
+supported source-build version. The minimum includes the let-chain syntax used
+by the parser and analysis code. Run the local quality gates with:
 
 ```bash
 cargo fmt --all -- --check
@@ -187,6 +188,25 @@ cargo test --all-targets --locked
 git diff --check
 python3 -m unittest discover -s tests -p "test_*.py"
 ```
+
+The minimum-Rust CI job reads `package.rust-version` from `Cargo.toml`, tests
+all Rust targets, and builds and installs the source distribution with that
+exact compiler. It runs on pull requests and `main` through the package
+workflow and blocks the release gate. `RUSTUP_TOOLCHAIN` overrides the newer
+development pin for both Cargo and the Python build backend; the installation
+disables pip's wheel cache so a cached binary cannot bypass compilation.
+
+To reproduce the minimum-version checks locally:
+
+```bash
+rustup toolchain install 1.88.0 --profile minimal --no-self-update
+RUSTUP_TOOLCHAIN=1.88.0 cargo test --all-targets --locked
+RUSTUP_TOOLCHAIN=1.88.0 python3 -m maturin sdist --out target/msrv-dist
+RUSTUP_TOOLCHAIN=1.88.0 PIP_NO_CACHE_DIR=1 python3 scripts/smoke_test_package.py --kind sdist target/msrv-dist
+```
+
+These packaging commands require `maturin==1.11.5` in the selected Python
+environment. Use an empty output directory when preparing a new version.
 
 Additional compatibility and performance commands are documented in the
 evidence guides above. The parser fuzz target can be exercised with:

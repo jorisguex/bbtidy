@@ -132,10 +132,9 @@ pub fn analyze_shell_body(source: &str) -> Vec<BodyDiagnostic> {
                 && blocks.last().is_some_and(|block| {
                     block.kind == ShellBlockKind::Case && block.phase == ShellBlockPhase::CaseHeader
                 })
+                && let Some(block) = blocks.last_mut()
             {
-                if let Some(block) = blocks.last_mut() {
-                    block.phase = ShellBlockPhase::CasePatterns;
-                }
+                block.phase = ShellBlockPhase::CasePatterns;
             }
             continue;
         }
@@ -376,17 +375,19 @@ fn shell_tokens(source: &str) -> Vec<ShellToken<'_>> {
             continue;
         }
         if let Some(delimiter) = quote {
-            if delimiter == b'"' && bytes[index..].starts_with(b"$(") {
-                if let Some(end) = skip_shell_command_substitution(bytes, index + 2) {
-                    index = end;
-                    continue;
-                }
+            if delimiter == b'"'
+                && bytes[index..].starts_with(b"$(")
+                && let Some(end) = skip_shell_command_substitution(bytes, index + 2)
+            {
+                index = end;
+                continue;
             }
-            if delimiter == b'"' && byte == b'`' {
-                if let Some(end) = skip_shell_backtick_substitution(bytes, index + 1) {
-                    index = end;
-                    continue;
-                }
+            if delimiter == b'"'
+                && byte == b'`'
+                && let Some(end) = skip_shell_backtick_substitution(bytes, index + 1)
+            {
+                index = end;
+                continue;
             }
             if byte == delimiter {
                 quote = None;
