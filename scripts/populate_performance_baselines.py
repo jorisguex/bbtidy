@@ -67,9 +67,11 @@ def populate(budget_path: Path, manifest_path: Path, reason: str) -> dict:
             raise BudgetError(f"{workload} requires at least two distinct reference runs")
         if any(
             record["mode"] != first["mode"] or record["corpus"] != first["corpus"]
+            or record["runner"].get("measurement_contract") != first["runner"].get("measurement_contract")
+            or record["runner"].get("rust") != first["runner"].get("rust")
             for _, record in references
         ):
-            raise BudgetError(f"{workload} reference modes or corpora differ")
+            raise BudgetError(f"{workload} reference modes, corpora, measurement contracts, or compilers differ")
         rules = workload_rules(workload, budget)
         changes[workload] = {}
         for metric in ("wall_ms", "peak_rss_bytes"):
@@ -89,6 +91,9 @@ def populate(budget_path: Path, manifest_path: Path, reason: str) -> dict:
             "sample_count": sum(len(record["samples"]) for _, record in references),
             "reason": reason,
         }
+        if first["runner"].get("measurement_contract") is not None:
+            rules["reference"]["measurement_contract"] = first["runner"]["measurement_contract"]
+            rules["reference"]["rust"] = first["runner"]["rust"]
         budget["workloads"][workload] = rules
 
     required = set(budget["policy"].get("required_baselines", [])) | grouped.keys()

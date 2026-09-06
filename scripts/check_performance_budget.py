@@ -148,8 +148,9 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
     if reference and (
         record.get("mode") != reference["mode"]
         or record.get("corpus") != reference["corpus"]
+        or record.get("runner", {}).get("measurement_contract") != reference.get("measurement_contract")
     ):
-        raise BudgetError(f"{workload} differs from the baseline mode or corpus; remeasure explicitly")
+        raise BudgetError(f"{workload} differs from the baseline mode, corpus, or measurement contract; remeasure explicitly")
     current = record["summary"]
     failures = []
     if current.get("status") != "success" or any(
@@ -286,6 +287,8 @@ def compare_candidate_to_baseline(
             raise BudgetError(f"candidate and baseline differ in {field}")
     if candidate.get("runner", {}).get("class") != baseline.get("runner", {}).get("class"):
         raise BudgetError("candidate and baseline use different runner classes")
+    if candidate.get("runner", {}).get("measurement_contract") != baseline.get("runner", {}).get("measurement_contract"):
+        raise BudgetError("candidate and baseline use different measurement contracts")
     candidate_corpus = candidate.get("corpus", {})
     baseline_corpus = baseline.get("corpus", {})
     if candidate_corpus.get("revision_digest") != baseline_corpus.get("revision_digest"):

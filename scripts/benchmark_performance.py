@@ -14,7 +14,6 @@ import json
 import os
 import platform
 import re
-import resource
 import shutil
 import statistics
 import signal
@@ -119,23 +118,11 @@ class ProcessSampler:
             self._stop.wait(0.005)
 
 
-def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
-    if os.name == "posix":
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            return
-        deadline = time.monotonic() + 0.25
-        while time.monotonic() < deadline:
-            if process.poll() is not None:
-                return
-            time.sleep(0.005)
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    else:
-        process.kill()
+def _signal_process_group(pid: int, sig: int) -> None:
+    try:
+        os.killpg(pid, sig)
+    except ProcessLookupError:
+        pass
 
 
 def run_command(
@@ -143,53 +130,60 @@ def run_command(
     cwd: Path | None = None,
     timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
-    before = resource.getrusage(resource.RUSAGE_CHILDREN)
-    started = time.perf_counter()
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=(os.name == "posix"),
-    )
-    sampler = ProcessSampler(process.pid)
-    sampler.start()
-    timed_out = False
-    try:
-        stdout, stderr = process.communicate(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as error:
-        timed_out = True
-        _terminate_process_group(process)
-        stdout, stderr = process.communicate()
-        if not stdout and error.stdout:
-            stdout = error.stdout
-        if not stderr and error.stderr:
-            stderr = error.stderr
-    sampler.stop()
-    after = resource.getrusage(resource.RUSAGE_CHILDREN)
-    wall_ms = (time.perf_counter() - started) * 1000
-    max_rss = after.ru_maxrss
-    if sys.platform != "darwin":
-        max_rss *= 1024
-    sampler.peak_rss = max(sampler.peak_rss, int(max_rss))
-    if sys.platform == "linux":
-        ticks_per_second = os.sysconf("SC_CLK_TCK")
-        user_cpu_ms = sampler.cpu_ticks / ticks_per_second * 1000
-        # /proc exposes combined ticks; rusage gives a portable split.
-        user_cpu_ms = max(0.0, (after.ru_utime - before.ru_utime) * 1000)
-        system_cpu_ms = max(0.0, (after.ru_stime - before.ru_stime) * 1000)
-    else:
-        user_cpu_ms = max(0.0, (after.ru_utime - before.ru_utime) * 1000)
-        system_cpu_ms = max(0.0, (after.ru_stime - before.ru_stime) * 1000)
+    # wait4 returns usage for this child, unlike cumulative RUSAGE_CHILDREN.
+    # File capture avoids pipe deadlocks while the sole waiter reaps the child.
+    if not hasattr(os, "wait4"):
+        raise RuntimeError("performance measurement requires POSIX wait4 (Linux or macOS)")
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        started = time.perf_counter()
+        process = subprocess.Popen(
+            command, cwd=cwd, stdin=subprocess.DEVNULL,
+            stdout=stdout_file, stderr=stderr_file, start_new_session=True,
+        )
+        waited = []
+        done = threading.Event()
+
+        def reap() -> None:
+            try:
+                _, status, usage = os.wait4(process.pid, 0)
+                process.returncode = os.waitstatus_to_exitcode(status)
+                waited.append((usage, time.perf_counter()))
+            finally:
+                done.set()
+
+        waiter = threading.Thread(target=reap)
+        waiter.start()
+        sampler = ProcessSampler(process.pid)
+        sampler.start()
+        timed_out = False
+        try:
+            if not done.wait(timeout_seconds):
+                timed_out = True
+                _signal_process_group(process.pid, signal.SIGTERM)
+                # Kill remaining descendants even if the leader exits on TERM.
+                time.sleep(0.25)
+                _signal_process_group(process.pid, signal.SIGKILL)
+            waiter.join()
+        finally:
+            if not done.is_set():
+                _signal_process_group(process.pid, signal.SIGKILL)
+                waiter.join()
+            sampler.stop()
+        if not waited:
+            raise RuntimeError("could not collect child process resource usage")
+        usage, ended = waited[0]
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        stdout, stderr = stdout_file.read(), stderr_file.read()
+    max_rss = usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
     status = "timed-out" if timed_out else "success" if process.returncode == 0 else "failed"
     return {
         "status": status,
         "exit_code": process.returncode,
-        "wall_ms": wall_ms,
-        "user_cpu_ms": user_cpu_ms,
-        "system_cpu_ms": system_cpu_ms,
-        "peak_rss_bytes": sampler.peak_rss,
+        "wall_ms": (ended - started) * 1000,
+        "user_cpu_ms": usage.ru_utime * 1000,
+        "system_cpu_ms": usage.ru_stime * 1000,
+        "peak_rss_bytes": max(sampler.peak_rss, int(max_rss)),
         "read_bytes": sampler.read_bytes,
         "written_bytes": sampler.written_bytes,
         "stdout_bytes": len(stdout),
@@ -231,6 +225,14 @@ def _source_commit() -> str | None:
     return result.stdout.strip() or None
 
 
+def _rust_version() -> str:
+    result = subprocess.run(
+        ["rustc", "--version"], cwd=PROJECT_ROOT, check=True,
+        capture_output=True, text=True, timeout=30,
+    )
+    return result.stdout.strip()
+
+
 def runner_metadata(
     runner_class: str | None = None,
     bbtidy: Path | None = None,
@@ -251,14 +253,16 @@ def runner_metadata(
         "cpu": platform.processor() or platform.machine(),
         "logical_cores": os.cpu_count() or 1,
         "memory_bytes": memory_bytes,
-        "rust": "unknown",
+        "rust": _rust_version(),
+        "measurement_contract": 2,
         "bitbake": None,
         "bbtidy_version": _binary_version(bbtidy),
         "source_commit": _source_commit(),
         "resource_backends": {
-            "process_tree": "procfs" if sys.platform == "linux" else "rusage",
-            "cpu": "rusage",
-            "memory": "procfs+rusage" if sys.platform == "linux" else "rusage",
+            "process_tree": "procfs" if sys.platform == "linux" else "wait4",
+            "cpu": "wait4",
+            "memory": "procfs+wait4" if sys.platform == "linux" else "wait4",
+            "output_capture": "temporary-files",
             "io": "procfs" if sys.platform == "linux" else "unavailable",
             "cgroup": Path("/sys/fs/cgroup").is_dir(),
             "gnu_time": shutil.which("time") is not None,
@@ -304,8 +308,11 @@ def _source_for_size(size: int) -> str:
 def synthetic_cases() -> list[tuple[str, str]]:
     cases = [(f"recipe-{size // 1024}k", _source_for_size(size)) for size in (1024, 10 * 1024, 100 * 1024, 1024 * 1024)]
     continued = "SRC_URI = \" \\\n" + "".join(f" file://entry-{index}.patch \\\n" for index in range(1000)) + "\"\n"
-    bodies = "do_compile() {\n" + "    echo benchmark\n" * 10000 + "}\n"
-    return cases + [("continued-1000", continued), ("shell-body-1m", bodies[:1024 * 1024])]
+    header, footer, line = "do_compile() {\n", "}\n", "    echo benchmark\n"
+    remaining = 1024 * 1024 - len(header) - len(footer)
+    lines, padding = divmod(remaining, len(line))
+    bodies = header + line * lines + " " * padding + footer
+    return cases + [("continued-1000", continued), ("shell-body-1m", bodies)]
 
 
 def _read_json_output(stdout: bytes) -> dict[str, Any] | None:
@@ -398,6 +405,21 @@ def measure_cli(
     source_bytes = 0
     for path in metadata_paths:
         source_bytes += len(path.read_bytes())
+    original_files = {}
+    expected_files = {}
+    if operation == "format":
+        for path in metadata_paths:
+            original_files[path] = path.read_bytes()
+            preview = run_command(
+                [str(bbtidy), "--no-config", "format", str(path)],
+                timeout_seconds=timeout_seconds,
+            )
+            if preview["status"] != "success":
+                raise ValueError(f"could not prepare expected formatting for {path}")
+            expected_files[path] = preview["stdout"]
+        changed_files = sum(original_files[path] != expected_files[path] for path in metadata_paths)
+        if not changed_files:
+            raise ValueError("format benchmark needs unformatted input; use format-check for clean files")
     phase_measurement["source_read_ms"] = (time.perf_counter() - read_started) * 1000
     syntax_result = run_command(
         [str(bbtidy), "--no-config", "syntax-stats", "--details", str(source_root)],
@@ -424,7 +446,13 @@ def measure_cli(
     ):
         if len(samples) >= maximum_repetitions:
             break
+        # Restore the same input before EVERY repetition, outside the timer.
+        for path, original in original_files.items():
+            path.write_bytes(original)
         result = run_command(command, timeout_seconds=timeout_seconds)
+        if operation == "format" and result["status"] == "success":
+            if any(path.read_bytes() != expected for path, expected in expected_files.items()):
+                result["status"] = "failed"
         total_wall_ms += result["wall_ms"]
         last_output = _read_json_output(result["stdout"])
         files_discovered = sum(
@@ -445,10 +473,12 @@ def measure_cli(
         sample_result["bbtidy"] = {
             "files_discovered": files_discovered,
             "files_parsed": files_discovered if result["status"] == "success" else 0,
-            "source_bytes": source_bytes,
+            "source_bytes": sum(map(len, original_files.values())) if operation == "format" else source_bytes,
             "diagnostics": len(last_output.get("diagnostics", [])) if last_output else 0,
             "output_bytes": result["stdout_bytes"] + result["stderr_bytes"],
         }
+        if operation == "format":
+            sample_result["bbtidy"]["files_changed"] = changed_files if result["status"] == "success" else 0
         if last_output and isinstance(last_output.get("execution"), dict):
             sample_result["bbtidy"]["bitbake"] = last_output["execution"]
         phase_measurement["rule_ms"] = result["wall_ms"]
@@ -566,7 +596,12 @@ def run_synthetic(args: argparse.Namespace) -> list[dict[str, Any]]:
             root = Path(temporary) / "layer"
             path = root / "recipes" / "benchmark.bb"
             path.parent.mkdir(parents=True)
+            # A non-canonical assignment forces a real transaction, including
+            # for opaque shell bodies, without changing their contents.
+            if args.operation == "format":
+                source = 'BBTIDY_BENCHMARK="write"\n' + source
             path.write_text(source, encoding="utf-8")
+            corpus = corpus_metadata(root)
             measured = measure_cli(
                 Path(args.bbtidy),
                 root,
@@ -585,7 +620,7 @@ def run_synthetic(args: argparse.Namespace) -> list[dict[str, Any]]:
                     args.mode,
                     [measured],
                     args.runner_class,
-                    corpus_metadata(root),
+                    corpus,
                     Path(args.bbtidy),
                 )
             )
@@ -631,6 +666,7 @@ def main() -> int:
     if args.source_root is None:
         print("error: --source-root is required unless --synthetic is used", file=sys.stderr)
         return 2
+    corpus = corpus_metadata(args.source_root)
     measured = measure_cli(
         args.bbtidy,
         args.source_root,
@@ -638,6 +674,7 @@ def main() -> int:
         args.mode,
         args.repetitions,
         args.profile,
+        minimum_duration_ms=args.minimum_duration_ms,
         timeout_seconds=args.timeout_seconds,
         bitbake_command=args.bitbake_command,
         bitbake_target=args.bitbake_target,
@@ -647,7 +684,7 @@ def main() -> int:
         args.mode,
         [measured],
         args.runner_class,
-        corpus_metadata(args.source_root),
+        corpus,
         args.bbtidy,
     )
     write_record(args.output, record)

@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.benchmark_performance import measure_cli, run_command
+from scripts.benchmark_performance import measure_cli, run_command, runner_metadata
 from scripts.check_performance_budget import (
     BudgetError,
     compare_candidate_to_baseline,
@@ -57,6 +57,68 @@ def record(workload="synthetic-scaling", wall_ms=100, runner_class="test-runner"
 
 
 class PerformanceTests(unittest.TestCase):
+    def test_rss_does_not_inherit_an_earlier_child_peak(self):
+        high = run_command([sys.executable, "-c", "data = bytearray(96 * 1024 * 1024)"])
+        low = run_command([sys.executable, "-c", "pass"])
+        self.assertEqual(high["status"], "success")
+        self.assertEqual(low["status"], "success")
+        self.assertGreater(high["peak_rss_bytes"] - low["peak_rss_bytes"], 64 * 1024 * 1024)
+
+    def test_resource_capture_drains_large_output_and_records_compiler(self):
+        measured = run_command([sys.executable, "-c", "import sys; sys.stdout.write('x' * 2000000); sys.stderr.write('y' * 1000000)"])
+        self.assertEqual(measured["status"], "success")
+        self.assertEqual(measured["stdout"], b"x" * 2000000)
+        self.assertEqual(measured["stderr"], b"y" * 1000000)
+        metadata = runner_metadata()
+        self.assertTrue(metadata["rust"].startswith("rustc "))
+        self.assertEqual(metadata["measurement_contract"], 2)
+
+    def test_shell_fixture_is_one_mib_and_retains_its_closing_brace(self):
+        source = dict(synthetic_cases())["shell-body-1m"]
+        self.assertEqual(len(source.encode()), 1024 * 1024)
+        self.assertTrue(source.startswith("do_compile() {\n"))
+        self.assertTrue(source.endswith("}\n"))
+
+    def test_format_repetitions_restore_input_and_verify_every_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            layer = root / "layer"
+            layer.mkdir()
+            source = layer / "example.bb"
+            log = root / "writes.log"
+            fake = root / "fake-bbtidy"
+            fake.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib, sys\n"
+                f"source = pathlib.Path({str(source)!r})\n"
+                f"log = pathlib.Path({str(log)!r})\n"
+                "if 'syntax-stats' in sys.argv:\n"
+                "    print('{\"files\": 1}')\n"
+                "elif '--write' in sys.argv:\n"
+                "    with log.open('ab') as stream: stream.write(source.read_bytes())\n"
+                "    source.write_bytes(b'A = \\\"a\\\"\\n')\n"
+                "else:\n"
+                "    sys.stdout.write('A = \\\"a\\\"\\n')\n"
+            )
+            fake.chmod(0o755)
+            original = b'A="a"\n'
+            source.write_bytes(original)
+            measured = measure_cli(fake, layer, "format", "offline", 3)
+            self.assertEqual(log.read_bytes(), original * 3)
+            self.assertEqual(source.read_bytes(), b'A = "a"\n')
+            self.assertEqual(len(measured["samples"]), 3)
+            for sample in measured["samples"]:
+                self.assertEqual(sample["result"]["status"], "success")
+                self.assertEqual(sample["bbtidy"]["files_changed"], 1)
+                self.assertEqual(sample["bbtidy"]["source_bytes"], len(original))
+            with self.assertRaisesRegex(ValueError, "unformatted"):
+                measure_cli(fake, layer, "format", "offline", 3)
+            source.write_bytes(original)
+            fake.write_text(fake.read_text().replace("source.write_bytes(b'A = \\\"a\\\"\\n')", "pass"))
+            broken = measure_cli(fake, layer, "format", "offline", 3)
+            self.assertEqual(broken["samples"][0]["result"]["status"], "failed")
+            self.assertEqual(len(broken["samples"]), 1)
+
     def test_schema_aggregates_repetitions_and_rejects_bad_status(self):
         aggregate = aggregate_results([{"result": result(100)}, {"result": result(200)}])
         self.assertEqual(aggregate["wall_ms"], 150)
