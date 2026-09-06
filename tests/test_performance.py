@@ -56,6 +56,17 @@ def record(workload="synthetic-scaling", wall_ms=100, runner_class="test-runner"
     }
 
 
+def reference_record(workload):
+    root = Path("tests/performance/references")
+    manifest = json.loads((root / "manifest.json").read_text())
+    for entry in manifest["evidence"]:
+        evidence = load_evidence(root / entry["path"])
+        for item in evidence.get("records", [evidence]):
+            if item["workload"] == workload:
+                return item
+    raise AssertionError("missing reference workload: " + workload)
+
+
 class PerformanceTests(unittest.TestCase):
     def test_rss_does_not_inherit_an_earlier_child_peak(self):
         high = run_command([sys.executable, "-c", "data = bytearray(96 * 1024 * 1024)"])
@@ -63,6 +74,13 @@ class PerformanceTests(unittest.TestCase):
         self.assertEqual(high["status"], "success")
         self.assertEqual(low["status"], "success")
         self.assertGreater(high["peak_rss_bytes"] - low["peak_rss_bytes"], 64 * 1024 * 1024)
+
+    def test_rss_does_not_include_the_python_harness_heap(self):
+        payload = bytearray(96 * 1024 * 1024)
+        payload[::4096] = b"x" * (len(payload) // 4096)
+        low = run_command([sys.executable, "-c", "pass"])
+        self.assertEqual(low["status"], "success")
+        self.assertLess(low["peak_rss_bytes"], 64 * 1024 * 1024)
 
     def test_resource_capture_drains_large_output_and_records_compiler(self):
         measured = run_command([sys.executable, "-c", "import sys; sys.stdout.write('x' * 2000000); sys.stderr.write('y' * 1000000)"])
@@ -355,7 +373,13 @@ class PerformanceTests(unittest.TestCase):
 
     def test_populated_baseline_rejects_changed_identity_and_failed_samples(self):
         budget = load_budgets(Path("tests/performance/budgets.json"))
-        reference = load_evidence(Path("tests/performance/references/33971299726/performance-json.json"))["records"][0]
+        reference = reference_record("recipe-1k-json")
+        changed = copy.deepcopy(reference)
+        changed["runner"]["measurement_contract"] = "incompatible"
+        with self.assertRaisesRegex(BudgetError, "measurement contract"):
+            compare_record(changed, budget)
+        with self.assertRaisesRegex(BudgetError, "measurement contract"):
+            compare_candidate_to_baseline(changed, reference, budget)
         for field in ("mode", "corpus"):
             changed = copy.deepcopy(reference)
             changed[field] = "cold" if field == "mode" else {**changed[field], "revision_digest": "b" * 64}
@@ -366,7 +390,7 @@ class PerformanceTests(unittest.TestCase):
 
     def test_populated_bitbake_budget_retains_common_structural_checks(self):
         budget = load_budgets(Path("tests/performance/budgets.json"))
-        reference = load_evidence(Path("tests/performance/references/33971300100/yocto-5.0-bitbake-warm.json"))
+        reference = reference_record("yocto-5.0-bitbake-warm")
         reference["summary"]["bitbake"]["commands_failed"] = 1
         comparison = compare_record(reference, budget)
         self.assertTrue(any("commands_failed" in failure for failure in comparison["failures"]))

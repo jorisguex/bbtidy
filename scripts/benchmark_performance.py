@@ -134,52 +134,56 @@ def run_command(
     # File capture avoids pipe deadlocks while the sole waiter reaps the child.
     if not hasattr(os, "wait4"):
         raise RuntimeError("performance measurement requires POSIX wait4 (Linux or macOS)")
-    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+    with open(os.devnull, "rb") as stdin_file, tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
         started = time.perf_counter()
-        process = subprocess.Popen(
-            command, cwd=cwd, stdin=subprocess.DEVNULL,
-            stdout=stdout_file, stderr=stderr_file, start_new_session=True,
-        )
+        # POSIX spawn avoids charging the Python parent's pre-exec RSS to the
+        # benchmark. Popen(start_new_session=True) uses fork on Linux/Python 3.12.
+        if cwd is not None:
+            raise ValueError("run benchmarks with explicit input paths, not a cwd override")
+        pid = os.posix_spawnp(command[0], command, os.environ, setsid=True, file_actions=[
+            (os.POSIX_SPAWN_DUP2, stdin_file.fileno(), 0),
+            (os.POSIX_SPAWN_DUP2, stdout_file.fileno(), 1),
+            (os.POSIX_SPAWN_DUP2, stderr_file.fileno(), 2),
+        ])
         waited = []
         done = threading.Event()
 
         def reap() -> None:
             try:
-                _, status, usage = os.wait4(process.pid, 0)
-                process.returncode = os.waitstatus_to_exitcode(status)
-                waited.append((usage, time.perf_counter()))
+                _, status, usage = os.wait4(pid, 0)
+                waited.append((usage, time.perf_counter(), os.waitstatus_to_exitcode(status)))
             finally:
                 done.set()
 
         waiter = threading.Thread(target=reap)
         waiter.start()
-        sampler = ProcessSampler(process.pid)
+        sampler = ProcessSampler(pid)
         sampler.start()
         timed_out = False
         try:
             if not done.wait(timeout_seconds):
                 timed_out = True
-                _signal_process_group(process.pid, signal.SIGTERM)
+                _signal_process_group(pid, signal.SIGTERM)
                 # Kill remaining descendants even if the leader exits on TERM.
                 time.sleep(0.25)
-                _signal_process_group(process.pid, signal.SIGKILL)
+                _signal_process_group(pid, signal.SIGKILL)
             waiter.join()
         finally:
             if not done.is_set():
-                _signal_process_group(process.pid, signal.SIGKILL)
+                _signal_process_group(pid, signal.SIGKILL)
                 waiter.join()
             sampler.stop()
         if not waited:
             raise RuntimeError("could not collect child process resource usage")
-        usage, ended = waited[0]
+        usage, ended, returncode = waited[0]
         stdout_file.seek(0)
         stderr_file.seek(0)
         stdout, stderr = stdout_file.read(), stderr_file.read()
     max_rss = usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
-    status = "timed-out" if timed_out else "success" if process.returncode == 0 else "failed"
+    status = "timed-out" if timed_out else "success" if returncode == 0 else "failed"
     return {
         "status": status,
-        "exit_code": process.returncode,
+        "exit_code": returncode,
         "wall_ms": (ended - started) * 1000,
         "user_cpu_ms": usage.ru_utime * 1000,
         "system_cpu_ms": usage.ru_stime * 1000,
@@ -263,6 +267,7 @@ def runner_metadata(
             "cpu": "wait4",
             "memory": "procfs+wait4" if sys.platform == "linux" else "wait4",
             "output_capture": "temporary-files",
+            "spawn": "posix_spawnp-setsid",
             "io": "procfs" if sys.platform == "linux" else "unavailable",
             "cgroup": Path("/sys/fs/cgroup").is_dir(),
             "gnu_time": shutil.which("time") is not None,
@@ -405,6 +410,7 @@ def measure_cli(
     source_bytes = 0
     for path in metadata_paths:
         source_bytes += len(path.read_bytes())
+    phase_measurement["source_read_ms"] = (time.perf_counter() - read_started) * 1000
     original_files = {}
     expected_files = {}
     if operation == "format":
@@ -420,7 +426,6 @@ def measure_cli(
         changed_files = sum(original_files[path] != expected_files[path] for path in metadata_paths)
         if not changed_files:
             raise ValueError("format benchmark needs unformatted input; use format-check for clean files")
-    phase_measurement["source_read_ms"] = (time.perf_counter() - read_started) * 1000
     syntax_result = run_command(
         [str(bbtidy), "--no-config", "syntax-stats", "--details", str(source_root)],
         timeout_seconds=timeout_seconds,

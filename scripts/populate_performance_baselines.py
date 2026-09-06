@@ -46,6 +46,10 @@ def populate(budget_path: Path, manifest_path: Path, reason: str) -> dict:
                 or runner.get("architecture") != "x86_64"
                 or record["commit"] != entry["source_commit"]
                 or runner.get("source_commit") != record["commit"]
+                or (
+                    budget["policy"].get("measurement_contract") is not None
+                    and runner.get("measurement_contract") != budget["policy"]["measurement_contract"]
+                )
             ):
                 raise BudgetError("reference runner or source identity mismatch")
             digest = record["corpus"].get("revision_digest")
