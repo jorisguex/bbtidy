@@ -46,12 +46,15 @@ jobs:
           python3 scripts/check_performance_budget.py
           --budgets tests/performance/budgets.json
           --evidence "performance-${{ matrix.operation }}.json"
+          --output "comparison-${{ matrix.operation }}.json"
       - name: Upload raw synthetic evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: performance-synthetic-${{ matrix.operation }}
-          path: performance-${{ matrix.operation }}.json
+          path: |
+            performance-${{ matrix.operation }}.json
+            comparison-${{ matrix.operation }}.json
           if-no-files-found: error
 
   scaling:

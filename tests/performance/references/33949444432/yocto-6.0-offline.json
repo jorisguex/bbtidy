@@ -1,0 +1,232 @@
+{
+  "aggregation": {
+    "method": "median",
+    "p90": "nearest-rank"
+  },
+  "commit": "21a7b25f7220876e663c13626a68e64e582f5c68",
+  "corpus": {
+    "files": 3733,
+    "id": "bbtidy-performance-source",
+    "revision_digest": "17205a203cc33ac8adfce691bc74cfe8e896fe9216132543ca1d21a7e2f38295",
+    "source_bytes": 8152935
+  },
+  "kind": "bbtidy-performance",
+  "mode": "offline",
+  "phase_timings": {
+    "baseline_ms": 0,
+    "body_ms": 0,
+    "config_ms": 0,
+    "diff_ms": 0,
+    "exclusion_ms": 0,
+    "index_ms": 0,
+    "method": "operation-level timing; unavailable subphases are zero and labelled",
+    "override_ms": 0,
+    "parse_ms": 253.73456699981034,
+    "resolution_ms": 0,
+    "rule_ms": 1807.95261700041,
+    "serialization_ms": 1807.95261700041,
+    "sort_ms": 0,
+    "source_read_ms": 64.24829600018711,
+    "suppression_ms": 0,
+    "transaction_ms": 0,
+    "traversal_ms": 211.7102590000286
+  },
+  "runner": {
+    "architecture": "x86_64",
+    "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+    "bitbake": null,
+    "class": "github-ubuntu-24.04-x86_64",
+    "cpu": "x86_64",
+    "logical_cores": 4,
+    "memory_bytes": 16765411328,
+    "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
+    "resource_backends": {
+      "cgroup": true,
+      "cpu": "rusage",
+      "gnu_time": true,
+      "io": "procfs",
+      "memory": "procfs+rusage",
+      "process_tree": "procfs"
+    },
+    "rust": "unknown",
+    "source_commit": "21a7b25f7220876e663c13626a68e64e582f5c68"
+  },
+  "sample_count": 3,
+  "samples": [
+    {
+      "bbtidy": {
+        "diagnostics": 2693,
+        "files_discovered": 3733,
+        "files_parsed": 3733,
+        "output_bytes": 1911382,
+        "source_bytes": 8152935
+      },
+      "result": {
+        "bbtidy": {
+          "diagnostics": 2693,
+          "files_discovered": 3733,
+          "files_parsed": 3733,
+          "output_bytes": 1911382,
+          "source_bytes": 8152935
+        },
+        "exit_code": 0,
+        "peak_rss_bytes": 60051456,
+        "read_bytes": 0,
+        "status": "success",
+        "stderr_bytes": 0,
+        "stdout_bytes": 1911382,
+        "system_cpu_ms": 743.564,
+        "user_cpu_ms": 1049.385,
+        "wall_ms": 1809.4499460003135,
+        "written_bytes": 0
+      }
+    },
+    {
+      "bbtidy": {
+        "diagnostics": 2693,
+        "files_discovered": 3733,
+        "files_parsed": 3733,
+        "output_bytes": 1911382,
+        "source_bytes": 8152935
+      },
+      "result": {
+        "bbtidy": {
+          "diagnostics": 2693,
+          "files_discovered": 3733,
+          "files_parsed": 3733,
+          "output_bytes": 1911382,
+          "source_bytes": 8152935
+        },
+        "exit_code": 0,
+        "peak_rss_bytes": 60051456,
+        "read_bytes": 0,
+        "status": "success",
+        "stderr_bytes": 0,
+        "stdout_bytes": 1911382,
+        "system_cpu_ms": 733.8109999999999,
+        "user_cpu_ms": 1060.727,
+        "wall_ms": 1803.9963090004676,
+        "written_bytes": 0
+      }
+    },
+    {
+      "bbtidy": {
+        "diagnostics": 2693,
+        "files_discovered": 3733,
+        "files_parsed": 3733,
+        "output_bytes": 1911382,
+        "source_bytes": 8152935
+      },
+      "result": {
+        "bbtidy": {
+          "diagnostics": 2693,
+          "files_discovered": 3733,
+          "files_parsed": 3733,
+          "output_bytes": 1911382,
+          "source_bytes": 8152935
+        },
+        "exit_code": 0,
+        "peak_rss_bytes": 60264448,
+        "read_bytes": 0,
+        "status": "success",
+        "stderr_bytes": 0,
+        "stdout_bytes": 1911382,
+        "system_cpu_ms": 720.723,
+        "user_cpu_ms": 1079.082,
+        "wall_ms": 1807.95261700041,
+        "written_bytes": 0
+      }
+    }
+  ],
+  "schema": 1,
+  "structural": {
+    "files": 3643,
+    "structured_nodes": 66099,
+    "total_nodes": 106137,
+    "trivia_nodes": 40038,
+    "unknown_bytes": 0,
+    "unknown_nodes": 0
+  },
+  "summary": {
+    "bbtidy": {
+      "diagnostics": 2693.0,
+      "files_discovered": 3733.0,
+      "files_parsed": 3733.0,
+      "output_bytes": 1911382.0,
+      "source_bytes": 8152935.0
+    },
+    "peak_rss_bytes": 60051456.0,
+    "phases": {
+      "baseline_ms": 0.0,
+      "body_ms": 0.0,
+      "config_ms": 0.0,
+      "diff_ms": 0.0,
+      "exclusion_ms": 0.0,
+      "index_ms": 0.0,
+      "override_ms": 0.0,
+      "parse_ms": 253.73456699981034,
+      "resolution_ms": 0.0,
+      "rule_ms": 1807.95261700041,
+      "serialization_ms": 1807.95261700041,
+      "sort_ms": 0.0,
+      "source_read_ms": 64.24829600018711,
+      "suppression_ms": 0.0,
+      "transaction_ms": 0.0,
+      "traversal_ms": 211.7102590000286
+    },
+    "read_bytes": 0.0,
+    "sample_ranges": {
+      "peak_rss_bytes": {
+        "max": 60264448.0,
+        "median": 60051456.0,
+        "min": 60051456.0,
+        "p90": 60264448.0
+      },
+      "read_bytes": {
+        "max": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p90": 0.0
+      },
+      "system_cpu_ms": {
+        "max": 743.564,
+        "median": 733.8109999999999,
+        "min": 720.723,
+        "p90": 743.564
+      },
+      "user_cpu_ms": {
+        "max": 1079.082,
+        "median": 1060.727,
+        "min": 1049.385,
+        "p90": 1079.082
+      },
+      "wall_ms": {
+        "max": 1809.4499460003135,
+        "median": 1807.95261700041,
+        "min": 1803.9963090004676,
+        "p90": 1809.4499460003135
+      },
+      "written_bytes": {
+        "max": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p90": 0.0
+      }
+    },
+    "status": "success",
+    "structural": {
+      "files": 3643.0,
+      "structured_nodes": 66099.0,
+      "total_nodes": 106137.0,
+      "trivia_nodes": 40038.0,
+      "unknown_bytes": 0.0,
+      "unknown_nodes": 0.0
+    },
+    "system_cpu_ms": 733.8109999999999,
+    "user_cpu_ms": 1060.727,
+    "wall_ms": 1807.95261700041,
+    "written_bytes": 0.0
+  },
+  "version": "bbtidy 0.1.0-alpha.5",
+  "workload": "yocto-6.0-offline"
+}

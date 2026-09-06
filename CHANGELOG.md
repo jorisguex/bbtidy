@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Populated blocking timing and memory baselines for 33 synthetic and pinned
+  Yocto workloads from repeated native Linux CI runs. Retained raw references,
+  checksums, runner/corpus identity, and explicit refresh tooling; failed
+  measurements cannot pass comparisons or replace reference baselines.
 - Corrected the minimum source-build Rust version to 1.88, which supports the
   let chains already used by the code. Package CI and the release gate now test
   the declared minimum and compile an installed source distribution with it.

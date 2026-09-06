@@ -1,0 +1,393 @@
+{
+  "aggregation": {
+    "method": "median",
+    "p90": "nearest-rank"
+  },
+  "commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+  "corpus": {
+    "files": 4,
+    "id": "bbtidy-semantic-build",
+    "revision_digest": "5c173d85fd84e51a19139d12210d15da0185967929b4811a868e991dd56a00df",
+    "source_bytes": 67316
+  },
+  "kind": "bbtidy-performance",
+  "mode": "cold",
+  "phase_timings": {
+    "baseline_ms": 0,
+    "body_ms": 0,
+    "config_ms": 0,
+    "diff_ms": 0,
+    "exclusion_ms": 0,
+    "index_ms": 0,
+    "method": "operation-level timing; unavailable subphases are zero and labelled",
+    "override_ms": 0,
+    "parse_ms": 15.741102999982104,
+    "resolution_ms": 0,
+    "rule_ms": 438411.7503039999,
+    "serialization_ms": 438411.7503039999,
+    "sort_ms": 0,
+    "source_read_ms": 0.06921900001088943,
+    "suppression_ms": 0,
+    "transaction_ms": 0,
+    "traversal_ms": 0.30161200004386046
+  },
+  "runner": {
+    "architecture": "x86_64",
+    "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+    "bitbake": null,
+    "class": "github-ubuntu-24.04-x86_64",
+    "cpu": "x86_64",
+    "logical_cores": 4,
+    "memory_bytes": 16769748992,
+    "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
+    "resource_backends": {
+      "cgroup": true,
+      "cpu": "rusage",
+      "gnu_time": true,
+      "io": "procfs",
+      "memory": "procfs+rusage",
+      "process_tree": "procfs"
+    },
+    "rust": "unknown",
+    "source_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+  },
+  "sample_count": 1,
+  "samples": [
+    {
+      "bbtidy": {
+        "bitbake": {
+          "cache_hits": 0,
+          "cache_state": "cold",
+          "commands_attempted": 6,
+          "commands_by_phase": {
+            "dependency_graph": 1,
+            "dry_run": 1,
+            "parse": 1,
+            "recipe_inventory": 1,
+            "target_environment": 1,
+            "version": 1
+          },
+          "commands_cancelled": 0,
+          "commands_failed": 0,
+          "commands_limit_terminated": 0,
+          "commands_succeeded": 6,
+          "commands_timed_out": 0,
+          "elapsed_ms_by_phase": {
+            "dependency_graph": 7645,
+            "dry_run": 265831,
+            "parse": 150890,
+            "recipe_inventory": 6497,
+            "target_environment": 6927,
+            "version": 254
+          },
+          "fallback_recipe_count": 0,
+          "fallback_recipe_percentage": 0,
+          "helper_recipe_count": 0,
+          "largest_output_bytes": 2335314,
+          "largest_output_phase": "target_environment",
+          "last_failure_kind": null,
+          "last_failure_phase": null,
+          "limits": {
+            "command_timeout": {
+              "nanos": 0,
+              "secs": 1800
+            },
+            "max_commands": 20000,
+            "max_recipe_queries": 10000,
+            "max_stderr_bytes": 16777216,
+            "max_stdout_bytes": 268435456,
+            "total_timeout": {
+              "nanos": 0,
+              "secs": 7200
+            }
+          },
+          "max_stderr_bytes": 0,
+          "max_stdout_bytes": 2335314,
+          "operation_elapsed_ms": 438090,
+          "peak_live_processes": 1,
+          "postprocess_ms": 0,
+          "recipe_queries_completed": 1,
+          "recipe_queries_scheduled": 1,
+          "stderr_bytes_by_phase": {
+            "dependency_graph": 0,
+            "dry_run": 0,
+            "parse": 0,
+            "recipe_inventory": 0,
+            "target_environment": 0,
+            "version": 0
+          },
+          "stdout_bytes_by_phase": {
+            "dependency_graph": 213,
+            "dry_run": 713235,
+            "parse": 193,
+            "recipe_inventory": 511875,
+            "target_environment": 2335314,
+            "version": 38
+          },
+          "strategy": "semantic-analysis",
+          "tinfoil_parse_ms": 0,
+          "tinfoil_prepare_ms": 0,
+          "total_commands": 6,
+          "total_stderr_bytes": 0,
+          "total_stdout_bytes": 3560868,
+          "workspace_environment_parse_ms": 0
+        },
+        "diagnostics": 4100,
+        "files_discovered": 4,
+        "files_parsed": 4,
+        "output_bytes": 10522328,
+        "source_bytes": 67316
+      },
+      "result": {
+        "bbtidy": {
+          "bitbake": {
+            "cache_hits": 0,
+            "cache_state": "cold",
+            "commands_attempted": 6,
+            "commands_by_phase": {
+              "dependency_graph": 1,
+              "dry_run": 1,
+              "parse": 1,
+              "recipe_inventory": 1,
+              "target_environment": 1,
+              "version": 1
+            },
+            "commands_cancelled": 0,
+            "commands_failed": 0,
+            "commands_limit_terminated": 0,
+            "commands_succeeded": 6,
+            "commands_timed_out": 0,
+            "elapsed_ms_by_phase": {
+              "dependency_graph": 7645,
+              "dry_run": 265831,
+              "parse": 150890,
+              "recipe_inventory": 6497,
+              "target_environment": 6927,
+              "version": 254
+            },
+            "fallback_recipe_count": 0,
+            "fallback_recipe_percentage": 0,
+            "helper_recipe_count": 0,
+            "largest_output_bytes": 2335314,
+            "largest_output_phase": "target_environment",
+            "last_failure_kind": null,
+            "last_failure_phase": null,
+            "limits": {
+              "command_timeout": {
+                "nanos": 0,
+                "secs": 1800
+              },
+              "max_commands": 20000,
+              "max_recipe_queries": 10000,
+              "max_stderr_bytes": 16777216,
+              "max_stdout_bytes": 268435456,
+              "total_timeout": {
+                "nanos": 0,
+                "secs": 7200
+              }
+            },
+            "max_stderr_bytes": 0,
+            "max_stdout_bytes": 2335314,
+            "operation_elapsed_ms": 438090,
+            "peak_live_processes": 1,
+            "postprocess_ms": 0,
+            "recipe_queries_completed": 1,
+            "recipe_queries_scheduled": 1,
+            "stderr_bytes_by_phase": {
+              "dependency_graph": 0,
+              "dry_run": 0,
+              "parse": 0,
+              "recipe_inventory": 0,
+              "target_environment": 0,
+              "version": 0
+            },
+            "stdout_bytes_by_phase": {
+              "dependency_graph": 213,
+              "dry_run": 713235,
+              "parse": 193,
+              "recipe_inventory": 511875,
+              "target_environment": 2335314,
+              "version": 38
+            },
+            "strategy": "semantic-analysis",
+            "tinfoil_parse_ms": 0,
+            "tinfoil_prepare_ms": 0,
+            "total_commands": 6,
+            "total_stderr_bytes": 0,
+            "total_stdout_bytes": 3560868,
+            "workspace_environment_parse_ms": 0
+          },
+          "diagnostics": 4100,
+          "files_discovered": 4,
+          "files_parsed": 4,
+          "output_bytes": 10522328,
+          "source_bytes": 67316
+        },
+        "exit_code": 0,
+        "peak_rss_bytes": 57282560,
+        "read_bytes": 0,
+        "status": "success",
+        "stderr_bytes": 0,
+        "stdout_bytes": 10522328,
+        "system_cpu_ms": 2737.515,
+        "user_cpu_ms": 8144.005999999999,
+        "wall_ms": 438411.7503039999,
+        "written_bytes": 1200128
+      }
+    }
+  ],
+  "schema": 1,
+  "structural": {},
+  "summary": {
+    "bbtidy": {
+      "diagnostics": 4100.0,
+      "files_discovered": 4.0,
+      "files_parsed": 4.0,
+      "output_bytes": 10522328.0,
+      "source_bytes": 67316.0
+    },
+    "bitbake": {
+      "cache_hits": 0.0,
+      "cache_state": "cold",
+      "commands_attempted": 6.0,
+      "commands_by_phase": {
+        "dependency_graph": 1,
+        "dry_run": 1,
+        "parse": 1,
+        "recipe_inventory": 1,
+        "target_environment": 1,
+        "version": 1
+      },
+      "commands_cancelled": 0.0,
+      "commands_failed": 0.0,
+      "commands_limit_terminated": 0.0,
+      "commands_succeeded": 6.0,
+      "commands_timed_out": 0.0,
+      "elapsed_ms_by_phase": {
+        "dependency_graph": 7645,
+        "dry_run": 265831,
+        "parse": 150890,
+        "recipe_inventory": 6497,
+        "target_environment": 6927,
+        "version": 254
+      },
+      "fallback_recipe_count": 0.0,
+      "fallback_recipe_percentage": 0.0,
+      "helper_recipe_count": 0.0,
+      "largest_output_bytes": 2335314.0,
+      "largest_output_phase": "target_environment",
+      "last_failure_kind": null,
+      "last_failure_phase": null,
+      "limits": {
+        "command_timeout": {
+          "nanos": 0,
+          "secs": 1800
+        },
+        "max_commands": 20000,
+        "max_recipe_queries": 10000,
+        "max_stderr_bytes": 16777216,
+        "max_stdout_bytes": 268435456,
+        "total_timeout": {
+          "nanos": 0,
+          "secs": 7200
+        }
+      },
+      "max_stderr_bytes": 0.0,
+      "max_stdout_bytes": 2335314.0,
+      "operation_elapsed_ms": 438090.0,
+      "peak_live_processes": 1.0,
+      "postprocess_ms": 0.0,
+      "recipe_queries_completed": 1.0,
+      "recipe_queries_scheduled": 1.0,
+      "stderr_bytes_by_phase": {
+        "dependency_graph": 0,
+        "dry_run": 0,
+        "parse": 0,
+        "recipe_inventory": 0,
+        "target_environment": 0,
+        "version": 0
+      },
+      "stdout_bytes_by_phase": {
+        "dependency_graph": 213,
+        "dry_run": 713235,
+        "parse": 193,
+        "recipe_inventory": 511875,
+        "target_environment": 2335314,
+        "version": 38
+      },
+      "strategy": "semantic-analysis",
+      "tinfoil_parse_ms": 0.0,
+      "tinfoil_prepare_ms": 0.0,
+      "total_commands": 6.0,
+      "total_stderr_bytes": 0.0,
+      "total_stdout_bytes": 3560868.0,
+      "workspace_environment_parse_ms": 0.0
+    },
+    "peak_rss_bytes": 57282560.0,
+    "phases": {
+      "baseline_ms": 0.0,
+      "body_ms": 0.0,
+      "config_ms": 0.0,
+      "diff_ms": 0.0,
+      "exclusion_ms": 0.0,
+      "index_ms": 0.0,
+      "override_ms": 0.0,
+      "parse_ms": 15.741102999982104,
+      "resolution_ms": 0.0,
+      "rule_ms": 438411.7503039999,
+      "serialization_ms": 438411.7503039999,
+      "sort_ms": 0.0,
+      "source_read_ms": 0.06921900001088943,
+      "suppression_ms": 0.0,
+      "transaction_ms": 0.0,
+      "traversal_ms": 0.30161200004386046
+    },
+    "read_bytes": 0.0,
+    "sample_ranges": {
+      "peak_rss_bytes": {
+        "max": 57282560.0,
+        "median": 57282560.0,
+        "min": 57282560.0,
+        "p90": 57282560.0
+      },
+      "read_bytes": {
+        "max": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p90": 0.0
+      },
+      "system_cpu_ms": {
+        "max": 2737.515,
+        "median": 2737.515,
+        "min": 2737.515,
+        "p90": 2737.515
+      },
+      "user_cpu_ms": {
+        "max": 8144.005999999999,
+        "median": 8144.005999999999,
+        "min": 8144.005999999999,
+        "p90": 8144.005999999999
+      },
+      "wall_ms": {
+        "max": 438411.7503039999,
+        "median": 438411.7503039999,
+        "min": 438411.7503039999,
+        "p90": 438411.7503039999
+      },
+      "written_bytes": {
+        "max": 1200128.0,
+        "median": 1200128.0,
+        "min": 1200128.0,
+        "p90": 1200128.0
+      }
+    },
+    "status": "success",
+    "structural": {},
+    "system_cpu_ms": 2737.515,
+    "user_cpu_ms": 8144.005999999999,
+    "wall_ms": 438411.7503039999,
+    "written_bytes": 1200128.0
+  },
+  "version": "bbtidy 0.1.0-alpha.5",
+  "workload": "yocto-5.0-semantic-full"
+}

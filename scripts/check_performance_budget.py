@@ -4,16 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
+import math
 import os
 import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 try:
-    from scripts.performance_schema import PerformanceSchemaError, load_evidence, load_record
+    from scripts.performance_schema import PerformanceSchemaError, load_evidence, load_record, validate_record
 except ModuleNotFoundError:  # direct script execution
-    from performance_schema import PerformanceSchemaError, load_evidence, load_record  # type: ignore[no-redef]
+    from performance_schema import PerformanceSchemaError, load_evidence, load_record, validate_record  # type: ignore[no-redef]
 
 
 class BudgetError(ValueError):
@@ -36,7 +38,7 @@ def load_budgets(path: Path) -> dict:
         if not isinstance(rules, Mapping):
             raise BudgetError(f"budget for {workload} must be an object")
         for metric, rule in rules.items():
-            if metric in {"notes"}:
+            if metric in {"notes", "reference"}:
                 continue
             if metric == "structural":
                 structural = rule
@@ -73,6 +75,21 @@ def load_budgets(path: Path) -> dict:
                     raise BudgetError(
                         f"timing budget for {workload}.{metric} needs max_ratio and min_absolute_regression"
                     )
+    for workload in policy.get("required_baselines", []):
+        rules = value["workloads"].get(workload, {})
+        if not rules.get("reference"):
+            raise BudgetError(f"required baseline {workload} has no reference identity")
+        for metric in ("wall_ms", "peak_rss_bytes"):
+            rule = rules.get(metric, {})
+            baseline = rule.get("baseline")
+            if (
+                isinstance(baseline, bool)
+                or not isinstance(baseline, (int, float))
+                or not math.isfinite(baseline)
+                or baseline <= 0
+                or rule.get("blocking") is not True
+            ):
+                raise BudgetError(f"required baseline {workload}.{metric} must be populated and blocking")
     return value
 
 
@@ -82,7 +99,7 @@ def _metric(result: Mapping[str, Any], name: str) -> float:
         if not isinstance(value, Mapping) or component not in value:
             raise BudgetError(f"result is missing metric {name}")
         value = value[component]
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
         raise BudgetError(f"result metric {name} is invalid")
     return float(value)
 
@@ -96,13 +113,8 @@ def _value(result: Mapping[str, Any], name: str) -> Any:
     return value
 
 
-def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict:
-    runner_class = record.get("runner", {}).get("class")
-    if runner_class != budget.get("runner_class"):
-        raise BudgetError(
-            f"runner class mismatch: evidence={runner_class!r}, budget={budget.get('runner_class')!r}"
-        )
-    workload = record.get("workload")
+def workload_rules(workload: str, budget: Mapping[str, Any]) -> dict:
+    """Resolve a policy without losing inherited structural safeguards."""
     workload_budget = budget.get("workloads", {}).get(workload)
     if not isinstance(workload_budget, Mapping) and isinstance(workload, str):
         if workload.endswith("-json"):
@@ -115,12 +127,40 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
             workload_budget = budget.get("workloads", {}).get("bitbake-common")
     if not isinstance(workload_budget, Mapping):
         raise BudgetError(f"no budget exists for workload {workload!r}")
+    rules = copy.deepcopy(workload_budget)
+    if isinstance(workload, str) and workload.startswith(
+        ("yocto-5.0-bitbake-", "yocto-6.0-bitbake-", "yocto-5.0-semantic-", "yocto-6.0-semantic-")
+    ):
+        common = budget.get("workloads", {}).get("bitbake-common", {}).get("structural", {})
+        rules["structural"] = {**common, **rules.get("structural", {})}
+    return rules
+
+
+def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict:
+    runner_class = record.get("runner", {}).get("class")
+    if runner_class != budget.get("runner_class"):
+        raise BudgetError(
+            f"runner class mismatch: evidence={runner_class!r}, budget={budget.get('runner_class')!r}"
+        )
+    workload = record.get("workload")
+    workload_budget = workload_rules(workload, budget)
+    reference = workload_budget.get("reference")
+    if reference and (
+        record.get("mode") != reference["mode"]
+        or record.get("corpus") != reference["corpus"]
+    ):
+        raise BudgetError(f"{workload} differs from the baseline mode or corpus; remeasure explicitly")
     current = record["summary"]
     failures = []
+    if current.get("status") != "success" or any(
+        sample.get("result", {}).get("status") != "success"
+        for sample in record.get("samples", [])
+    ):
+        failures.append(f"{workload} contains an unsuccessful performance sample")
     advisory = []
     measurements = {}
     for metric, rule in workload_budget.items():
-        if metric in {"structural", "notes"}:
+        if metric in {"structural", "notes", "reference"}:
             continue
         if not isinstance(rule, Mapping):
             raise BudgetError(f"budget for {workload}.{metric} must be an object")
@@ -132,7 +172,7 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
         if baseline is None:
             advisory.append(f"{workload}.{metric} has no populated baseline")
             continue
-        if isinstance(baseline, bool) or not isinstance(baseline, (int, float)) or baseline < 0:
+        if isinstance(baseline, bool) or not isinstance(baseline, (int, float)) or not math.isfinite(baseline) or baseline < 0:
             raise BudgetError(f"baseline for {workload}.{metric} is invalid")
         ratio = rule.get("max_ratio")
         absolute = rule.get("min_absolute_regression")
@@ -158,7 +198,7 @@ def compare_record(record: Mapping[str, Any], budget: Mapping[str, Any]) -> dict
         {
             metric: rule
             for metric, rule in workload_budget.items()
-            if metric not in {"structural", "notes"}
+            if metric not in {"structural", "notes", "reference"}
             and isinstance(rule, Mapping)
             and ("max" in rule or "max_delta" in rule)
             and "max_ratio" not in rule
@@ -201,16 +241,28 @@ def update_budget(budget_path: Path, record: Mapping[str, Any], reason: str) -> 
     if os.environ.get("CI", "").lower() == "true" and os.environ.get("BBTIDY_ALLOW_PERFORMANCE_UPDATE") != "1":
         raise BudgetError("performance budget updates are disabled in CI")
     value = load_budgets(budget_path)
+    validate_record(record)
+    if record["summary"]["status"] != "success" or any(
+        sample["result"]["status"] != "success" for sample in record["samples"]
+    ):
+        raise BudgetError("cannot update budgets from unsuccessful samples")
     if value["runner_class"] != record["runner"]["class"]:
         raise BudgetError("cannot update budgets from an incompatible runner class")
     workload = record["workload"]
-    workload_budget = value["workloads"].setdefault(workload, {})
+    workload_budget = workload_rules(workload, value)
+    if workload_budget.get("reference"):
+        raise BudgetError("use populate_performance_baselines.py to refresh repeated reference measurements")
+    value["workloads"][workload] = workload_budget
     before = {}
-    for metric in ("wall_ms", "peak_rss_bytes", "user_cpu_ms", "system_cpu_ms", "read_bytes", "written_bytes"):
+    for metric, rule in workload_budget.items():
+        if not isinstance(rule, dict) or "baseline" not in rule or "max" in rule:
+            continue
         current = record["summary"].get(metric)
         if current is None:
             continue
-        rule = workload_budget.setdefault(metric, {"max_ratio": 1.15, "min_absolute_regression": 0, "blocking": False})
+        rule.setdefault("max_ratio", 1.15)
+        rule.setdefault("min_absolute_regression", 0)
+        rule.setdefault("blocking", False)
         before[metric] = rule.get("baseline")
         rule["baseline"] = current
     value.setdefault("history", []).append(
@@ -224,6 +276,11 @@ def update_budget(budget_path: Path, record: Mapping[str, Any], reason: str) -> 
 def compare_candidate_to_baseline(
     candidate: Mapping[str, Any], baseline: Mapping[str, Any], budget: Mapping[str, Any]
 ) -> dict:
+    if baseline.get("summary", {}).get("status") != "success" or any(
+        sample.get("result", {}).get("status") != "success"
+        for sample in baseline.get("samples", [])
+    ):
+        raise BudgetError("cannot compare against an unsuccessful baseline")
     for field in ("workload", "mode"):
         if candidate.get(field) != baseline.get(field):
             raise BudgetError(f"candidate and baseline differ in {field}")
@@ -234,20 +291,11 @@ def compare_candidate_to_baseline(
     if candidate_corpus.get("revision_digest") != baseline_corpus.get("revision_digest"):
         raise BudgetError("candidate and baseline use different corpus revisions")
     workload = candidate["workload"]
-    rules = budget.get("workloads", {}).get(workload)
-    if not isinstance(rules, Mapping):
-        if workload.endswith("-json"):
-            rules = budget["workloads"]["synthetic-serialization"]
-        elif workload.startswith(("recipe-", "continued-", "shell-body-")):
-            rules = budget["workloads"]["synthetic-scaling"]
-        elif workload.startswith(
-            ("yocto-5.0-bitbake-", "yocto-6.0-bitbake-", "yocto-5.0-semantic-", "yocto-6.0-semantic-")
-        ):
-            rules = budget["workloads"]["bitbake-common"]
-    if not isinstance(rules, Mapping):
-        raise BudgetError(f"no budget exists for workload {workload!r}")
+    rules = workload_rules(workload, budget)
     derived = json.loads(json.dumps(budget))
-    derived_rules = derived["workloads"].setdefault(workload, dict(rules))
+    derived_rules = rules
+    # The explicit reference pair replaces the checked-in reference identity.
+    derived_rules.pop("reference", None)
     for metric, rule in derived_rules.items():
         if not isinstance(rule, dict) or "max_ratio" not in rule:
             continue

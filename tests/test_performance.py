@@ -1,4 +1,6 @@
 import json
+import copy
+import hashlib
 import os
 import sys
 import tempfile
@@ -14,6 +16,8 @@ from scripts.check_performance_budget import (
     update_budget,
 )
 from scripts.prepare_performance_evidence import consolidate
+from scripts.populate_performance_baselines import populate
+from scripts.benchmark_performance import synthetic_cases
 from scripts.performance_schema import (
     PerformanceSchemaError,
     aggregate_results,
@@ -217,7 +221,7 @@ class PerformanceTests(unittest.TestCase):
         self.assertTrue(budgets["policy"]["relative_and_absolute_required"])
         for workload in budgets["workloads"].values():
             for metric, rule in workload.items():
-                if metric in {"notes", "structural"} or not isinstance(rule, dict):
+                if metric in {"notes", "structural", "reference"} or not isinstance(rule, dict):
                     continue
                 if "max_ratio" not in rule:
                     self.assertTrue(
@@ -243,6 +247,124 @@ class PerformanceTests(unittest.TestCase):
             )
             evidence = load_evidence(path)
             self.assertEqual(len(evidence["records"]), 1)
+
+    def test_checked_in_references_reproduce_complete_blocking_budgets(self):
+        budget_path = Path("tests/performance/budgets.json")
+        budget = load_budgets(budget_path)
+        expected = {
+            f"{name}-{operation}"
+            for name, _ in synthetic_cases()
+            for operation in ("format-check", "format", "json", "sarif")
+        } | {"yocto-community-offline"} | {
+            f"yocto-{version}-{operation}"
+            for version in ("5.0", "6.0")
+            for operation in ("offline", "bitbake-cold", "bitbake-warm", "semantic-full")
+        }
+        self.assertEqual(set(budget["policy"]["required_baselines"]), expected)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "budgets.json"
+            target.write_bytes(budget_path.read_bytes())
+            from unittest.mock import patch
+            with patch.dict(os.environ, {"BBTIDY_ALLOW_PERFORMANCE_UPDATE": "1"}):
+                changes = populate(
+                    target, Path("tests/performance/references/manifest.json"),
+                    budget["workloads"]["recipe-1k-json"]["reference"]["reason"],
+                )
+            self.assertEqual(set(changes), expected)
+            self.assertEqual(json.loads(target.read_text()), budget)
+
+    def test_real_references_match_and_regressions_fail(self):
+        budget = load_budgets(Path("tests/performance/budgets.json"))
+        for path in Path("tests/performance/references").rglob("*.json"):
+            if path.name == "manifest.json":
+                continue
+            evidence = load_evidence(path)
+            for reference in evidence.get("records", [evidence]):
+                with self.subTest(path=path, workload=reference["workload"]):
+                    self.assertEqual(compare_record(reference, budget)["status"], "matched")
+                    for metric in ("wall_ms", "peak_rss_bytes"):
+                        changed = copy.deepcopy(reference)
+                        rule = budget["workloads"][reference["workload"]][metric]
+                        changed["summary"][metric] = max(
+                            rule["baseline"] * rule["max_ratio"],
+                            rule["baseline"] + rule["min_absolute_regression"],
+                        ) + 1
+                        self.assertEqual(compare_record(changed, budget)["status"], "failed")
+
+    def test_populated_baseline_rejects_changed_identity_and_failed_samples(self):
+        budget = load_budgets(Path("tests/performance/budgets.json"))
+        reference = load_evidence(Path("tests/performance/references/33971299726/performance-json.json"))["records"][0]
+        for field in ("mode", "corpus"):
+            changed = copy.deepcopy(reference)
+            changed[field] = "cold" if field == "mode" else {**changed[field], "revision_digest": "b" * 64}
+            with self.assertRaises(BudgetError):
+                compare_record(changed, budget)
+        reference["samples"][0]["result"]["status"] = "failed"
+        self.assertEqual(compare_record(reference, budget)["status"], "failed")
+
+    def test_populated_bitbake_budget_retains_common_structural_checks(self):
+        budget = load_budgets(Path("tests/performance/budgets.json"))
+        reference = load_evidence(Path("tests/performance/references/33971300100/yocto-5.0-bitbake-warm.json"))
+        reference["summary"]["bitbake"]["commands_failed"] = 1
+        comparison = compare_record(reference, budget)
+        self.assertTrue(any("commands_failed" in failure for failure in comparison["failures"]))
+
+    def test_required_baseline_cannot_be_disabled_or_emptied(self):
+        original = load_budgets(Path("tests/performance/budgets.json"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "budgets.json"
+            for change in ({"baseline": None}, {"baseline": float("nan")}, {"blocking": False}):
+                budget = copy.deepcopy(original)
+                budget["workloads"]["recipe-1k-json"]["wall_ms"].update(change)
+                path.write_text(json.dumps(budget))
+                with self.assertRaises(BudgetError):
+                    load_budgets(path)
+
+    def test_reference_update_rejects_untrusted_measurements_without_writing(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"BBTIDY_ALLOW_PERFORMANCE_UPDATE": "1"}):
+            root = Path(directory)
+            budget = {
+                "schema": 1, "runner_class": "test-runner",
+                "policy": {"relative_and_absolute_required": True},
+                "workloads": {"synthetic-scaling": {
+                    metric: {"baseline": None, "max_ratio": 1.15, "min_absolute_regression": 50}
+                    for metric in ("wall_ms", "peak_rss_bytes")
+                }},
+            }
+            budget_path = root / "budget.json"
+            budget_path.write_text(json.dumps(budget))
+            before = budget_path.read_bytes()
+            original = record()
+            original["runner"].update(os="Linux-test", architecture="x86_64", source_commit=original["commit"])
+            for failure in ("checksum", "failed", "summary", "runner", "source", "corpus", "single-run"):
+                entries = []
+                for index in range(2):
+                    sample = copy.deepcopy(original)
+                    if index == 1:
+                        if failure == "failed":
+                            sample["samples"][0]["result"]["status"] = "failed"
+                        elif failure == "summary":
+                            sample["summary"]["wall_ms"] = 1
+                        elif failure == "runner":
+                            sample["runner"]["os"] = "Darwin-test"
+                        elif failure == "source":
+                            sample["commit"] = "b" * 40
+                        elif failure == "corpus":
+                            sample["corpus"]["revision_digest"] = "b" * 64
+                    path = root / f"sample-{index}.json"
+                    path.write_text(json.dumps(sample))
+                    entries.append({
+                        "path": path.name,
+                        "sha256": "bad" if failure == "checksum" else hashlib.sha256(path.read_bytes()).hexdigest(),
+                        "source_commit": original["commit"],
+                        "run_url": f"https://github.com/jorisguex/bbtidy/actions/runs/{0 if failure == 'single-run' else index}",
+                    })
+                manifest = root / "manifest.json"
+                manifest.write_text(json.dumps({"schema": 1, "evidence": entries}))
+                with self.subTest(failure=failure), self.assertRaises(BudgetError):
+                    populate(budget_path, manifest, "test invalid reference")
+                self.assertEqual(budget_path.read_bytes(), before)
 
     def test_release_performance_evidence_is_consolidated(self):
         with tempfile.TemporaryDirectory() as directory:

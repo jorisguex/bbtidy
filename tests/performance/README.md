@@ -35,13 +35,53 @@ python3 scripts/check_performance_budget.py \
   --output performance/budget-comparison.json
 ```
 
-Timing budgets are advisory until repeated native-Linux reference samples are
-populated. Blocking comparisons require both the configured relative and
-absolute regression thresholds. Structural command/query/strategy/output
-invariants remain blocking. Updating a baseline requires `--update --reason`
-and is refused in CI unless `BBTIDY_ALLOW_PERFORMANCE_UPDATE=1` is explicitly
-set; unaffected workloads are preserved and the before/after values are
-printed.
+Timing and memory budgets are populated and blocking for 33 workloads on
+`github-ubuntu-24.04-x86_64`:
+
+| Workloads | Coverage | Reference runs |
+| --- | --- | --- |
+| 24 synthetic | Six fixtures × format-check, format, JSON, SARIF | Two runs per case, 6–13 samples per run |
+| 3 pinned offline | Yocto 5.0, Yocto 6.0, pinned community | Two runs, three samples per run |
+| 4 BitBake | Yocto 5.0/6.0 cold and warm | Two runs, one cold/two warm samples per run |
+| 2 full semantic | Yocto 5.0 and 6.0 | Two runs, one sample per run |
+
+Each baseline is the median of the per-run medians, giving each runner equal
+weight. [The reference manifest](references/manifest.json) records the exact
+source commits, GitHub run URLs, artifact IDs, and SHA-256 hashes of the raw
+JSON files retained beside it. Synthetic references come from commits
+`c1e0567` and `8cfd07b`; pinned references come from `21a7b25` and `8cfd07b`.
+Their corpus identities match within every workload. The Python tests reproduce
+the checked-in baselines from these files and verify that injected regressions
+fail. Empty or disabled required baselines fail policy validation.
+
+Blocking comparisons require both the configured relative and absolute
+regression thresholds. Structural command/query/strategy/output invariants
+remain blocking, including the common BitBake checks when a workload has its
+own timing rules. Failed raw samples fail comparisons even if the summary
+claims success. A different runner, mode, or corpus requires explicit new
+reference measurements. The two generic synthetic policies remain unpopulated
+templates for new cases; all current CI cases have individual blocking rules.
+
+To refresh baselines, collect at least two independent successful native Linux
+runs of each affected workload, keep their raw records, and update the manifest
+with their source commits, run URLs, artifact IDs, and checksums. Then run:
+
+```bash
+python3 scripts/populate_performance_baselines.py \
+  --budgets tests/performance/budgets.json \
+  --references tests/performance/references/manifest.json \
+  --reason "Explain the intentional change and the reference runs"
+python3 -m unittest discover -s tests -p 'test_performance.py'
+```
+
+The updater checks raw-sample aggregates, hashes, successful outcomes, distinct
+runs, and matching input identities before writing anything. It preserves
+existing relative/absolute thresholds and structural rules, and prints the
+before/after values. Review those changes together with the evidence. Refreshes
+are refused in CI unless `BBTIDY_ALLOW_PERFORMANCE_UPDATE=1` is explicitly set.
+The older checker `--update --reason` command is available only for unreferenced
+experimental workloads; it cannot replace these repeated references with one
+sample. The normal CI jobs never refresh budgets automatically.
 
 The reference policy is: synthetic timing regressions over 15% plus 50 ms,
 pinned offline regressions over 20% plus 2 s, warm BitBake regressions over 25%
@@ -60,6 +100,21 @@ Release evidence should contain `performance/manifest.json`, `budgets.json`,
 `summary.json`, the synthetic and pinned offline records, BitBake cold/warm
 records for each supported release, raw samples, and any failure artifacts.
 Hosted-runner timing is reference evidence, not a universal user guarantee.
+These initial references include only two independent runners per workload;
+retain more runs when evaluating a suspected regression. Small synthetic wall
+times include process startup and measurement overhead. The `format` fixtures
+are already formatted, so they measure the no-change `--write` path. The
+historical `shell-body-1m` fixture name currently represents about 180 KB of
+shell source; its byte count and digest, rather than its name, define it.
+RSS is the existing procfs/process-tree plus child-rusage high-water estimate;
+rusage may carry an earlier child's peak into later samples. Memory budgets
+therefore detect large regressions, not precise allocation changes. Use the
+Criterion suite below for in-process scaling investigations.
+
+Synthetic comparisons and raw samples are uploaded together by performance CI.
+Pinned offline, cold/warm, and semantic budgets are enforced by the upstream
+and release gates; changes to performance scripts or reference data trigger
+that upstream gate as well.
 
 ## Rust scaling baseline
 
