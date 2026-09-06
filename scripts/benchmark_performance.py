@@ -84,8 +84,9 @@ def _linux_process_metrics(pids: Iterable[int]) -> tuple[int, int, int, int]:
 
 
 class ProcessSampler:
-    def __init__(self, pid: int) -> None:
+    def __init__(self, pid: int, exclude_root: bool = False) -> None:
         self.pid = pid
+        self.exclude_root = exclude_root
         self.peak_rss = 0
         self.read_bytes = 0
         self.written_bytes = 0
@@ -104,8 +105,9 @@ class ProcessSampler:
     def _sample_once(self) -> None:
         if sys.platform != "linux":
             return
+        pids = _linux_processes(self.pid)
         rss, read_bytes, written_bytes, cpu_ticks = _linux_process_metrics(
-            _linux_processes(self.pid)
+            pids[1:] if self.exclude_root else pids
         )
         self.peak_rss = max(self.peak_rss, rss)
         self.read_bytes = max(self.read_bytes, read_bytes)
@@ -134,10 +136,17 @@ def run_command(
     # File capture avoids pipe deadlocks while the sole waiter reaps the child.
     if not hasattr(os, "wait4"):
         raise RuntimeError("performance measurement requires POSIX wait4 (Linux or macOS)")
-    with open(os.devnull, "rb") as stdin_file, tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+    with open(os.devnull, "rb") as stdin_file, tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file, tempfile.NamedTemporaryFile() as usage_file:
+        linux = sys.platform == "linux"
+        if linux:
+            if not Path("/usr/bin/time").is_file():
+                raise RuntimeError("Linux performance measurement requires GNU /usr/bin/time")
+            # Linux can retain pre-exec parent RSS even with posix_spawn.
+            # GNU time forks the measured command from its small native image
+            # and reports that child's peak, excluding the Python harness.
+            command = ["/usr/bin/time", "--quiet", "--format=%M", "--output=" + usage_file.name, "--", *command]
         started = time.perf_counter()
-        # POSIX spawn avoids charging the Python parent's pre-exec RSS to the
-        # benchmark. Popen(start_new_session=True) uses fork on Linux/Python 3.12.
+        # Spawn a fresh session without Python work in a post-fork child.
         if cwd is not None:
             raise ValueError("run benchmarks with explicit input paths, not a cwd override")
         pid = os.posix_spawnp(command[0], command, os.environ, setsid=True, file_actions=[
@@ -157,7 +166,7 @@ def run_command(
 
         waiter = threading.Thread(target=reap)
         waiter.start()
-        sampler = ProcessSampler(pid)
+        sampler = ProcessSampler(pid, exclude_root=linux)
         sampler.start()
         timed_out = False
         try:
@@ -179,7 +188,14 @@ def run_command(
         stdout_file.seek(0)
         stderr_file.seek(0)
         stdout, stderr = stdout_file.read(), stderr_file.read()
-    max_rss = usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+        if linux:
+            usage_file.seek(0)
+            native_rss = usage_file.read().strip()
+            if not native_rss.isdigit() and not timed_out and returncode == 0:
+                raise RuntimeError("GNU time did not report the command's peak RSS")
+            max_rss = int(native_rss) * 1024 if native_rss.isdigit() else 0
+        else:
+            max_rss = usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
     status = "timed-out" if timed_out else "success" if returncode == 0 else "failed"
     return {
         "status": status,
@@ -265,7 +281,7 @@ def runner_metadata(
         "resource_backends": {
             "process_tree": "procfs" if sys.platform == "linux" else "wait4",
             "cpu": "wait4",
-            "memory": "procfs+wait4" if sys.platform == "linux" else "wait4",
+            "memory": "procfs+gnu-time-child" if sys.platform == "linux" else "wait4",
             "output_capture": "temporary-files",
             "spawn": "posix_spawnp-setsid",
             "io": "procfs" if sys.platform == "linux" else "unavailable",

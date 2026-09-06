@@ -4,6 +4,7 @@ import hashlib
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -90,6 +91,23 @@ class PerformanceTests(unittest.TestCase):
         metadata = runner_metadata()
         self.assertTrue(metadata["rust"].startswith("rustc "))
         self.assertEqual(metadata["measurement_contract"], 2)
+
+    def test_timeout_kills_descendants_after_the_leader_exits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker = Path(directory) / "survived"
+            child = (
+                "import pathlib, signal, time; "
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+                f"time.sleep(0.8); pathlib.Path({str(marker)!r}).write_text('survived')"
+            )
+            parent = (
+                "import subprocess, sys, time; "
+                f"subprocess.Popen([sys.executable, '-c', {child!r}]); time.sleep(10)"
+            )
+            measured = run_command([sys.executable, "-c", parent], timeout_seconds=0.4)
+            self.assertEqual(measured["status"], "timed-out")
+            time.sleep(0.5)
+            self.assertFalse(marker.exists(), "TERM-resistant descendant survived the timeout")
 
     def test_shell_fixture_is_one_mib_and_retains_its_closing_brace(self):
         source = dict(synthetic_cases())["shell-body-1m"]
