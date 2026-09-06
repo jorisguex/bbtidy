@@ -37,6 +37,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Corrected the pilot actionability threshold to require at least 70%, reject
+  invalid pilot metrics, and distinguish failed observations from missing data.
+  Review sampling now reserves space for smaller repositories and never
+  requires more samples than a rule's finding population.
 - Extracted shared file transactions and hardened Windows writes, relative-path
   writes, staging cleanup, and rollback. Read-only sources are refused; failed
   restoration retains the original backup and preserves newer concurrent edits.
@@ -49,6 +53,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Prepared 574 fingerprint-bound lint samples from the three pinned corpora,
+  blank human-review and pilot observation forms, an evidence evaluator, and
+  an adoption pilot protocol. Corpus CI now emits fresh review packets; human
+  results remain explicitly pending and the built-in lint default is unchanged.
 - Evidence-driven lint adoption profiles (`essential`, `recommended`, `strict`,
   and compatibility-preserving `all`), deterministic per-rule quality reports,
   stratified review fingerprints, reasoned inline suppressions, and validated

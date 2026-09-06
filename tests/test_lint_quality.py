@@ -318,7 +318,7 @@ class LintQualityTests(unittest.TestCase):
         self.assertEqual(len(stratified_review_sample(findings, 2)), 2)
 
     def test_review_sample_policy_is_tiered(self):
-        self.assertEqual([minimum_review_samples(value) for value in (0, 1, 5, 6, 25, 26, 100, 101, 500, 501)], [0, 1, 5, 8, 8, 12, 12, 20, 20, 30])
+        self.assertEqual([minimum_review_samples(value) for value in (0, 1, 5, 6, 7, 25, 26, 100, 101, 500, 501)], [0, 1, 5, 6, 7, 8, 12, 12, 20, 20, 30])
 
 
 if __name__ == "__main__":

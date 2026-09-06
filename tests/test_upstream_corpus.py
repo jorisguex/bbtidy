@@ -446,7 +446,7 @@ class LintQualityHarnessTests(unittest.TestCase):
             {
                 path.name for path in (evidence / "lint").iterdir()
             },
-            {"findings.json", "summary.json", "baseline-comparison.json"},
+            {"findings.json", "summary.json", "baseline-comparison.json", "review-packet.json", "review-form.json"},
         )
         stored = json.loads((evidence / "lint" / "findings.json").read_text(encoding="utf-8"))
         self.assertEqual(len(stored["findings"]), 1)

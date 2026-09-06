@@ -643,7 +643,7 @@ def stratified_review_sample(
     for finding in ordered:
         repositories.setdefault(finding["source"]["repository"], []).append(finding)
     for repository in sorted(repositories):
-        quota = max(1, math.ceil(len(repositories[repository]) * 0.10))
+        quota = max(1, math.ceil(target * 0.10))
         for finding in repositories[repository][:quota]:
             if len(selected) >= target:
                 break
@@ -651,7 +651,7 @@ def stratified_review_sample(
 
     # Fill the remaining budget in digest order, which naturally retains
     # long-tail diagnostic shapes rather than over-sampling one common form.
-    for finding in ordered:
+    for finding in sorted(ordered, key=_finding_digest):
         if len(selected) >= target:
             break
         add(finding)
@@ -844,17 +844,28 @@ def evaluate_pilot_thresholds(
         if value is None:
             results[key] = {"limit": limit, "value": None, "status": "not-run"}
         else:
-            passing = value <= limit if "rate" not in key else value <= limit
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < 0
+                or (key.endswith("_rate") and value > 1)
+                or (key in {"operational_failures_mistaken_for_lint", "unsafe_edits"} and not float(value).is_integer())
+            ):
+                raise LintBaselineError("invalid pilot metric {}".format(key))
+            passing = value >= limit if key == "recommended_actionable_rate" else value <= limit
             results[key] = {
                 "limit": limit,
                 "value": value,
                 "status": "pass" if passing else "fail",
             }
     measured = [entry["status"] for entry in results.values() if entry["status"] != "not-run"]
+    complete = len(measured) == len(results)
+    status = "fail" if "fail" in measured else "pass" if complete else "insufficient-evidence"
     return {
         "thresholds": results,
-        "status": "pass" if measured and all(status == "pass" for status in measured) and len(measured) == len(results) else "insufficient-evidence",
-        "default_decision": "recommended-beta-candidate" if measured and all(status == "pass" for status in measured) and len(measured) == len(results) else "retain-all-and-collect-pilot-evidence",
+        "status": status,
+        "default_decision": "recommended-beta-candidate" if status == "pass" else "retain-all-and-collect-pilot-evidence",
     }
 
 
@@ -1138,7 +1149,7 @@ def minimum_review_samples(count: int) -> int:
     if count <= 5:
         return count
     if count <= 25:
-        return 8
+        return min(count, 8)
     if count <= 100:
         return 12
     if count <= 500:

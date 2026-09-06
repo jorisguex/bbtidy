@@ -1,5 +1,22 @@
 # Lint review ledgers
 
+Ready-to-review packets for the three pinned corpora are checked in here:
+
+- [Yocto 5.0 Scarthgap](yocto-5.0-scarthgap/packet.json): 210 selected findings.
+- [Yocto 6.0 Wrynose](yocto-6.0-wrynose/packet.json): 214 selected findings.
+- [Pinned community](community-master/packet.json): 150 selected findings.
+
+Each directory includes blank `reviews.json` and `observations.json` forms.
+Their status is **awaiting human review and user sessions**. No classifications
+or pilot outcomes have been inferred from the existing aggregate baselines.
+[sources.json](sources.json) retains provenance and checksums. Follow the
+[pilot protocol](../../../docs/adoption-pilots.md) to inspect the formatted
+source, record actual decisions, and evaluate the results.
+
+These per-finding pilot forms use their own schema 1 and are separate from the
+aggregate schema 2 release review ledgers described below. They are not
+automatically imported into a release baseline.
+
 Corpus runs write deterministic, stratified review candidates to the lint
 quality evidence bundle. A checked-in review ledger uses schema 2 and keeps
 measurement separate from human classification:

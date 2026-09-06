@@ -1,0 +1,4569 @@
+{
+  "corpus_id": "community-master",
+  "findings_sha256": "29b8c8fb93d4dedcb4c5c806b11aeac5f89ab2137ab1621aa9e4e523d24ae191",
+  "kind": "bbtidy-adoption-review",
+  "profiles": {
+    "all": [
+      "BBT001",
+      "BBT002",
+      "BBT003",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT011",
+      "BBT012",
+      "BBT013",
+      "BBT014",
+      "BBT015",
+      "BBT016",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT021",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "essential": [
+      "BBT001",
+      "BBT002",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT014",
+      "BBT015",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "recommended": [
+      "BBT001",
+      "BBT002",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT014",
+      "BBT015",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "strict": [
+      "BBT001",
+      "BBT002",
+      "BBT003",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT011",
+      "BBT012",
+      "BBT013",
+      "BBT014",
+      "BBT015",
+      "BBT016",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT021",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ]
+  },
+  "rules": {
+    "BBT001": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 781,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 780
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 781,
+                "column": 44,
+                "line": 23
+              },
+              "start": {
+                "byte": 780,
+                "column": 43,
+                "line": 23
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-security/trusted-services/libpsats_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "3948cb6c29cb5ec56d4d69909986ab7faf469421bbba514a43179dc47f505f9a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 5842,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 5840
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 5842,
+                "column": 17,
+                "line": 131
+              },
+              "start": {
+                "byte": 5840,
+                "column": 15,
+                "line": 131
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "classes/image-oci.bbclass",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "6b2a954dda198efebca08d8509a3bb3ef12b0376c0693dc0e1fc90d4730206a5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 116,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 115
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 116,
+                "column": 18,
+                "line": 5
+              },
+              "start": {
+                "byte": 115,
+                "column": 17,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/libvirt/libvirt-python.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "4e630ee9ccc99fd3928217d6ada073f57bdb65369340d6cc8f650a18aef16e8d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 811,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 810
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 811,
+                "column": 15,
+                "line": 22
+              },
+              "start": {
+                "byte": 810,
+                "column": 14,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/docker-distribution/docker-distribution_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "33ea0345436dead7231934894cddfedefb2e297613199ad434c70b8ea173f151"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 782,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 781
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 782,
+                "column": 3,
+                "line": 32
+              },
+              "start": {
+                "byte": 781,
+                "column": 2,
+                "line": 32
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-demo/images/app-container.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "07913b39d77ed5cbe22f60b75c06eb72a734f5ee43f62f5cd76107d16c17ba37"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 752,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 751
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 752,
+                "column": 15,
+                "line": 18
+              },
+              "start": {
+                "byte": 751,
+                "column": 14,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/oci-image-tools/oci-image-tools_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0895a6e8a32289ca799f8fb9136c05e0310040d2e9b7ae302635a5b6d655112b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 966,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 962
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 966,
+                "column": 5,
+                "line": 31
+              },
+              "start": {
+                "byte": 962,
+                "column": 1,
+                "line": 31
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-demo/helloworld-flask/helloworld-flask_0.1.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0923e67c0bda28d2c293f7b0a43aed9e0ec68e20e5464d6f0938329f2569de4a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 671,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 670
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 671,
+                "column": 3,
+                "line": 29
+              },
+              "start": {
+                "byte": 670,
+                "column": 2,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-demo/images/app-container.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0cd2a6b00d4d4007c21392783dd23529eabf51a67985264c11bfa21231b349fc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 354,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 353
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 354,
+                "column": 5,
+                "line": 7
+              },
+              "start": {
+                "byte": 353,
+                "column": 4,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/python/gunicorn_26.0.0.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "13b40074395682de3364453753fcd4948f6363cc00a578b67f9213f569efe82a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 825,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 824
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 825,
+                "column": 15,
+                "line": 24
+              },
+              "start": {
+                "byte": 824,
+                "column": 14,
+                "line": 24
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/riddler/riddler_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1a2710ed86f9f68ef101a3e42c6ec55756cacb2e60df857d1c2e2eb0205f3ff3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 13598,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 13597
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 13598,
+                "column": 61,
+                "line": 289
+              },
+              "start": {
+                "byte": 13597,
+                "column": 60,
+                "line": 289
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/libvirt/libvirt_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "3131e3aeb648710a982c300fdcc6367ce2fd576a3cc773c14c019e2fe92378c5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 718,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 717
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 718,
+                "column": 15,
+                "line": 23
+              },
+              "start": {
+                "byte": 717,
+                "column": 14,
+                "line": 23
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/umoci/umoci_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "3331291ed96528a5627bb4e5b37ed457155965ddc4fb88c1eb99a511ebee9682"
+        }
+      ],
+      "total_findings": 29
+    },
+    "BBT002": {
+      "required_samples": 1,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 86,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 86
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 86,
+                "column": 39,
+                "line": 3
+              },
+              "start": {
+                "byte": 86,
+                "column": 39,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/u-boot/u-boot-uefi-http-boot.inc",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "2a19d02067f4cde65284820e78aa8da8ba1a9e4578b5ef670df35d9e2da078cc"
+        }
+      ],
+      "total_findings": 1
+    },
+    "BBT003": {
+      "required_samples": 5,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 88 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 51,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 44,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cri-o/cri-o_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "e89a093ef372950ec6d8d8cc0ba8a807a0d66f0f253de9c7cb9d416e560729b5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 94 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm_0.1.0.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1725358cf2853eb3fc4075753398c08192ff652503166183e42c5872d9fa30e3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 143 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/xvisor/xvisor_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "6f3a96c7ed2a46c27d49fc2f66d577cd939b56516ef775b2b43785f570487596"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 84 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 57,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 50,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/skopeo/skopeo_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "8d542eb588e98ddeed27c1255d26179b96c0f7e1ce134bede9d4ba233919df3f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 88 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 68,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 61,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/oci-runtime-tools/oci-runtime-tools_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "f927d9f320ae71b71fa877f3840caa6edd11397e914a491846026872f814ea9b"
+        }
+      ],
+      "total_findings": 5
+    },
+    "BBT005": {
+      "required_samples": 1,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "class 'pkgconfig' is inherited more than once",
+            "range": {
+              "end": {
+                "byte": 1702,
+                "column": 18,
+                "line": 52
+              },
+              "start": {
+                "byte": 1693,
+                "column": 9,
+                "line": 52
+              }
+            },
+            "rule_id": "BBT005",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/docker/docker.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "e97f193d68062e0a82a365b11ee4eacd053152c5269e44ca069d1d17e8cb1b65"
+        }
+      ],
+      "total_findings": 1
+    },
+    "BBT006": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/machine/include/arm/arch-armv8a.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 329,
+                "column": 49,
+                "line": 7
+              },
+              "start": {
+                "byte": 289,
+                "column": 9,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/conf/machine/include/arm/arch-armv8-7a.inc",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "231a4422bfc659594d86fee7c39827e2c955be0ffbc5033283c1f66cfe3afe7c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/machine/include/arm/armv7a/tune-cortexa15.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 161,
+                "column": 59,
+                "line": 5
+              },
+              "start": {
+                "byte": 111,
+                "column": 9,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/conf/machine/include/am57xx.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "771ef0b5cf39901803c41fce59a718ebca5cb89d2cf0d9377614ce0cd81ee4cb"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/distro/poky.conf' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 315,
+                "column": 30,
+                "line": 10
+              },
+              "start": {
+                "byte": 294,
+                "column": 9,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "conf/distro/include/vruntime-base.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "111d7eb8491c17f4cba33d8331e4c33fa7be8decee564bc5194fb0338bc111a4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'recipes-kernel/linux/linux-yocto-fitimage.bb' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 216,
+                "column": 53,
+                "line": 6
+              },
+              "start": {
+                "byte": 172,
+                "column": 9,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-kernel/linux/ti-kernel-fitimage.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "58073bb85ca3db0579a04c94e4ea80219334c4a16110907619bd9f65cd761993"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/machine/include/arm/armv8a/tune-cortexa72-cortexa53.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 210,
+                "column": 69,
+                "line": 7
+              },
+              "start": {
+                "byte": 150,
+                "column": 9,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/conf/machine/include/k3.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "530ee0748102d363c050578e3a92449f4607372025647ff489e2832bf3499789"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/machine/include/arm/armv5/tune-arm926ejs.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 130,
+                "column": 58,
+                "line": 4
+              },
+              "start": {
+                "byte": 81,
+                "column": 9,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/conf/machine/include/omapl138.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "b72fce4f207a9b0f3d53287069a6c274b2bfde2c340238360e96d3e996bfd13f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'conf/machine/include/soc-family.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 200,
+                "column": 44,
+                "line": 4
+              },
+              "start": {
+                "byte": 165,
+                "column": 9,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/conf/machine/include/ti-soc.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "49494f53624e8ea52be542ddfe37aa35d5ab511c7bb1cbd7535d2192041aa55e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "required file 'recipes-core/meta/dummy-sdk-package.inc' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 219,
+                "column": 48,
+                "line": 8
+              },
+              "start": {
+                "byte": 180,
+                "column": 9,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT006",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-core/meta/container-dummy-provides.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0f416143777a0dc4af5693fb676bbfc3371da19cb35489ea800d7164b40ceb67"
+        }
+      ],
+      "total_findings": 19
+    },
+    "BBT007": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'python3native' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 336,
+                "column": 22,
+                "line": 9
+              },
+              "start": {
+                "byte": 323,
+                "column": 9,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/classes/tfm_sign_image.bbclass",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "434677107a48944720af3615056f7e7c4932626c6dfcaef44c67afeb3f0ef70f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'linux-kernel-base' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 101,
+                "column": 26,
+                "line": 7
+              },
+              "start": {
+                "byte": 84,
+                "column": 9,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/classes/kernel_legacyhs.bbclass",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "35ecfdb5e9320b7a19ca5b5d95aaaae1d396f4848d9d5fd5f2d514cef709d9e6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'deploy' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 9612,
+                "column": 15,
+                "line": 217
+              },
+              "start": {
+                "byte": 9606,
+                "column": 9,
+                "line": 217
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "classes/container-bundle.bbclass",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "6838e473ba9c8ca4f744859d6e1e972fc1f50cbe6fff224926a1353c1abaff26"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'autotools' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 428,
+                "column": 18,
+                "line": 14
+              },
+              "start": {
+                "byte": 419,
+                "column": 9,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/boot-wrapper-aarch64/boot-wrapper-aarch64_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "7368190c238f4fcc4e2b569f5bc8f6dc3fe954719d8a65844f71c3ab58671b21"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'firmware' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 1004,
+                "column": 17,
+                "line": 28
+              },
+              "start": {
+                "byte": 996,
+                "column": 9,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/scp-firmware/scp-firmware.inc",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "7ea6bc6d346fe34331ffabef28854518434c054171dd449dec68f65408532143"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'allarch' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 608,
+                "column": 16,
+                "line": 12
+              },
+              "start": {
+                "byte": 601,
+                "column": 9,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cgroup-lite/cgroup-lite_1.15.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "377e1a64fb65e8861cf611001051dd9c00f1068dbe79bf54f5624346e0ddc540"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'autotools-brokensep' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 1085,
+                "column": 28,
+                "line": 28
+              },
+              "start": {
+                "byte": 1066,
+                "column": 9,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/ipc/ti-ipc_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "9e4d000be393ba553998fd6185f617ce284ccf0a6c378231a4d3c939b28f60d3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'bash-completion' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 708,
+                "column": 24,
+                "line": 19
+              },
+              "start": {
+                "byte": 693,
+                "column": 9,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/virt-manager/virt-manager_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "94385afaab6f53d6687d6049cc4f216c2404f861d29940d20c42caf6519b8ec5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'cargo-update-recipe-crates' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 540,
+                "column": 41,
+                "line": 15
+              },
+              "start": {
+                "byte": 514,
+                "column": 15,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/aardvark-dns/aardvark-dns_1.17.1.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "d6bb723af81de27bdb06cecb238c338643db42340a7ed790072aaf724a502c2a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'cargo' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 513,
+                "column": 14,
+                "line": 15
+              },
+              "start": {
+                "byte": 508,
+                "column": 9,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/aardvark-dns/aardvark-dns_1.17.1.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "f3ab1b7a522bc2067ed7ab79b390ece39b6aeddefe4a33dccd0ffdcc581243ba"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'cmake' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 431,
+                "column": 21,
+                "line": 11
+              },
+              "start": {
+                "byte": 426,
+                "column": 16,
+                "line": 11
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-rmm/trusted-firmware-rmm_0.6.0.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "a2b8cf9bf25dc4e1e52220662cfe7562a65774c9db2fa20c598574b94f3a776e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'cml1' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 27974,
+                "column": 13,
+                "line": 692
+              },
+              "start": {
+                "byte": 27970,
+                "column": 9,
+                "line": 692
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/classes/kernel_legacyhs.bbclass",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "5194557ee7140669ce12e8b91a05d31512349f118fd060da69f37ca56e27d212"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'core-image' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 1077,
+                "column": 19,
+                "line": 27
+              },
+              "start": {
+                "byte": 1067,
+                "column": 9,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/vcontainer/vcontainer-tiny-initramfs-image.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "248a1f70f10aa6000e60279840ad95970adc5ed3d4779dac9bfd383a39e84810"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'deploy' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 435,
+                "column": 25,
+                "line": 14
+              },
+              "start": {
+                "byte": 429,
+                "column": 19,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/boot-wrapper-aarch64/boot-wrapper-aarch64_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "e22de1488edd41cc15a20bdb964da9c916f14b3fbaeec3f8b00ef94b4e1f5d3d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'dos2unix' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 889,
+                "column": 57,
+                "line": 25
+              },
+              "start": {
+                "byte": 881,
+                "column": 49,
+                "line": 25
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/nagios/nagios-nsca_2.10.3.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "63335474621d85ed9b8b93e6a19f307cf9f91af8bd3bb19e28ded86d6aae0119"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'extrausers' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 1828,
+                "column": 19,
+                "line": 34
+              },
+              "start": {
+                "byte": 1818,
+                "column": 9,
+                "line": 34
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "classes/container-nonroot-user.bbclass",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "8a7796f65bc0da57913acd6a806da7f478e8c2bb79c5fdce2cef4c1d0836a2ea"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'features_check' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 268,
+                "column": 30,
+                "line": 6
+              },
+              "start": {
+                "byte": 254,
+                "column": 16,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/gc320-drivers/ti-gc320-driver_5.0.11.p7.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "eda017f043e69bd23adf0cdd95aeaba6875cf862a9aadf0b47cf50fe1de113a9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'gettext' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 2846,
+                "column": 46,
+                "line": 55
+              },
+              "start": {
+                "byte": 2839,
+                "column": 39,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-graphics/mesa/mesa-pvr.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "7da38397252920e64e91d54cbc74de072788d99a8357e83d180a4c488113d4a6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'go-mod' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 256,
+                "column": 15,
+                "line": 7
+              },
+              "start": {
+                "byte": 250,
+                "column": 9,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cdi/go-mod-hybrid-gomod.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0ea2e23f5bef2759f104a1e967dba2e4eb98f0ee3d22ab07bf77a627653b4f24"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "inherited class 'go' was not found in indexed layers",
+            "range": {
+              "end": {
+                "byte": 395,
+                "column": 11,
+                "line": 13
+              },
+              "start": {
+                "byte": 393,
+                "column": 9,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT007",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/buildah/buildah_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "c2765b024f83b9f941600ea5a4937dd604c20a0ee33168b0e40296f31f5f5fe9"
+        }
+      ],
+      "total_findings": 442
+    },
+    "BBT011": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 883,
+                "column": 1,
+                "line": 24
+              },
+              "start": {
+                "byte": 883,
+                "column": 1,
+                "line": 24
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-a/cot-dt2c_0.1.0.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "6b6f0ecd2e86315f22f62d2baa8f29480f207dd91085d565ff1ce6a66cb6a095"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 3121,
+                "column": 1,
+                "line": 72
+              },
+              "start": {
+                "byte": 3121,
+                "column": 1,
+                "line": 72
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/crun/crun_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "2a34c9940a170d0df5409401063e6d3d6265ab3379210ea97ff02edeb5a3ae05"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1124,
+                "column": 1,
+                "line": 34
+              },
+              "start": {
+                "byte": 1124,
+                "column": 1,
+                "line": 34
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-a/fiptool-native_2.14.2.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "d507528d58033470ae1e2d3f45d23f542b75f91f27fdd03b67fdeca9ed734a2d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1389,
+                "column": 1,
+                "line": 42
+              },
+              "start": {
+                "byte": 1389,
+                "column": 1,
+                "line": 42
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/go-digest/go-digest_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "ff6ec965e030fdfc10c56d14a1bf74d23c154202c55066f3efa57fc7b03e7b03"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 965,
+                "column": 1,
+                "line": 31
+              },
+              "start": {
+                "byte": 965,
+                "column": 1,
+                "line": 31
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/go/go-logrus_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "009739ea4273807e76a1fcd9eea2b97d61907f24c7b05e242824fdbebfb3a042"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1872,
+                "column": 1,
+                "line": 39
+              },
+              "start": {
+                "byte": 1872,
+                "column": 1,
+                "line": 39
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-a/trusted-firmware-a_2.14.2.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "04bc2954817ae8634d4154e480e354b2501ae2abd31ddcf3182af17aa7ecf4d0"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 532,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 532,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/podman-compose/podman-compose_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0b256dfbced405d670ad6987196a75e04ad5b18d8634873b680ccceaff3e722f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 17749,
+                "column": 1,
+                "line": 391
+              },
+              "start": {
+                "byte": 17749,
+                "column": 1,
+                "line": 391
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/libvirt/libvirt_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0b712164101bcbe1b244c5ab6999d8056322b2b085b04fa0f60543ccdb2e3e68"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1030,
+                "column": 1,
+                "line": 34
+              },
+              "start": {
+                "byte": 1030,
+                "column": 1,
+                "line": 34
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/go/go-cli_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1584dacfef7202b64a2944556327cc6275c6f407fad521560323bcee11b34d0f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 271,
+                "column": 1,
+                "line": 15
+              },
+              "start": {
+                "byte": 271,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/cloud-image-compute.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "24053b6f49cac2fdcf5279d7d223a1ce2b1dbc8cf48b9783bcc47e334f5c2839"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1359,
+                "column": 1,
+                "line": 40
+              },
+              "start": {
+                "byte": 1359,
+                "column": 1,
+                "line": 40
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/oci-image-spec/oci-image-spec_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "25f3ffe7f02d3bf1aeac59b52cf7c24649350d6b89124bb25b9f396fbb6cf40b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 340,
+                "column": 1,
+                "line": 9
+              },
+              "start": {
+                "byte": 340,
+                "column": 1,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-a/trusted-firmware-a_2.15.0.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "2940ccdd58862e8607124c84e633fc4113b9d4aa860f903bebe6872d384d6f12"
+        }
+      ],
+      "total_findings": 66
+    },
+    "BBT012": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 2997,
+                "column": 1,
+                "line": 93
+              },
+              "start": {
+                "byte": 2997,
+                "column": 1,
+                "line": 93
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/boot-wrapper-aarch64/boot-wrapper-aarch64_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "5fe1edfa77401f3efa79177a8cdd7d6e747d7d74204f10c6643e3212e9c0e0bc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 511,
+                "column": 1,
+                "line": 19
+              },
+              "start": {
+                "byte": 511,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/cadence-mhdp-fw/cadence-mhdp-fw_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "588d2c62943fe1085aea07050c2d9138f1540f024f5a3546c4042531ff3e5d4e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1047,
+                "column": 1,
+                "line": 42
+              },
+              "start": {
+                "byte": 1047,
+                "column": 1,
+                "line": 42
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/aardvark-dns/aardvark-dns_1.17.1.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "d325f1a82d717c0cbb6f4cc8436edc50bc1a528ad32100bc3cf91f7d6006a996"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 217,
+                "column": 1,
+                "line": 10
+              },
+              "start": {
+                "byte": 217,
+                "column": 1,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-m/trusted-firmware-m-scripts-native_2.3.0.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "76f8527bb045948ea84a9b3fe25091556bb74664bb1a6c8d2b7cf020ef99e11e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 845,
+                "column": 1,
+                "line": 28
+              },
+              "start": {
+                "byte": 845,
+                "column": 1,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/cm3-pm-firmware/amx3-cm3_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "7f4c32277c7b37d8d73ffaf175a976b10b3c9cda042c6a6b16851866040ced34"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 799,
+                "column": 1,
+                "line": 31
+              },
+              "start": {
+                "byte": 799,
+                "column": 1,
+                "line": 31
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/conmon/conmon_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "f190c6b76597301d7291d87793889d5527c8224ede21b3fae8402105b1329be9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 685,
+                "column": 1,
+                "line": 15
+              },
+              "start": {
+                "byte": 685,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-devtools/fvp/fvp-tc3.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "057345abc3e61b15449b06dc4ce232bb0ebfc9558b18c37c2e48b6c90b8269cb"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1886,
+                "column": 1,
+                "line": 82
+              },
+              "start": {
+                "byte": 1886,
+                "column": 1,
+                "line": 82
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-core/packagegroups/packagegroup-container.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "06678da8af59a8b437fc698656c5da630e86016dc9ff4b9b1abd6483ea6fa64e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 2715,
+                "column": 1,
+                "line": 78
+              },
+              "start": {
+                "byte": 2715,
+                "column": 1,
+                "line": 78
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/yq/yq_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "088f98dfba12b288a4da3493b9da077be32bc4317326fd40b56cd72f2d1a7d73"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1450,
+                "column": 1,
+                "line": 47
+              },
+              "start": {
+                "byte": 1450,
+                "column": 1,
+                "line": 47
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-demo/images/app-container.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0926219a9a1123e02addcd6314197934773071c5a0e90ef47d6dd5108dc83f02"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1906,
+                "column": 1,
+                "line": 46
+              },
+              "start": {
+                "byte": 1906,
+                "column": 1,
+                "line": 46
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-devtools/fvp/fvp-corstone1000-a320.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "094050c35d2ffda1c509c2c72b4ce294271d522c26880be25bc079e1cea3d441"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1091,
+                "column": 1,
+                "line": 35
+              },
+              "start": {
+                "byte": 1091,
+                "column": 1,
+                "line": 35
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-devtools/opencsd/opencsd_1.8.3.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "0ca0146137f4dc4d77a7d844788004debdc77e3d4e9e219f51bf27036d06e8e3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1423,
+                "column": 1,
+                "line": 51
+              },
+              "start": {
+                "byte": 1423,
+                "column": 1,
+                "line": 51
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/container-devtools-base.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0df8ed3e1aafa2b6f3dabd82c5c9141ed234a35fafeb92566b2cc180d27183f4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 314,
+                "column": 1,
+                "line": 10
+              },
+              "start": {
+                "byte": 314,
+                "column": 1,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-kernel/linux/linux-ti-staging-rt_6.18.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "11e7bda485ba518ddc66b10c5194c702f946321f439f942825fe54264ff37522"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 738,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 738,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/vpdma-fw/vpdma-fw_03-2012.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "125025d7ab05bd800404ce8e21ef479a85f65ce8fa386fcc67afab6dd18f2f1f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 130,
+                "column": 1,
+                "line": 10
+              },
+              "start": {
+                "byte": 130,
+                "column": 1,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/ipc/ti-rpmsg-char_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "14d5ea9ff777481e2913ffd05d61fdd6712edb8c41a48c6781d30865f9da83a2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 759,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 759,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/python/python3-udica_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "150b5f926e05aca8b7604f551f5a36e909508bf32b61a2b130027fcb809cc5e5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1005,
+                "column": 1,
+                "line": 36
+              },
+              "start": {
+                "byte": 1005,
+                "column": 1,
+                "line": 36
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-demo/images/app-container-alpine.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1817c7f6fea50f64d823031af6f76f56dbe213770d5fdd736d0c24ee48f5eb90"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 652,
+                "column": 1,
+                "line": 28
+              },
+              "start": {
+                "byte": 652,
+                "column": 1,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/initramfs/packagegroup-ti-core-initramfs.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "1cedfd7e8b5fba6cbac7770ed8c82350175d55596d080ed72afa5ddada718666"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1290,
+                "column": 1,
+                "line": 40
+              },
+              "start": {
+                "byte": 1290,
+                "column": 1,
+                "line": 40
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/cpsw9g-eth-fw/cpsw9g-eth-fw_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "1de78f0f46a9f8d42b703d47fb7a5627711ad19c5333c094bba4fc722ae94cfe"
+        }
+      ],
+      "total_findings": 117
+    },
+    "BBT013": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 149,
+                "column": 1,
+                "line": 3
+              },
+              "start": {
+                "byte": 149,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-m/trusted-firmware-m-scripts-native_2.2.2.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "f0a8768b3dabf0a32cb17635c7b9684b6cd7f56c2e2d1a4d8241ded7a8ad4330"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 380,
+                "column": 1,
+                "line": 13
+              },
+              "start": {
+                "byte": 380,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-kernel/linux/ti-kernel-fitimage.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "45729f03e2b18179bb3d6829569707993597b1c7065a3577be7b2f0b05d019bc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 1185,
+                "column": 1,
+                "line": 36
+              },
+              "start": {
+                "byte": 1185,
+                "column": 1,
+                "line": 36
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-core/busybox/busybox-initrd.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "206eb14ada2a05af1bc5ec87d4e2f2f11f656bdff694e51c6ec9459df566d136"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 328,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 328,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/cloud-image-guest.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0075608db860f15fc5719fbafa5908511f9b7ce05c7991b18747c025e7b73daa"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 397,
+                "column": 1,
+                "line": 8
+              },
+              "start": {
+                "byte": 397,
+                "column": 1,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/trusted-firmware-m/trusted-firmware-m_2.2.2.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "108247dab08746b2c2c22193e63da6d9a6d0eae7420c1f5f7f4bbc4168f05d81"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 2411,
+                "column": 1,
+                "line": 66
+              },
+              "start": {
+                "byte": 2411,
+                "column": 1,
+                "line": 66
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "26f633eab91ddb425b2a517cb6a8b424fd3428213b4edd3436c88bfc170ea2ad"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 220,
+                "column": 1,
+                "line": 9
+              },
+              "start": {
+                "byte": 220,
+                "column": 1,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-core/meta/container-dummy-provides.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "45527b4c099e66b50666c06e42a702a7d317349c3fd5555dd27718a98594a36d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 672,
+                "column": 1,
+                "line": 33
+              },
+              "start": {
+                "byte": 672,
+                "column": 1,
+                "line": 33
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/cloud-image-controller.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "55a09bababaa047384df79876a1ad3d5ac48581dc1fe28158b3336739335e3d0"
+        }
+      ],
+      "total_findings": 18
+    },
+    "BBT014": {
+      "required_samples": 4,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS:prepend:qemuarm64-secureboot must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 84,
+                "column": 47,
+                "line": 3
+              },
+              "start": {
+                "byte": 83,
+                "column": 46,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-kernel/linux/linux-yocto%.bbappend",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "1ad29c0a1659db4bef8f2d1a577ae56a4dd7db86286a6b9f1a2f71dd4e8d51ba"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS:prepend:qemuarm64 must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 559,
+                "column": 36,
+                "line": 18
+              },
+              "start": {
+                "byte": 558,
+                "column": 35,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-kernel/linux/linux-yocto%.bbappend",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "7b44a831025b578967d0d62b606f9f1ca7ea825d6ed670f14e04eb9c393aadd5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS:prepend:qemuarm must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 658,
+                "column": 34,
+                "line": 21
+              },
+              "start": {
+                "byte": 657,
+                "column": 33,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-kernel/linux/linux-yocto%.bbappend",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "1db49d88d46ddfc402bddafa93e0fe56a11e59b19980bca39d0568da67bf9c34"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS:prepend:qemuarm-secureboot must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 436,
+                "column": 45,
+                "line": 13
+              },
+              "start": {
+                "byte": 435,
+                "column": 44,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-kernel/linux/linux-yocto%.bbappend",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "d7a06d7fffa9628a8568d5b2c077d7e77fa5c0bafd43b966473cd5ba31b5ba27"
+        }
+      ],
+      "total_findings": 4
+    },
+    "BBT015": {
+      "required_samples": 3,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 401,
+                "column": 88,
+                "line": 12
+              },
+              "start": {
+                "byte": 325,
+                "column": 12,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/kvmtool/kvmtool_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "4a4730ca620af300d98a35bb3c337dd8cd7b3fb454f43e1d23630e2b4153e2f9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://passt.top/passt;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 546,
+                "column": 47,
+                "line": 16
+              },
+              "start": {
+                "byte": 511,
+                "column": 12,
+                "line": 16
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-networking/passt/passt_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "d14d82f494032c34e43e1f16ecc6311a2968a34fb21cd65b8cc8a28a220fdede"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://xenbits.xen.org/xtf;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 292,
+                "column": 51,
+                "line": 8
+              },
+              "start": {
+                "byte": 253,
+                "column": 12,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/xen/xtf_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "d2b6c9db7673d6535b3d68fb178503298c54d930f74d7d8d2602403e6f573ea0"
+        }
+      ],
+      "total_findings": 3
+    },
+    "BBT016": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRCREV_FORMAT' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 620,
+                "column": 14,
+                "line": 13
+              },
+              "start": {
+                "byte": 607,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cdi/cdi_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1ef9116d490ed9b7650554564df92cc205e8e87f1d6f5f3ac41f2ce120ead8ba"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[autocfg-1.1.0.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 43176,
+                "column": 33,
+                "line": 597
+              },
+              "start": {
+                "byte": 43144,
+                "column": 1,
+                "line": 597
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "bcc4557ef355d196852fbbedfa9a55c274bb6274a6159dbbc069cc4e17f96231"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[aho-corasick-1.1.2.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 63687,
+                "column": 38,
+                "line": 904
+              },
+              "start": {
+                "byte": 63650,
+                "column": 1,
+                "line": 904
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "c69f60fdf87a56830e4d95e87250642df6ae8060b9af7dd05e8605e42eeb95f3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[anyhow-1.0.75.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 54783,
+                "column": 33,
+                "line": 779
+              },
+              "start": {
+                "byte": 54751,
+                "column": 1,
+                "line": 779
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "bd320b37775fd8c2f68eb2bcbd7787ffe691faf77411901044c072ee2d9d6c2d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[argh-0.1.10.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 47030,
+                "column": 31,
+                "line": 667
+              },
+              "start": {
+                "byte": 47000,
+                "column": 1,
+                "line": 667
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0c17760d578ab893587e2c6746d45a663532cdde3e7df5eb48c5a621c966e30b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[argh_derive-0.1.10.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 47137,
+                "column": 38,
+                "line": 668
+              },
+              "start": {
+                "byte": 47100,
+                "column": 1,
+                "line": 668
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "93d852b18f505578b2e377c0a459471efce5d82ffd3bd4400783f0bcab9c6730"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[argh_shared-0.1.10.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 47244,
+                "column": 38,
+                "line": 669
+              },
+              "start": {
+                "byte": 47207,
+                "column": 1,
+                "line": 669
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "286ecc5e5a372ce555c095597e165f4fe6a2ca458f5fc253d4501abdc8327c26"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[bitflags-1.3.2.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 47347,
+                "column": 34,
+                "line": 670
+              },
+              "start": {
+                "byte": 47314,
+                "column": 1,
+                "line": 670
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "e88997c696ec42d33176d33f909e3dd668d14e37bdfcf59002ecd5b8dbfbde4f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[cexpr-0.6.0.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 55506,
+                "column": 31,
+                "line": 786
+              },
+              "start": {
+                "byte": 55476,
+                "column": 1,
+                "line": 786
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "4f027e1066ef2a28d37d896f3169da539f4fc580b53fb38ecb4eb883ef11ae27"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[cfg-if-1.0.0.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 43277,
+                "column": 32,
+                "line": 598
+              },
+              "start": {
+                "byte": 43246,
+                "column": 1,
+                "line": 598
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "3d049e3db1c9185f7db76e5edd07f6489b2d2f0b0828bc1a100fc632c94fd204"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[crossbeam-channel-0.5.8.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 43389,
+                "column": 43,
+                "line": 599
+              },
+              "start": {
+                "byte": 43347,
+                "column": 1,
+                "line": 599
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "469b7f35928403a1e3cbc830aa771424a27c4dbf59ebd7c207db68bdb8d03bf9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[crossbeam-deque-0.8.3.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 43499,
+                "column": 41,
+                "line": 600
+              },
+              "start": {
+                "byte": 43459,
+                "column": 1,
+                "line": 600
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/crosvm/crosvm-crates.inc",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1fce54e36e5207870e9fe2615f3b3261b6838fdced3882a36ed004e0a9e835c8"
+        }
+      ],
+      "total_findings": 64
+    },
+    "BBT017": {
+      "required_samples": 1,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 11953,
+                "column": 18,
+                "line": 256
+              },
+              "start": {
+                "byte": 11936,
+                "column": 1,
+                "line": 256
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-graphics/mesa/mesa-pvr.inc",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "8241b626b635faad4434a6aab7987e7386fb74ae373b4e5b4305a8b1bd15a193"
+        }
+      ],
+      "total_findings": 1
+    },
+    "BBT021": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 399,
+                "column": 3,
+                "line": 12
+              },
+              "start": {
+                "byte": 397,
+                "column": 1,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/boot-wrapper-aarch64/boot-wrapper-aarch64_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "7d10cd8114d56d08f531934a37d0e7ca6d328219d4ab79ca4dd6022dd34002d3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.9.2' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 154,
+                "column": 3,
+                "line": 6
+              },
+              "start": {
+                "byte": 152,
+                "column": 1,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/cm3-pm-firmware/amx3-cm3_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "088e01ea0e7c592477bdb414a8aee26b484623d78b52ef7a4242c59b5589b812"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.1.0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 360,
+                "column": 3,
+                "line": 8
+              },
+              "start": {
+                "byte": 358,
+                "column": 1,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cdi/cdi_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "6860bf916e674bb1fe04a0a274617b61596a02775a4a1b979afe7a80d942755e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '2026_07_16+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 551,
+                "column": 3,
+                "line": 18
+              },
+              "start": {
+                "byte": 549,
+                "column": 1,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-networking/passt/passt_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "965a9626e147d5f6c45e2ae2e2690b31cc83b4932c92d144c8e5b1d20310c69b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '6.1.0-dev' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 923,
+                "column": 3,
+                "line": 30
+              },
+              "start": {
+                "byte": 921,
+                "column": 1,
+                "line": 30
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/podman/podman_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "c493def74db78e9017e5150d8ac0f6d69cef469877e36a25e2ff1fa2d26a83e3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '6.6.58+git' does not match recipe filename version '6.6'",
+            "range": {
+              "end": {
+                "byte": 398,
+                "column": 3,
+                "line": 15
+              },
+              "start": {
+                "byte": 396,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-kernel/linux/linux-ti-staging-rt_6.6.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "95e913e9d94dc1e5652352c04b68a10512e97506830e5b0e28ec6b0fee67d157"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '6.6.0-rc3+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 155,
+                "column": 3,
+                "line": 7
+              },
+              "start": {
+                "byte": 153,
+                "column": 1,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-kernel/linux/linux-ti-next_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "e30cb7a5194fecea19bd169e18aa513d9cdd41a0f5593e03f0f3351a306f400c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'v2.3.1' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 1738,
+                "column": 3,
+                "line": 46
+              },
+              "start": {
+                "byte": 1736,
+                "column": 1,
+                "line": 46
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/nerdctl/nerdctl_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "4a3d2627eb389243a60802ad541751327b6b9289c51b7c2dc78fee658202f04e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'v0.8.1+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 457,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 455,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/go-errors/go-errors_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "8063c1eed3ecf2d833dbb46ce13278c491e92be8d678d30eb9ebeeac4b05a775"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'v1.36.2+k3s1+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 1784,
+                "column": 3,
+                "line": 36
+              },
+              "start": {
+                "byte": 1782,
+                "column": 1,
+                "line": 36
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/k3s/k3s_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "7fb25b26f791e9fa04cc7e9746f176b227af6bed289f44266b49cb77154f3b3d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'v1.0.0-rc0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 513,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 511,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/go-digest/go-digest_git.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "7aa5d63f9bb522e6df85e2a216145a1388418b670037790540ac80e62b1f1698"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 113,
+                "column": 3,
+                "line": 5
+              },
+              "start": {
+                "byte": 111,
+                "column": 1,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-security/optee/optee-client_git.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "b409ac71c6385ad8db9367b90bca8c77aae8d7188f4f7d14e6f26c6ae76a898c"
+        }
+      ],
+      "total_findings": 83
+    },
+    "BBT022": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 149,
+                "column": 8,
+                "line": 3
+              },
+              "start": {
+                "byte": 142,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-bsp/images/firmware-deploy-image.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "ffcffe95551a4c34eae4ecacaf047254e6880713725cd66283f559619d19bd30"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 60,
+                "column": 8,
+                "line": 3
+              },
+              "start": {
+                "byte": 53,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/initramfs/packagegroup-ti-core-initramfs.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "c47d31568cd2dbfeb39c72402b2b1cb3b3c8c2236aa274edd922259e19ae465c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 1157,
+                "column": 8,
+                "line": 31
+              },
+              "start": {
+                "byte": 1150,
+                "column": 1,
+                "line": 31
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/container-registry/container-registry-index.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "f10730f4035bf0881e49dd0b5d6887e1d7c9c1594904eff91f315ebd8272ff76"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 75,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 68,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/uxen-guest-image-minimal.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0c248d524591758b7b765d8916961ef889f646f6609e4d5f774da0393a23fee3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 1544,
+                "column": 8,
+                "line": 43
+              },
+              "start": {
+                "byte": 1537,
+                "column": 1,
+                "line": 43
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/xen-image-minimal.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1342e7372409c0342142768c5ed17424720e6df1efe192eae41b0a375b20f4f6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 222,
+                "column": 8,
+                "line": 8
+              },
+              "start": {
+                "byte": 215,
+                "column": 1,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/initramfs/ti-core-initramfs.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "1d8a9ed7106c1b367fc17bece1f5a99e461992c43ec9f95b6534f75f0b4cba47"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 365,
+                "column": 8,
+                "line": 19
+              },
+              "start": {
+                "byte": 358,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/crosvm-image-minimal.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "2c235e0a3826174b45cdd7f037531514bd97458d48c90acbca27dea6dbb6b018"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 334,
+                "column": 8,
+                "line": 14
+              },
+              "start": {
+                "byte": 327,
+                "column": 1,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/images/xvisor-image-minimal.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "475ac6acb545e96fd98fe680d21e5b772d5d7bb0f378c26241173073c6697f69"
+        }
+      ],
+      "total_findings": 12
+    },
+    "BBT023": {
+      "required_samples": 6,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://downloads.ti.com/dsps/dsps_public_sw/glsdk/vis/01_50_07_15/exports/vis-dra7xx-evm-01.50.07.15.tar.gz;protocol=http' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 355,
+                "column": 133,
+                "line": 9
+              },
+              "start": {
+                "byte": 234,
+                "column": 12,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/vis-fw/vis_01.50.07.15.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "0f55cf3ef6cbfb99fa4855eaa603526e1d1ec5b7ad3959b6aad21d4ef9d6146b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'https://launchpad.net/ubuntu/+archive/primary/+files/cgroup-lite_1.15.tar.xz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 416,
+                "column": 88,
+                "line": 7
+              },
+              "start": {
+                "byte": 340,
+                "column": 12,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-containers/cgroup-lite/cgroup-lite_1.15.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "0357d602b595bbffd99fc4c5c3c49810509083c1106bf2a76c9978f734b07b32"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://downloads.ti.com/dsps/dsps_public_sw/glsdk/vpdma-fw/03-2012/exports/vpdma-fw_03-2012.tar.gz;protocol=http;name=dra7xx-evm' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 341,
+                "column": 140,
+                "line": 8
+              },
+              "start": {
+                "byte": 213,
+                "column": 12,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/vpdma-fw/vpdma-fw_03-2012.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "7b251ba09829a7bd449acf6a756a087f364a70cada5b03edcb819212f1df6b8c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://www.oberhumer.com/opensource/ucl/download/ucl-1.03.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 265,
+                "column": 76,
+                "line": 6
+              },
+              "start": {
+                "byte": 201,
+                "column": 12,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/upx/libucl_1.03.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "2dcae647437d922f32e7a0629297b39a960bbd01e3ff55fe533024bfe628ba9e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'https://git.ti.com/cgit/ti-linux-kernel/ti-linux-kernel/plain/include/uapi/linux/rpmsg_rpc.h?h=ti-linux-5.10.y;name=rpmsg_rpc;subdir=linux;downloadfilename=rpmsg_rpc.h' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 519,
+                "column": 187,
+                "line": 12
+              },
+              "start": {
+                "byte": 352,
+                "column": 20,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-ti/ipc/ti-ipc_git.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "a949f345d6bb5b9922e5d560b45ef9597d0af579397babfba8647345ae84548a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'https://www.bromium.com/wp-content/uploads/2019/11/Bromium-4.1.8-Open-Source-Software.pdf;name=license' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 455,
+                "column": 107,
+                "line": 10
+              },
+              "start": {
+                "byte": 353,
+                "column": 5,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-extended/uxen/uxen-guest-tools_4.1.8.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "f2723224b055311cdd6255580c41ee4cb284acb486d25268ae0ffa5837233789"
+        }
+      ],
+      "total_findings": 6
+    },
+    "BBT024": {
+      "required_samples": 5,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PACKAGECONFIG feature 'fdt' has no PACKAGECONFIG[fdt] definition",
+            "range": {
+              "end": {
+                "byte": 2109,
+                "column": 21,
+                "line": 55
+              },
+              "start": {
+                "byte": 2106,
+                "column": 18,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT024",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "bcdd22fe5e73eddaf48a3d352e3051b4f1158d9ec0203b03030c1467f508a7a7"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PACKAGECONFIG feature 'kvm' has no PACKAGECONFIG[kvm] definition",
+            "range": {
+              "end": {
+                "byte": 2113,
+                "column": 25,
+                "line": 55
+              },
+              "start": {
+                "byte": 2110,
+                "column": 22,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT024",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "78d8e226bd9392f1952ae06173f3e76c8abc72b6b075d6d70fe359057dbf7f6b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PACKAGECONFIG feature 'pie' has no PACKAGECONFIG[pie] definition",
+            "range": {
+              "end": {
+                "byte": 2117,
+                "column": 29,
+                "line": 55
+              },
+              "start": {
+                "byte": 2114,
+                "column": 26,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT024",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "9f007c3ed30e5f561ed6755a8987ebc81ffb54f12ba169d27aa02f0a095afc5b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PACKAGECONFIG feature 'slirp' has no PACKAGECONFIG[slirp] definition",
+            "range": {
+              "end": {
+                "byte": 2123,
+                "column": 35,
+                "line": 55
+              },
+              "start": {
+                "byte": 2118,
+                "column": 30,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT024",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "d673a76f5da9ed50d75238330f4fad307be167278ffccbbd7d20f52d2243b252"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PACKAGECONFIG feature 'virtfs' has no PACKAGECONFIG[virtfs] definition",
+            "range": {
+              "end": {
+                "byte": 2130,
+                "column": 42,
+                "line": 55
+              },
+              "start": {
+                "byte": 2124,
+                "column": 36,
+                "line": 55
+              }
+            },
+            "rule_id": "BBT024",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-devtools/qemu/nativesdk-qemu-vcontainer.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "fa1f0165d8bfb627b27f60dc1057b6ec7fbc96505145995e77ec03b2a715a257"
+        }
+      ],
+      "total_findings": 5
+    },
+    "BBT026": {
+      "required_samples": 1,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-podman is scoped to undeclared package 'packagegroup-podman'",
+            "range": {
+              "end": {
+                "byte": 955,
+                "column": 29,
+                "line": 42
+              },
+              "start": {
+                "byte": 927,
+                "column": 1,
+                "line": 42
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "recipes-core/packagegroups/packagegroup-container.bb",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "766687bac8f67987bcde8f63be59bf91083f04bd6f12438b24568b612a094d21"
+        }
+      ],
+      "total_findings": 1
+    },
+    "BBT028": {
+      "required_samples": 3,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SRC_URI entry 'git://github.com/ARM-software/gator.git;protocol=http;branch=main;protocol=https' has invalid or conflicting parameter 'protocol=https'",
+            "range": {
+              "end": {
+                "byte": 980,
+                "column": 92,
+                "line": 19
+              },
+              "start": {
+                "byte": 966,
+                "column": 78,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT028",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/recipes-devtools/gator-daemon/gator-daemon_7.8.0.bb",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "e8564f506ca0eb175d14be74e5b4a17a4b6e6825673652908896c687cdae07d6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SRC_URI entry 'http://downloads.ti.com/dsps/dsps_public_sw/glsdk/vis/01_50_07_15/exports/vis-dra7xx-evm-01.50.07.15.tar.gz;protocol=http' has invalid or conflicting parameter 'protocol=http'",
+            "range": {
+              "end": {
+                "byte": 355,
+                "column": 133,
+                "line": 9
+              },
+              "start": {
+                "byte": 342,
+                "column": 120,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT028",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/vis-fw/vis_01.50.07.15.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "88e711a1c5c402a6f4c9b5dcd7a39be075726c4a5ef5f7da660e50118d0711db"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SRC_URI entry 'http://downloads.ti.com/dsps/dsps_public_sw/glsdk/vpdma-fw/03-2012/exports/vpdma-fw_03-2012.tar.gz;protocol=http;name=dra7xx-evm' has invalid or conflicting parameter 'protocol=http'",
+            "range": {
+              "end": {
+                "byte": 325,
+                "column": 124,
+                "line": 8
+              },
+              "start": {
+                "byte": 312,
+                "column": 111,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT028",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/recipes-bsp/vpdma-fw/vpdma-fw_03-2012.bb",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "9de29148d7c032a77487dcd7b4baf3689ad546d5571e44085d418d2d31e359bf"
+        }
+      ],
+      "total_findings": 3
+    },
+    "BBT032": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_meta-arm references unknown layer collection 'core'",
+            "range": {
+              "end": {
+                "byte": 363,
+                "column": 9,
+                "line": 13
+              },
+              "start": {
+                "byte": 359,
+                "column": 5,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/conf/layer.conf",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "3f9e6d7dafac22792aed1c8cc3c6276449f77cfcb83bc1056753193d45001cad"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_meta-ti-bsp references unknown layer collection 'core'",
+            "range": {
+              "end": {
+                "byte": 509,
+                "column": 9,
+                "line": 17
+              },
+              "start": {
+                "byte": 505,
+                "column": 5,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "meta-ti-bsp/conf/layer.conf",
+              "repository": "meta-ti"
+            }
+          },
+          "fingerprint": "426abf77d7d10b36340cefef827b0473cb657c9977db235818f9dc4699888cc7"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_virtualization-layer references unknown layer collection 'core'",
+            "range": {
+              "end": {
+                "byte": 992,
+                "column": 9,
+                "line": 26
+              },
+              "start": {
+                "byte": 988,
+                "column": 5,
+                "line": 26
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "conf/layer.conf",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "93512004970d461cf80d6bcd07fad50bcafee55cb631dd1cdce4ff88c13a0296"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_meta-arm references unknown layer collection 'arm-toolchain'",
+            "range": {
+              "end": {
+                "byte": 383,
+                "column": 18,
+                "line": 14
+              },
+              "start": {
+                "byte": 370,
+                "column": 5,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "meta-arm/conf/layer.conf",
+              "repository": "meta-arm"
+            }
+          },
+          "fingerprint": "c71e990a8ab333f8375ef43b1bf09bedaa43fcf51bf8c993491133cf79e8ea9f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_virtualization-layer references unknown layer collection 'filesystems-layer'",
+            "range": {
+              "end": {
+                "byte": 1064,
+                "column": 22,
+                "line": 29
+              },
+              "start": {
+                "byte": 1047,
+                "column": 5,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "conf/layer.conf",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "1a6ca1527d03989799c0cb44d262d69c23c2c4971eb64629e3f99936af998608"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_virtualization-layer references unknown layer collection 'meta-python'",
+            "range": {
+              "end": {
+                "byte": 1082,
+                "column": 16,
+                "line": 30
+              },
+              "start": {
+                "byte": 1071,
+                "column": 5,
+                "line": 30
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "conf/layer.conf",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "04e8e122914d226f62c4f3dd20550d0d043b7d7e8dd83169bf49796f7a1d9b6b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_virtualization-layer references unknown layer collection 'networking-layer'",
+            "range": {
+              "end": {
+                "byte": 1040,
+                "column": 21,
+                "line": 28
+              },
+              "start": {
+                "byte": 1024,
+                "column": 5,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "conf/layer.conf",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "10428e9bc43b809d6bf4d0529b39140b529700cf51d6cd92dce6321e4e447b83"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "LAYERDEPENDS_virtualization-layer references unknown layer collection 'openembedded-layer'",
+            "range": {
+              "end": {
+                "byte": 1017,
+                "column": 23,
+                "line": 27
+              },
+              "start": {
+                "byte": 999,
+                "column": 5,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT032",
+            "severity": "warning",
+            "source": {
+              "path": "conf/layer.conf",
+              "repository": "meta-virtualization"
+            }
+          },
+          "fingerprint": "dd4c0b46860eb14a17100f15d766bc417f678db4e64aef7cc037d14fd645cf0d"
+        }
+      ],
+      "total_findings": 8
+    }
+  },
+  "schema": 1,
+  "source_state": "formatted"
+}

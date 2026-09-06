@@ -216,6 +216,11 @@ def build_lint_baseline(summary, manifest=None, previous=None):
 
 
 def write_lint_evidence(evidence_dir, findings, summary, comparison, quality=None):
+    try:
+        from scripts.adoption_pilot import review_packet, review_form
+    except ModuleNotFoundError:
+        from adoption_pilot import review_packet, review_form
+
     write_json(
         evidence_dir / "lint" / "findings.json",
         {
@@ -229,6 +234,9 @@ def write_lint_evidence(evidence_dir, findings, summary, comparison, quality=Non
     )
     write_json(evidence_dir / "lint" / "summary.json", summary)
     write_json(evidence_dir / "lint" / "baseline-comparison.json", comparison)
+    packet = review_packet(findings, summary["corpus_id"])
+    write_json(evidence_dir / "lint" / "review-packet.json", packet)
+    write_json(evidence_dir / "lint" / "review-form.json", review_form(packet))
     if quality is not None:
         write_json(evidence_dir / "lint" / "quality-report.json", quality)
         (evidence_dir / "lint" / "quality-report.md").parent.mkdir(parents=True, exist_ok=True)

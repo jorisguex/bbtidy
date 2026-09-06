@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "artifact_id": 9971157995,
+      "bbtidy_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+      "corpus_id": "yocto-5.0-scarthgap",
+      "findings_file_sha256": "c9324a7b142bd6ba87cf6223207d16da43b8a651cf0e697df4ca3f10d1c22c70",
+      "packet": "yocto-5.0-scarthgap/packet.json",
+      "packet_sha256": "3a9d9e11e98df14f04e53ff12b061b8bc56b388b59e0c90ae1b49bfecca6ca9f",
+      "repositories": [
+        {
+          "name": "poky",
+          "revision": "077627338ac18aeca34bfe0c52777fab38e2e0c0",
+          "url": "https://github.com/yoctoproject/poky.git"
+        },
+        {
+          "name": "meta-openembedded",
+          "revision": "ef3df29f2cfca6a9513b51ebcdccf82b6c8a836f",
+          "url": "https://github.com/openembedded/meta-openembedded.git"
+        }
+      ],
+      "run_url": "https://github.com/jorisguex/bbtidy/actions/runs/33971300100",
+      "source_state": "formatted"
+    },
+    {
+      "artifact_id": 9971180928,
+      "bbtidy_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+      "corpus_id": "yocto-6.0-wrynose",
+      "findings_file_sha256": "8183e2ab317006dd4f462cc75ffe187e7cd79a793a4386883a7ddee1a6f45051",
+      "packet": "yocto-6.0-wrynose/packet.json",
+      "packet_sha256": "67f6fa0e3752b2bb51be51ba455e9cf6db4db602e048a405480884ecb60393f3",
+      "repositories": [
+        {
+          "name": "openembedded-core",
+          "revision": "f09a0f28aeb54ddd90415dd458338e1565bb5a49",
+          "url": "https://github.com/openembedded/openembedded-core.git"
+        },
+        {
+          "name": "bitbake",
+          "revision": "fae9db3168dbff1b8c76fe9c6726a9687ff97514",
+          "url": "https://github.com/openembedded/bitbake.git"
+        },
+        {
+          "name": "meta-openembedded",
+          "revision": "af8b6d6b2f0b11595b0a0d5b82efa3129d52a628",
+          "url": "https://github.com/openembedded/meta-openembedded.git"
+        }
+      ],
+      "run_url": "https://github.com/jorisguex/bbtidy/actions/runs/33971300100",
+      "source_state": "formatted"
+    },
+    {
+      "artifact_id": 9971087089,
+      "bbtidy_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+      "corpus_id": "community-master",
+      "findings_file_sha256": "5b4a87ad4b7ed7894516cfa3c0f1fe145ec35f17de415a0fba387c458c202d22",
+      "packet": "community-master/packet.json",
+      "packet_sha256": "8454475bf71c353a05d4f4490055e3be0fe1945d6dfe242e155c90c12e957ba2",
+      "repositories": [
+        {
+          "name": "poky",
+          "revision": "5c2b3d184065b0a15695bad7db455ef65653e4c6",
+          "url": "https://github.com/yoctoproject/poky.git"
+        },
+        {
+          "name": "meta-arm",
+          "revision": "b08f6b0b5eabe54e974782e1998a2a854d23c5fa",
+          "url": "https://git.yoctoproject.org/meta-arm"
+        },
+        {
+          "name": "meta-ti",
+          "revision": "8b9b4854295491a0272722fe4fb2e0aa773d0a6d",
+          "url": "https://github.com/TexasInstruments/meta-ti.git"
+        },
+        {
+          "name": "meta-virtualization",
+          "revision": "e4aed393ce551b3141d4594330fc654abaa2d4cf",
+          "url": "https://git.yoctoproject.org/meta-virtualization"
+        }
+      ],
+      "run_url": "https://github.com/jorisguex/bbtidy/actions/runs/33971300100",
+      "source_state": "formatted"
+    }
+  ],
+  "status": "awaiting-human-review"
+}

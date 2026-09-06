@@ -1,0 +1,6330 @@
+{
+  "corpus_id": "yocto-5.0-scarthgap",
+  "findings_sha256": "4357defacdc309ad27619f5a4fa31f1b29a4cf4da35f54cbdb7e7931e9ffd8c7",
+  "kind": "bbtidy-adoption-review",
+  "profiles": {
+    "all": [
+      "BBT001",
+      "BBT002",
+      "BBT003",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT011",
+      "BBT012",
+      "BBT013",
+      "BBT014",
+      "BBT015",
+      "BBT016",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT021",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "essential": [
+      "BBT001",
+      "BBT002",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT014",
+      "BBT015",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "recommended": [
+      "BBT001",
+      "BBT002",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT014",
+      "BBT015",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ],
+    "strict": [
+      "BBT001",
+      "BBT002",
+      "BBT003",
+      "BBT004",
+      "BBT005",
+      "BBT006",
+      "BBT007",
+      "BBT008",
+      "BBT009",
+      "BBT010",
+      "BBT011",
+      "BBT012",
+      "BBT013",
+      "BBT014",
+      "BBT015",
+      "BBT016",
+      "BBT017",
+      "BBT018",
+      "BBT019",
+      "BBT020",
+      "BBT021",
+      "BBT022",
+      "BBT023",
+      "BBT024",
+      "BBT025",
+      "BBT026",
+      "BBT027",
+      "BBT028",
+      "BBT029",
+      "BBT030",
+      "BBT031",
+      "BBT032",
+      "BBT033",
+      "BBT034",
+      "BBT035",
+      "BBT036",
+      "BBT037",
+      "BBT038"
+    ]
+  },
+  "rules": {
+    "BBT001": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 1511,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 1510
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 1511,
+                "column": 31,
+                "line": 33
+              },
+              "start": {
+                "byte": 1510,
+                "column": 30,
+                "line": 33
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/bearssl/bearssl_0.6.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "479c7f5a487a96fcc029ece628117207ed11e3cc9d5bbf58403719fa1a4897c6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 10590,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 10589
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 10590,
+                "column": 78,
+                "line": 300
+              },
+              "start": {
+                "byte": 10589,
+                "column": 77,
+                "line": 300
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/classes-global/base.bbclass",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "e1b5740cf6738db3d8084deba8bd0b8ac79ee1a3e4337baa47b9c8865b6d5608"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 1104,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 1103
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 1104,
+                "column": 3,
+                "line": 22
+              },
+              "start": {
+                "byte": 1103,
+                "column": 2,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/classes/signing.bbclass",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "d2564e35f31b9733d1c8139a9a41ead194acfab9468a76312aef6ba0b1b9dc2a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 80,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 79
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 80,
+                "column": 79,
+                "line": 2
+              },
+              "start": {
+                "byte": 79,
+                "column": 78,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/conf/abi_version.conf",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "485a953f64e1979cdaee039f575e885123fce953dd522824bc6b6a8a83dce37e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 150,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 149
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 150,
+                "column": 105,
+                "line": 2
+              },
+              "start": {
+                "byte": 149,
+                "column": 104,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "7a1af30866c5227b2996a9e7eee87517be95d4a5c5ac1bdfdcd0284e035ed101"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 945,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 944
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 945,
+                "column": 64,
+                "line": 23
+              },
+              "start": {
+                "byte": 944,
+                "column": 63,
+                "line": 23
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-core/images/meta-networking-image-ptest.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "b3b0703ad3900a384c75454dfc258470f33c33bb8c2110b70578bf25160f7474"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 11458,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 11457
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 11458,
+                "column": 96,
+                "line": 314
+              },
+              "start": {
+                "byte": 11457,
+                "column": 95,
+                "line": 314
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/classes-global/base.bbclass",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "b46bcd99ec5290ad3407bbfd6982b88c0b7de4a70a761c4b80db2ffd1682d000"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 4998,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 4994
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 4998,
+                "column": 5,
+                "line": 86
+              },
+              "start": {
+                "byte": 4994,
+                "column": 1,
+                "line": 86
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/perfetto/perfetto.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0044284df7cafc30b7e719b08aa9e1642f1facd5974b03518f7ee13320c1b185"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 20436,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 20435
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 20436,
+                "column": 95,
+                "line": 282
+              },
+              "start": {
+                "byte": 20435,
+                "column": 94,
+                "line": 282
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "009d6f0109508abc421cb9284869ae383c03a41d8d6121d5973046ec6b10eccf"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 30957,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 30956
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 30957,
+                "column": 93,
+                "line": 422
+              },
+              "start": {
+                "byte": 30956,
+                "column": 92,
+                "line": 422
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "00d0087fbd74f15c793f9ecfa99c85aec5eed282f5eb3d3ff7f53c225e5e840a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 476,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 472
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 476,
+                "column": 40,
+                "line": 19
+              },
+              "start": {
+                "byte": 472,
+                "column": 36,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/flatbuffers/flatbuffers.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "03d26043cd032e67a36693bd3f588d4d9573a74244e0b061f80570f72a296882"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 6263,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 6262
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 6263,
+                "column": 96,
+                "line": 87
+              },
+              "start": {
+                "byte": 6262,
+                "column": 95,
+                "line": 87
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "05ab6a409c8ab6a7b735bff164e370ca4f0172eae8709b649ddd8d02f249efc6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 2458,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 2457
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 2458,
+                "column": 79,
+                "line": 45
+              },
+              "start": {
+                "byte": 2457,
+                "column": 78,
+                "line": 45
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/bootchart2/bootchart2_0.14.9.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "08330073926d375a5154912a1ed84cbd56cd7b6033f48be506552be1da32140b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 23384,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 23383
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 23384,
+                "column": 100,
+                "line": 322
+              },
+              "start": {
+                "byte": 23383,
+                "column": 99,
+                "line": 322
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "09c4c31e434f86ea201f00d7ea8b94d4fca391adc792cf12b9bd9341aa9f7b37"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 22993,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 22992
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 22993,
+                "column": 80,
+                "line": 546
+              },
+              "start": {
+                "byte": 22992,
+                "column": 79,
+                "line": 546
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/classes-global/sanity.bbclass",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0a9aba53bf3ee1b0b87fce305ebeab3774c16a7cb7bdceb84a358a7400eba55b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 35202,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 35201
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 35202,
+                "column": 94,
+                "line": 482
+              },
+              "start": {
+                "byte": 35201,
+                "column": 93,
+                "line": 482
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0aea6203d302ab23ccc81f3287de3e3247b96dcbfe69442ff62e7ec59588c262"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 46069,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 46065
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 46069,
+                "column": 5,
+                "line": 1015
+              },
+              "start": {
+                "byte": 46065,
+                "column": 1,
+                "line": 1015
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/classes-global/sanity.bbclass",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0b74de2eab7dfd8634456ed85671509557e02930eef100ed76d25479d1079bbf"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 30604,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 30603
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 30604,
+                "column": 99,
+                "line": 417
+              },
+              "start": {
+                "byte": 30603,
+                "column": 98,
+                "line": 417
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0bb518736d990b93b7735353a8df35ddbf7272e3e8eef11e1059d1e43a9c773b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 13089,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 13088
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 13089,
+                "column": 97,
+                "line": 182
+              },
+              "start": {
+                "byte": 13088,
+                "column": 96,
+                "line": 182
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/minio/src_uri.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0c6a3904dd68b30324eb611c29fb4085bc70d6e6b4fdaf6dbae4d87113b31e32"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 14552,
+                "message": "remove trailing whitespace",
+                "replacement": "",
+                "start_byte": 14551
+              }
+            ],
+            "help": "Remove the trailing spaces or tabs from this line.",
+            "message": "line ends with whitespace",
+            "range": {
+              "end": {
+                "byte": 14552,
+                "column": 74,
+                "line": 415
+              },
+              "start": {
+                "byte": 14551,
+                "column": 73,
+                "line": 415
+              }
+            },
+            "rule_id": "BBT001",
+            "severity": "warning",
+            "source": {
+              "path": "meta/classes-recipe/kernel-yocto.bbclass",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0d0e87dd95ceaf49ad28ccc7a703f6e0850beb78ee55a5826a8bcfc66e94e7a7"
+        }
+      ],
+      "total_findings": 287
+    },
+    "BBT002": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 2722,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 2722
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 2722,
+                "column": 2,
+                "line": 69
+              },
+              "start": {
+                "byte": 2722,
+                "column": 2,
+                "line": 69
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-kernel/usbip-tools/usbip-tools.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "14a71a8d8302c35d57716ae053eb0ad386b3db9e47e837a336dfa3e7e1ae257e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 579,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 579
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 579,
+                "column": 2,
+                "line": 19
+              },
+              "start": {
+                "byte": 579,
+                "column": 2,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/ssh-pregen-hostkeys/ssh-pregen-hostkeys_1.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "4f81a65bdbc6f2d68bc9a2ea25e7bf73f3f54864dd463989dc979074a2faef41"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 953,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 953
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 953,
+                "column": 25,
+                "line": 24
+              },
+              "start": {
+                "byte": 953,
+                "column": 25,
+                "line": 24
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-passlib_1.7.4.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "41b16a86ae0e947538d7573e781bec509ecfa74a393c3c9ed769ae2d1c4b0c82"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 54,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 54
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 54,
+                "column": 32,
+                "line": 2
+              },
+              "start": {
+                "byte": 54,
+                "column": 32,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/rust/rust-cross-canadian_1.75.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "43ffb9c2d9c37a7dfe54c395bef430fa8f1e63317da5e10cd43e685c8f62b667"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 716,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 716
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 716,
+                "column": 50,
+                "line": 27
+              },
+              "start": {
+                "byte": 716,
+                "column": 50,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/cyaml/cyaml_1.4.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "659e8bea1370272c8f0afec7c41d9fdca89d14a97a5c1f02ea52fcecc74f4d32"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 379,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 379
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 379,
+                "column": 25,
+                "line": 11
+              },
+              "start": {
+                "byte": 379,
+                "column": 25,
+                "line": 11
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-transitions_0.9.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "9accf9e40bd2513c763deca6319b11b73771fa81820338be8f1e95aaca3153e8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 554,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 554
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 554,
+                "column": 35,
+                "line": 17
+              },
+              "start": {
+                "byte": 554,
+                "column": 35,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-stopit_1.1.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "ab76b21d96cca77b4768794543f67477644af5556fee06b38df7ff38c2ed83a5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": true,
+            "fixes": [
+              {
+                "end_byte": 144,
+                "message": "append a final newline",
+                "replacement": "\n",
+                "start_byte": 144
+              }
+            ],
+            "help": "Append a newline at the end of the file.",
+            "message": "file does not end with a newline",
+            "range": {
+              "end": {
+                "byte": 144,
+                "column": 88,
+                "line": 4
+              },
+              "start": {
+                "byte": 144,
+                "column": 88,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT002",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-flask-sijax_0.4.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "d39ccb2f6e5d0c72214177db03f32ed55e35a74f02132769433e4b2b44e310bf"
+        }
+      ],
+      "total_findings": 8
+    },
+    "BBT003": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 86 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 85,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 78,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/openthread/ot-daemon_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "2700f26082e2a95c90a9e030e07252f4f6718fd235ed12ee967f79448ada9a2e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 104 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 23,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 16,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/build-sysroots.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "b5f55c2281ff1843aa8ac08ee4702ddbfa732d271a32124da9b9833c7810ef8c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 91 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-kernel/crash/crash.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "21404b7092ec26d6fafaa6fabf2379678a32dfcd6ca3590635b108bad630cfb2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 83 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-daemons/lldpd/lldpd_1.0.18.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "8069dc3a1a4c43e6a4ef2ea9d47ac2ff84a7eb159378c5308ecde03a69c40fd3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 104 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 177,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 170,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/buildtools-docs-tarball.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "008ebe1d56cb316dfeb904c3c29fb6960692f94de02af89753afa4db47679182"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 83 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-sato/webkit/libwpe_1.14.2.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "003fea23948d4e2b0650a160839b2f6cc1473936eeb393ba5f1840ae981c1374"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 136 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 101,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 94,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-filelock_3.13.4.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "04b8a885871c06b95a0ab1ac7c1779a169041f52821b7b5e3e6f950ba243e38f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 96 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/btop/btop_1.3.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0674b5b871eaab89c784bc2a01852df59b847664f9545947b255e4d27d09519c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 82 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-connectivity/pcapplusplus/pcapplusplus_23.09.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0826cd9536314c5f6c94012698aadfc3106460f2caa0da842e62d8c0d1a9f1e2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 90 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 101,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 94,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-benchmark/linpack/linpack_1.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "098edd777ab43e308873c94bdddcc945f24451365a3a86ce552f96a20ea6a56f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 103 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/python/python3-pyelftools_0.30.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0c2298489f3d4976d743ebd785ed4a1363ed512136532156081212ffc757383e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 83 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-anyio_4.3.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0ce93e9c2607ea93aed648425ff4fdf4f6b86aae3289e9ad570f8b7c6c124249"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 101 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 101,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 94,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pyproject-api_1.6.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0e02bb68c7ec8bfc996fa016c492c7ffd5f953247c5f5fc465a14e64ee3754dc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 101 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/libosinfo/libosinfo_1.11.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0f1c38875ac532cd84c2f7e63fdfda811c464b0d49b7eecafb9f4deac9fb6544"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 85 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pyyaml-include_1.3.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0f94dc0c5736ab64b3103f900c81d63cdf7df27eafe5fca969b68fb40cca1bb5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 111 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-extended/images/core-image-testcontroller.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "156a4de82d017124143237ed6222eecefc950d228bb5203f63ea383248339bc4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 102 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-httplib2_0.22.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "1697ea99a641c5ee492ba0cfd8284c95e20da3bb50f9de30fa4959d7c0d5b7c0"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 89 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/libcomps/libcomps_0.1.20.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "17f2a67b9878a66007bb4a60e7739a55b0709322ec4ef10a0ad2b9826db0b1dd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 90 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pyproj_3.6.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "190731248fa56f2cacb6dade8b64d16eee5bdf0bbf8d0d9e81407ab7103791c8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SUMMARY is 112 characters; limit it to 80",
+            "range": {
+              "end": {
+                "byte": 7,
+                "column": 8,
+                "line": 1
+              },
+              "start": {
+                "byte": 0,
+                "column": 1,
+                "line": 1
+              }
+            },
+            "rule_id": "BBT003",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pyunormalize_15.1.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "19a1b4e256fdb1f0d2e784ac61ad307557af592cb8f5db857dcfb3b301feeb9c"
+        }
+      ],
+      "total_findings": 126
+    },
+    "BBT004": {
+      "required_samples": 2,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SRCREV_machine uses ${AUTOREV}; pin a source revision for reproducible builds",
+            "range": {
+              "end": {
+                "byte": 1398,
+                "column": 111,
+                "line": 28
+              },
+              "start": {
+                "byte": 1388,
+                "column": 101,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT004",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-kernel/linux/linux-yocto-dev.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "5b9b0855a421f48d2b8115668c2b3f4a62bc57bb26f5ba5e8d2432b5128cc656"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "SRCREV_meta uses ${AUTOREV}; pin a source revision for reproducible builds",
+            "range": {
+              "end": {
+                "byte": 1557,
+                "column": 108,
+                "line": 29
+              },
+              "start": {
+                "byte": 1547,
+                "column": 98,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT004",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-kernel/linux/linux-yocto-dev.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "eb88189660772ab3ac76d12e8c12d925f5446d52069bf2f22c4f06971b9c6a7f"
+        }
+      ],
+      "total_findings": 2
+    },
+    "BBT005": {
+      "required_samples": 4,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "class 'pypi' is inherited more than once",
+            "range": {
+              "end": {
+                "byte": 343,
+                "column": 47,
+                "line": 9
+              },
+              "start": {
+                "byte": 339,
+                "column": 43,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT005",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pybcj_1.0.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "f6e58a523dcab8aff47c8c62ba4f7749254ac289cea3cb80a06cb44921d99c2e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "class 'update-alternatives' is inherited more than once",
+            "range": {
+              "end": {
+                "byte": 9448,
+                "column": 28,
+                "line": 230
+              },
+              "start": {
+                "byte": 9429,
+                "column": 9,
+                "line": 230
+              }
+            },
+            "rule_id": "BBT005",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/perl/perl_5.38.4.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "31475d9329f9af214d3bb7bd91512ad88f0c11332cd984580cfad3bf37a0f108"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "class 'autotools' is inherited more than once",
+            "range": {
+              "end": {
+                "byte": 1311,
+                "column": 18,
+                "line": 41
+              },
+              "start": {
+                "byte": 1302,
+                "column": 9,
+                "line": 41
+              }
+            },
+            "rule_id": "BBT005",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-extended/less/less_643.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "79c31426075bcf8931139f5bfe26b814435a98065cda013500825da6da26ae79"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "class 'update-alternatives' is inherited more than once",
+            "range": {
+              "end": {
+                "byte": 1331,
+                "column": 38,
+                "line": 41
+              },
+              "start": {
+                "byte": 1312,
+                "column": 19,
+                "line": 41
+              }
+            },
+            "rule_id": "BBT005",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-extended/less/less_643.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "c490dd8835c6a81609dabab2d1b249c45041468349e1124f39e9c22bbf66e662"
+        }
+      ],
+      "total_findings": 4
+    },
+    "BBT011": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1689,
+                "column": 1,
+                "line": 51
+              },
+              "start": {
+                "byte": 1689,
+                "column": 1,
+                "line": 51
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/dynamic-layers/meta-python/recipes-printing/system-config-printer/system-config-printer_1.5.18.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "c3413c8aebc99e15141483e4e87fe7c08226a6fb2fa5422b64e800590267a457"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 962,
+                "column": 1,
+                "line": 38
+              },
+              "start": {
+                "byte": 962,
+                "column": 1,
+                "line": 38
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/glibc/glibc-testsuite_2.39.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "ebc870d93ce58d261470ceeaf85db24d5f141bb67429e2d2871621c2491947d4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 1219,
+                "column": 1,
+                "line": 32
+              },
+              "start": {
+                "byte": 1219,
+                "column": 1,
+                "line": 32
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/autossh/autossh_1.4g.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "8f1e862ab94311a1531b7b7ae9846cde615c031fa355fd6d7a732d36e44c33d8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 331,
+                "column": 1,
+                "line": 12
+              },
+              "start": {
+                "byte": 331,
+                "column": 1,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/binutils/binutils-crosssdk_2.42.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "fc6a5773880b8104d214d9b44f66506b83603c315c8ce60f6e8aacd92f33c79a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 417,
+                "column": 1,
+                "line": 12
+              },
+              "start": {
+                "byte": 417,
+                "column": 1,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/dfu-util/dfu-util_0.11.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "00388255796f092dd2a25dcdaf9e841dfe2bc8f09e4c40083152ae13647ef5e2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 632,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 632,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/android-tools/android-tools-conf_1.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "01b4e6fb64bfe387bc978e4014f5115bd8641c3fb3bf421810aaec13564d66c7"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 2414,
+                "column": 1,
+                "line": 58
+              },
+              "start": {
+                "byte": 2414,
+                "column": 1,
+                "line": 58
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/ckermit/ckermit_302.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "01ee28be80f2cdab65bbe512ac0b033b241536ed8b8007f78e7ba08921725f5f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 73,
+                "column": 1,
+                "line": 3
+              },
+              "start": {
+                "byte": 73,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/gcc/gcc-crosssdk_13.4.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "02844aff4ebfeca24f1b8ef5d37044d3b7f9f0255fa8351b2f4122ecc7009ecd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 469,
+                "column": 1,
+                "line": 15
+              },
+              "start": {
+                "byte": 469,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-flask-jwt_0.3.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "02979bab77e750bda0849f96197aa01e2fe98a6eab05227549a913627d61b201"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 861,
+                "column": 1,
+                "line": 29
+              },
+              "start": {
+                "byte": 861,
+                "column": 1,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-test/libfaketime/libfaketime_0.9.10.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "037ceda49335c22db1694b7b331724caa1eb264d79b5e7cf9386c39b5eb74fab"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 2171,
+                "column": 1,
+                "line": 70
+              },
+              "start": {
+                "byte": 2171,
+                "column": 1,
+                "line": 70
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-test/pm-qa/pm-qa_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "040bfaed6f3b0daebae0c4c70e4e76b0eab1172ab0059ec32b1d1883acc815da"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 387,
+                "column": 1,
+                "line": 15
+              },
+              "start": {
+                "byte": 387,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-ifaddr_0.2.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "046c5640e5b5ec79f29fa3d62f440167884e96b118574e2f4811c1f0e574609c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 3095,
+                "column": 1,
+                "line": 72
+              },
+              "start": {
+                "byte": 3095,
+                "column": 1,
+                "line": 72
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/grpc/grpc_1.60.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0505a0b270e99202ab1c5ab5b641b6ca6de77e0cc9ad01bb2ce24ca8e9608e1c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 349,
+                "column": 1,
+                "line": 15
+              },
+              "start": {
+                "byte": 349,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-py-ubjson_0.16.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "05353d2fa7d4fa93fbb4d684f7504e096ffdd52b1e522ef0cd525f65aaa851fe"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 454,
+                "column": 1,
+                "line": 18
+              },
+              "start": {
+                "byte": 454,
+                "column": 1,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-pytest-metadata_2.0.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0623049a4bd4e8246be81c07f9e12dfaf6ef7c9ba818face98aaa7b66b409248"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 779,
+                "column": 1,
+                "line": 20
+              },
+              "start": {
+                "byte": 779,
+                "column": 1,
+                "line": 20
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-printing/cups/libcupsfilters_2.0.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "06254029071133807a307500d222766e79e65f43360cbd6a4e8336b885cc46a5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 560,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 560,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-printing/cups/libppd_2.0.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "07191a1dc8e1e349b4bca9bc99fc2c80c023a973c454ae7276edff6cbfd6ec46"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 581,
+                "column": 1,
+                "line": 25
+              },
+              "start": {
+                "byte": 581,
+                "column": 1,
+                "line": 25
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-cantools_39.4.4.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "07878d104cc83617e01de09562557ea3a69ea4b3feb32fce4e7137d0d9951410"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 483,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 483,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-aiohue_4.7.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "07eb197f07b4927703b4c571029992984abdae3ae12bc77958d448f2a353454f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a SUMMARY assignment",
+            "range": {
+              "end": {
+                "byte": 438,
+                "column": 1,
+                "line": 16
+              },
+              "start": {
+                "byte": 438,
+                "column": 1,
+                "line": 16
+              }
+            },
+            "rule_id": "BBT011",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-flask-migrate_4.0.7.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "09109d7bf478ae0221a252b8b6cc492a932f488c7d854704ba5877813a4099ec"
+        }
+      ],
+      "total_findings": 373
+    },
+    "BBT012": {
+      "required_samples": 30,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 10502,
+                "column": 1,
+                "line": 313
+              },
+              "start": {
+                "byte": 10502,
+                "column": 1,
+                "line": 313
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/dynamic-layers/meta-python/recipes-connectivity/firewalld/firewalld_1.3.4.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "a4ca0608840c712a395004822de4ca688e019a4eaa3416e2040236860f8c3d55"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1553,
+                "column": 1,
+                "line": 35
+              },
+              "start": {
+                "byte": 1553,
+                "column": 1,
+                "line": 35
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/connman/connman-gnome_0.7.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "fd6c986dab49966f12e45d72bf70ad3cb2361b6705eec5ed0e60a93e9f327773"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 585,
+                "column": 1,
+                "line": 18
+              },
+              "start": {
+                "byte": 585,
+                "column": 1,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/cannelloni/cannelloni_1.1.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "636414a726953798cdfaad6235a7e0b989bd66d6c3718b2c44c464814d6389c9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 2287,
+                "column": 1,
+                "line": 51
+              },
+              "start": {
+                "byte": 2287,
+                "column": 1,
+                "line": 51
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/civetweb/civetweb_1.16.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "ddd4681d7f19b7604bbed6024fe9b8594997b88775aa0a9f5765db78d7e2113c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 579,
+                "column": 2,
+                "line": 19
+              },
+              "start": {
+                "byte": 579,
+                "column": 2,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/ssh-pregen-hostkeys/ssh-pregen-hostkeys_1.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "a18ca6ae927b1c920b66b74ec7949dc9f53057fa13aa985ddda23a8a708c1c8d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1529,
+                "column": 1,
+                "line": 63
+              },
+              "start": {
+                "byte": 1529,
+                "column": 1,
+                "line": 63
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/busybox/busybox-inittab_1.36.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "31c803268a70c3331b82222d0cf3b7bfe3ac41209636fc80f1b86390d231e4c4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 759,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 759,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-multimedia/libmodplug/libmodplug_0.8.9.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "000de73fe51428067fd8be8016dcb479b9c4733d8e4d9cdce6c3ce0af199d806"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 593,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 593,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/p8platform/p8platform_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "001f96f03ae5934544f4c4f2c137b311d1a58b7f61fcccbb1fb1bf446175b426"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 693,
+                "column": 1,
+                "line": 28
+              },
+              "start": {
+                "byte": 693,
+                "column": 1,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/python/python3-markupsafe_2.1.5.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "002cbc1f31a9ff5dc14ccf08edbdd5cc62f9b82a0f83125f4bd2b453d0556dd3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 716,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 716,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/msr-tools/msr-tools_1.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "004f4008e9cfb1ec9cdb5be374b5be7aaf8bc265851a9e15d7fb1091c489e3e2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 449,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 449,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-decouple_3.8.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "005ff46d63525ec32de67ed94b40c5ca39ea40f2a4bdc014caef2125e0f30f97"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 473,
+                "column": 1,
+                "line": 12
+              },
+              "start": {
+                "byte": 473,
+                "column": 1,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-jmespath_1.0.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "00b1746464d84cf87304f9da9ae4bc1cc19784d3ce90ef732e5b4d9d2a84612a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 447,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 447,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/python/python3-isodate_0.6.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "00cde234a16b48c938340c3e58d7e1154b0bbfa813f39bbfe363506b7eec61e1"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 625,
+                "column": 1,
+                "line": 24
+              },
+              "start": {
+                "byte": 625,
+                "column": 1,
+                "line": 24
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/libtommath/libtommath_1.3.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0271a9a7bdc41fcdd2783325e0b28657947b5bc1492e861fa1354d9e8ef44b56"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 853,
+                "column": 1,
+                "line": 32
+              },
+              "start": {
+                "byte": 853,
+                "column": 1,
+                "line": 32
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-flexcache_0.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "027d2ea4d6b0e5a1a86203044575ea6b142a7a3cc0f1d2ad7ef2ee9d6e8d7f15"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1048,
+                "column": 1,
+                "line": 31
+              },
+              "start": {
+                "byte": 1048,
+                "column": 1,
+                "line": 31
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-support/nghttp2/nghttp2_1.61.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "02ffc6acf73a56fcf58100f188488cbcd97ba46339b70054a35127ea82b08dde"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 769,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 769,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/log4c/log4c_1.2.4.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "032a95b77f801dcbe8cc922f6245828181fddd3d7c08befe8dc723dc96a8002e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 694,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 694,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/python/python3-docutils_0.20.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "038bf2a10604ee18fd52ecaa3d7ad682cc9b17bf2496627fd04fb4c76cb6d62d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 3118,
+                "column": 1,
+                "line": 127
+              },
+              "start": {
+                "byte": 3118,
+                "column": 1,
+                "line": 127
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/fvwm/fvwm_2.7.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "038c137b2c80a8204dd23ebb7cf134614abfeac3eee338c615a0c1884cf4f968"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1007,
+                "column": 1,
+                "line": 33
+              },
+              "start": {
+                "byte": 1007,
+                "column": 1,
+                "line": 33
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-core/glib-2.0/glibmm-2.68_2.78.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "03d37479212be6b2984bfd54dd78e5ce8b8801f2c3470b9ca9792dc9ffc3a4ff"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 584,
+                "column": 1,
+                "line": 18
+              },
+              "start": {
+                "byte": 584,
+                "column": 1,
+                "line": 18
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/pango/pangomm_2.46.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "040d365916334a62c755509367e0e55c4ecfdb84d8db3e15acec5da19a9aae71"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 774,
+                "column": 1,
+                "line": 29
+              },
+              "start": {
+                "byte": 774,
+                "column": 1,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-socketio_5.11.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "04371250164847946cedbe4ad0ac43cc25b040ddf0a331e4d992d1ca3ebb09b9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 749,
+                "column": 1,
+                "line": 21
+              },
+              "start": {
+                "byte": 749,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/xorg-font/font-adobe-100dpi_1.0.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "04c71f0ebb910b0e2ecea6dc52cd22d62e3a3dd78732c072e7417800a6fb3c15"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1431,
+                "column": 1,
+                "line": 40
+              },
+              "start": {
+                "byte": 1431,
+                "column": 1,
+                "line": 40
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-multimedia/libmad/libmad_0.15.1b.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "04c9417e4c886a662158cc7c672e112b4a8a613d7c46d6229a6b4498aef3f272"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 2551,
+                "column": 1,
+                "line": 63
+              },
+              "start": {
+                "byte": 2551,
+                "column": 1,
+                "line": 63
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/upm/upm_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "04d3681e06f981548cc75196105f6c635342e83360eba98e620b31082043660b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 517,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 517,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-benchmark/mbw/mbw_2.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0570e2421ccaee26bc9801421ecc5ccca372367afd4f128988650c608a9c3e45"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 438,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 438,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-trafaret_2.1.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "057773b3ce95bb9fc98e23a3a3a84660cfd71b177da41b3f74cd264f8242eca0"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 483,
+                "column": 1,
+                "line": 19
+              },
+              "start": {
+                "byte": 483,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-support/spice/usbredir_0.13.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "057bc0355285246aad00a521a390a6cfd9bef3da7c1d8a852e2d209c2ff79269"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 1173,
+                "column": 1,
+                "line": 27
+              },
+              "start": {
+                "byte": 1173,
+                "column": 1,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-dbs/mysql/mysql-python_1.2.5.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "05beaab26f523199f9da86e9913c2b1c2a630b8cc91d6b094b34263250749642"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a DESCRIPTION assignment",
+            "range": {
+              "end": {
+                "byte": 504,
+                "column": 1,
+                "line": 19
+              },
+              "start": {
+                "byte": 504,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT012",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/initrdscripts/initramfs-module-setup-live_1.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0604623dc26ba38662e41307d17dfb85b53c3f71a98984c3abe8af754e4646b0"
+        }
+      ],
+      "total_findings": 1120
+    },
+    "BBT013": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 5533,
+                "column": 1,
+                "line": 254
+              },
+              "start": {
+                "byte": 5533,
+                "column": 1,
+                "line": 254
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-core/packagegroups/packagegroup-meta-networking.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "56b8905289b2e0b2b3947edb1017d90a1aee24c2004247dab6a49d7f9fd2f5e9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 962,
+                "column": 1,
+                "line": 38
+              },
+              "start": {
+                "byte": 962,
+                "column": 1,
+                "line": 38
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/glibc/glibc-testsuite_2.39.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "e27b274da4beed6b45c6724c09972c1e8c703a153122b10a3e2b30dc04cfa2fa"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 232,
+                "column": 1,
+                "line": 17
+              },
+              "start": {
+                "byte": 232,
+                "column": 1,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/dynamic-layers/meta-python/recipes-devtools/nanopb/nanopb.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "cd974abb7c01b5e838c9913576907d4567fe1f2f41aca899e8c761b7b3c5023c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 724,
+                "column": 1,
+                "line": 22
+              },
+              "start": {
+                "byte": 724,
+                "column": 1,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/ovmf/ovmf-shell-image.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "e5f4c6135ced84a5cab36f4da8839d4a5d984edb26afd815b28cf7b4b266c48c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 381,
+                "column": 1,
+                "line": 16
+              },
+              "start": {
+                "byte": 381,
+                "column": 1,
+                "line": 16
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-graphics/packagegroups/packagegroup-core-x11-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "049df195e441fedbd9433dc7f65061f04f8bc63e3e81bee136d0c6cf8c8101e2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 806,
+                "column": 1,
+                "line": 25
+              },
+              "start": {
+                "byte": 806,
+                "column": 1,
+                "line": 25
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/packagegroups/packagegroup-sdk-target.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "12e4d93e687c41517a7b2f0385bd1a838b3fc0e089b2041f353ae7c3f0b4830d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 724,
+                "column": 1,
+                "line": 35
+              },
+              "start": {
+                "byte": 724,
+                "column": 1,
+                "line": 35
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-graphics/packagegroups/packagegroup-core-x11.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "15dffaaedd1c8520664a69a02e1963b8be218eb2abd51af0a53d77721748a320"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 969,
+                "column": 1,
+                "line": 25
+              },
+              "start": {
+                "byte": 969,
+                "column": 1,
+                "line": 25
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-cross-canadian.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "1f0990528e208ca1633d9518af38bb6aef04b35e83815e68e6bbe093ef479c0f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 42,
+                "column": 1,
+                "line": 3
+              },
+              "start": {
+                "byte": 42,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/go/go-cross_1.22.12.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "253ce8cfb198256e07d3191938bde3f60c6d4cacc5d64a8fc49b9baf7c580418"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 1482,
+                "column": 1,
+                "line": 43
+              },
+              "start": {
+                "byte": 1482,
+                "column": 1,
+                "line": 43
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-core-boot.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "260a4aa3ef4ea440218585f8f8d0af6f9f7e90ea1f3004021e19099bf861026b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 1394,
+                "column": 1,
+                "line": 67
+              },
+              "start": {
+                "byte": 1394,
+                "column": 1,
+                "line": 67
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-core-tools-profile.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "27bc1534e8a4906c75bc35693fa4f409bd3f611ad0e512be644ac406696f96f5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "recipe is missing a LICENSE assignment",
+            "range": {
+              "end": {
+                "byte": 45,
+                "column": 1,
+                "line": 4
+              },
+              "start": {
+                "byte": 45,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT013",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/go/go-runtime_1.22.12.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "27e6b39fa820cf6d0510f4da2983f2274b109a9e5330b00cd1df0426c9741112"
+        }
+      ],
+      "total_findings": 60
+    },
+    "BBT014": {
+      "required_samples": 6,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 14521,
+                "column": 19,
+                "line": 380
+              },
+              "start": {
+                "byte": 14519,
+                "column": 17,
+                "line": 380
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/conf/bitbake.conf",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "4c825c0c2b6999b0bfabb00791a2c37a204880a583cf8ec76d232d2211572522"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 614,
+                "column": 19,
+                "line": 20
+              },
+              "start": {
+                "byte": 612,
+                "column": 17,
+                "line": 20
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/glibc/cross-localedef-native_2.39.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "2c1e67ff322ea3074a4bb03433154966aa983ee7c6c0e0119391fce39fa98466"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 209,
+                "column": 19,
+                "line": 11
+              },
+              "start": {
+                "byte": 207,
+                "column": 17,
+                "line": 11
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/gcc/gcc-13.4.inc",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "21dc60183c43abb41493aae5e3c564feaf8b2c29d53191d5168f8dda19704bcc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 75,
+                "column": 19,
+                "line": 4
+              },
+              "start": {
+                "byte": 73,
+                "column": 17,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/libtool/nativesdk-libtool_2.4.7.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "04b0d8e521f9f0c0034c13e378f01846ea4c5831ba189fa1c53c5fb248adfc28"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 38,
+                "column": 19,
+                "line": 2
+              },
+              "start": {
+                "byte": 36,
+                "column": 17,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/systemd/systemd-boot_255.21.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "4d0041275a5c079c87c9379b0cb4ac73016d7e6516a2f50e800044e1b5256250"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILESEXTRAPATHS must use ':=' so path expansion happens before parsing",
+            "range": {
+              "end": {
+                "byte": 830,
+                "column": 19,
+                "line": 22
+              },
+              "start": {
+                "byte": 828,
+                "column": 17,
+                "line": 22
+              }
+            },
+            "rule_id": "BBT014",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/glibc/ldconfig-native_2.12.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "5264a5ad0263c7f384120b71665da91e4200f67c11290d3102f4241a17a0fbd2"
+        }
+      ],
+      "total_findings": 6
+    },
+    "BBT015": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.infradead.org/users/dwmw2/openconnect.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 237,
+                "column": 70,
+                "line": 6
+              },
+              "start": {
+                "byte": 172,
+                "column": 5,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/openconnect/openconnect_9.12.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "37039de4d6ba68a343aa2e849bc87ae34e18475607ee43178950c32cc0d9372b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.infradead.org/mtd-utils.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 689,
+                "column": 63,
+                "line": 17
+              },
+              "start": {
+                "byte": 638,
+                "column": 12,
+                "line": 17
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/mtd/mtd-utils_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "c6a387cf716a3a900a91dc55a653cc49c4319ffc5ba5ff41511b76cec757cfa2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://sourceware.org/git/lvm2.git;branch=main' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 413,
+                "column": 57,
+                "line": 10
+              },
+              "start": {
+                "byte": 368,
+                "column": 12,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/lvm2/lvm2.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "c50497e22f4f4af69294046c80e6ae0a9fcb03f454a795c4a52b7fceee5c9b03"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.altlinux.org/people/ldv/packages/libutempter.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 579,
+                "column": 84,
+                "line": 12
+              },
+              "start": {
+                "byte": 507,
+                "column": 12,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/libutempter/libutempter_1.2.2-alt1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "a105fed7fc42f8a10da9d7cd615aa76a92b38fe32218f9339c488afa2565240a"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.code.sf.net/p/tclap/code;branch=1.4' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 782,
+                "column": 57,
+                "line": 14
+              },
+              "start": {
+                "byte": 737,
+                "column": 12,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/tclap/tclap_1.4.0.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "726b995b00b2364401a6fb4646ab4a64fa59bb45db5a433a8114b3bfa4da8dc1"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.code.sf.net/p/tipc/tipcutils;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 241,
+                "column": 64,
+                "line": 5
+              },
+              "start": {
+                "byte": 189,
+                "column": 12,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-extended/tipcutils/tipcutils_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "48b3eda862da3015bc24ddb9e51fefcafb59c85ec6c30d15d25793637774169e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.ideasonboard.org/yavta.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 210,
+                "column": 62,
+                "line": 5
+              },
+              "start": {
+                "byte": 160,
+                "column": 12,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-multimedia/v4l2apps/yavta_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "92fdcbda33e59be99942fb299edc91be2ebca55ffabc194fe30ead790ed3e1d8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.infradead.org/users/hch/nvmetcli.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 1056,
+                "column": 72,
+                "line": 23
+              },
+              "start": {
+                "byte": 996,
+                "column": 12,
+                "line": 23
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/dynamic-layers/meta-python/recipes-support/nvmetcli/nvmetcli_0.7.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "99fc2613f21553f244521edb71ccf846590e420b08df06d12b7f17cdb7549e58"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.kernel.dk/fio.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 1184,
+                "column": 53,
+                "line": 27
+              },
+              "start": {
+                "byte": 1143,
+                "column": 12,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-benchmark/fio/fio_3.36.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "c39cfa0e98fc7ceac58f5eea9b0bbf75689f2e573ca81d5b19bd21a7f7b8feb9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.kernel.org/pub/scm/devel/pahole/pahole.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 436,
+                "column": 78,
+                "line": 13
+              },
+              "start": {
+                "byte": 370,
+                "column": 12,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/pahole/pahole_1.25.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "b0a6a216b475c8d298418e2cd8d3f1db46695d94e30d8ccd770d1318bf274c29"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.kernel.org/pub/scm/fs/fsverity/fsverity-utils.git;branch=master' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 711,
+                "column": 85,
+                "line": 13
+              },
+              "start": {
+                "byte": 638,
+                "column": 12,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-crypto/fsverity-utils/fsverity-utils_1.5.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "67b6c9e2de492bd353144341db4f802735dc3118122e7c51388600bf83474b35"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "Git URI 'git://git.kernel.org/pub/scm/libs/python/python-linux-procfs/python-linux-procfs.git;branch=main' does not declare a protocol",
+            "range": {
+              "end": {
+                "byte": 421,
+                "column": 108,
+                "line": 7
+              },
+              "start": {
+                "byte": 325,
+                "column": 12,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT015",
+            "severity": "warning",
+            "source": {
+              "path": "meta-python/recipes-devtools/python/python3-linux-procfs_0.7.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "e852de1d9a673a701b2a25a38743515496a534ab6774e10d645b753aac30628e"
+        }
+      ],
+      "total_findings": 28
+    },
+    "BBT016": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'UPSTREAM_CHECK_URI' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 643,
+                "column": 19,
+                "line": 21
+              },
+              "start": {
+                "byte": 625,
+                "column": 1,
+                "line": 21
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-daemons/vblade/vblade_25.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "55e69c9bceaf7b4d3b0b72ed109383ca1de38b722d1205ada5602186a486aca1"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'BB_RENAMED_VARIABLES[PNBLACKLIST]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 3605,
+                "column": 34,
+                "line": 101
+              },
+              "start": {
+                "byte": 3572,
+                "column": 1,
+                "line": 101
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/conf/bitbake.conf",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "d9adad39847c7ab3e95a65fbf2ea6c561c2b5c05900f7edbbaa535f7a8dcb691"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'SRC_URI[aho-corasick-1.1.3.sha256sum]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 53286,
+                "column": 38,
+                "line": 783
+              },
+              "start": {
+                "byte": 53249,
+                "column": 1,
+                "line": 783
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-core/uutils-coreutils/uutils-coreutils-crates.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "59b08de9a2b48d1df54b7d35f97c4c41568eda2a6bf070eba1f31f1e9dd302d6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'ALTERNATIVE_PRIORITY' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 13066,
+                "column": 21,
+                "line": 311
+              },
+              "start": {
+                "byte": 13046,
+                "column": 1,
+                "line": 311
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/perl/perl_5.38.4.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "b5da8c3a78f77a1a0dd4356fbb62d0bde284b27b0996ef887c062fddf723f8cb"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'ARCH_FLAGS_FOR_TARGET' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 6925,
+                "column": 29,
+                "line": 192
+              },
+              "start": {
+                "byte": 6904,
+                "column": 8,
+                "line": 192
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/gcc/gcc-cross-canadian.inc",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "cc821bd57662d3dadf42d31dbd6a931a8576c113433cc2c1e1533abb7877d154"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'BBCLASSEXTEND' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 894,
+                "column": 14,
+                "line": 27
+              },
+              "start": {
+                "byte": 881,
+                "column": 1,
+                "line": 27
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-navigation/proj/proj_9.3.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "f182e85b91efa686b705922ebe6366d5c9528c99bf6efd3a082b792ece2a8b96"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'CACHE' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 35271,
+                "column": 6,
+                "line": 864
+              },
+              "start": {
+                "byte": 35266,
+                "column": 1,
+                "line": 864
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/conf/bitbake.conf",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "143733b9ee01e8c18bc062f9cbd6f5fe5fc188da37becef19a999a56d3d0ef77"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'CVE_STATUS[CVE-2025-14821]' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 2603,
+                "column": 27,
+                "line": 74
+              },
+              "start": {
+                "byte": 2577,
+                "column": 1,
+                "line": 74
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/libssh/libssh_0.10.6.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "e42664cf6acbe80158e3923465cbcac6994717b752a1e31d207bf12d23302ba6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'DESCRIPTION' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 356,
+                "column": 12,
+                "line": 4
+              },
+              "start": {
+                "byte": 345,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-support/nettle/nettle_3.9.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "dfab017c7e206ca7b17bc03cb01aa12f7739fd399303c3ea1c887367e07370c9"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'LIC_FILES_CHKSUM' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 1161,
+                "column": 17,
+                "line": 29
+              },
+              "start": {
+                "byte": 1145,
+                "column": 1,
+                "line": 29
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-daemons/vsftpd/vsftpd_3.0.5.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "6b314df1e822eb94c02b779363ae0c5895b8be7e4df009a0856b863628a1e49b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'LICENSE' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 515,
+                "column": 8,
+                "line": 10
+              },
+              "start": {
+                "byte": 508,
+                "column": 1,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/autoconf-2.13/autoconf-2.13-native_2.13.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "d7d7eeba1f5fbc6e7af7f0403e03077edbf1a3eba037fd54049a892197fe4fb6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "variable 'PACKAGE_ARCH' is assigned directly more than once",
+            "range": {
+              "end": {
+                "byte": 317,
+                "column": 13,
+                "line": 14
+              },
+              "start": {
+                "byte": 305,
+                "column": 1,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT016",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-extended/packagegroups/packagegroup-core-base-utils.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "fa26acdd40a6ff0b61ad432cc90cf291ca4e33a398935ed0e3f826af40e63d6d"
+        }
+      ],
+      "total_findings": 83
+    },
+    "BBT017": {
+      "required_samples": 8,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 2521,
+                "column": 18,
+                "line": 65
+              },
+              "start": {
+                "byte": 2504,
+                "column": 1,
+                "line": 65
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/blueman/blueman_2.3.5.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "66a1e609920d8dec759b98688d2f1aeeda936edd7429a9b0b1eee59dbe20251d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 2880,
+                "column": 18,
+                "line": 69
+              },
+              "start": {
+                "byte": 2863,
+                "column": 1,
+                "line": 69
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/kea/kea_2.4.2.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "446184c59d05860791d3273b0762813827c7d684d11413a033bae29bb7c2c4fe"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_compile:prepend:class-target' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 5152,
+                "column": 32,
+                "line": 128
+              },
+              "start": {
+                "byte": 5121,
+                "column": 1,
+                "line": 128
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-dbs/mysql/mariadb.inc",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "1315e74112f9d10640afa584773ae49c34031dc259e4eaff232437bf5ed44ae5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_compile:prepend:class-native' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 2963,
+                "column": 32,
+                "line": 74
+              },
+              "start": {
+                "byte": 2932,
+                "column": 1,
+                "line": 74
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/nss/nss_3.98.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "6dc80d0074b331ef95f806071ca856ac5e820f4286e05e0b29d06219cdfbcb93"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append:class-native' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 13456,
+                "column": 31,
+                "line": 297
+              },
+              "start": {
+                "byte": 13426,
+                "column": 1,
+                "line": 297
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/php/php_8.2.32.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "2a47f952be18969bd2a655ab9546403edd8ed73879913cba5f7c8e950c9c67fd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append:class-nativesdk' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 5803,
+                "column": 34,
+                "line": 125
+              },
+              "start": {
+                "byte": 5770,
+                "column": 1,
+                "line": 125
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/rpm/rpm_4.19.1.1.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "cf0fd81f981615835f7d48ccc2f371a41dd74d445f06ad4051a1002311104f74"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 9308,
+                "column": 18,
+                "line": 215
+              },
+              "start": {
+                "byte": 9291,
+                "column": 1,
+                "line": 215
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/qemu/qemu.inc",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "392672f973b13f4a2fcd8fa3e78fa0bc21a809cc55863fa5ebf6ef74ea4df8b8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "function 'do_install:append' is declared more than once",
+            "range": {
+              "end": {
+                "byte": 3054,
+                "column": 18,
+                "line": 44
+              },
+              "start": {
+                "byte": 3037,
+                "column": 1,
+                "line": 44
+              }
+            },
+            "rule_id": "BBT017",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/python/python3-pip_24.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "7303c415cde1e8e8ae6030c97e1433c048a84a0882ed5a8c464c31c259f66748"
+        }
+      ],
+      "total_findings": 11
+    },
+    "BBT021": {
+      "required_samples": 20,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '+git' does not match recipe filename version '0.6'",
+            "range": {
+              "end": {
+                "byte": 1224,
+                "column": 3,
+                "line": 26
+              },
+              "start": {
+                "byte": 1222,
+                "column": 1,
+                "line": 26
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/bearssl/bearssl_0.6.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "c73db5a843250f6017b5b6cda18f77c01c9f503f564c2839c5f4e14c20a9e767"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '+39+git' does not match recipe filename version '39'",
+            "range": {
+              "end": {
+                "byte": 560,
+                "column": 3,
+                "line": 14
+              },
+              "start": {
+                "byte": 558,
+                "column": 1,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-bsp/efivar/efivar_39.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "352cca40dbcc0561a12753ab1aa937817572901cc31c00ddfb5aceb243b217da"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '-47' does not match recipe filename version '7.1.1'",
+            "range": {
+              "end": {
+                "byte": 677,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 675,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/imagemagick/imagemagick_7.1.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "29afbeaa1c8b2645628d0bf6a008f90648fb8afcf4391269d39a826d19923411"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.3.0' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 262,
+                "column": 3,
+                "line": 8
+              },
+              "start": {
+                "byte": 260,
+                "column": 1,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/nanomsg/nngpp_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "45229b4c4f7ad5b8532f5452de64b59b139b6f783413188f2337b49b2d61c24d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'edk2-stable202402' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 2322,
+                "column": 3,
+                "line": 45
+              },
+              "start": {
+                "byte": 2320,
+                "column": 1,
+                "line": 45
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/ovmf/ovmf_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "e1f727de25665b1cc568515ae7de9b8103fd216d0793a4084be2434d5d7de053"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.3.0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 314,
+                "column": 3,
+                "line": 8
+              },
+              "start": {
+                "byte": 312,
+                "column": 1,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/bluepy/bluepy_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "22c2f722c9ab781f46f34607786e86d52f576fc585a3e68bcf637d3058ae86ca"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.0+gitr' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 962,
+                "column": 3,
+                "line": 19
+              },
+              "start": {
+                "byte": 960,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-graphics/piglit/piglit_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "fa52e882cbc7c1f73ab2074dd91f0d71020e3602ac1687cb04afc9d5431aa038"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'r3039+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 661,
+                "column": 3,
+                "line": 19
+              },
+              "start": {
+                "byte": 659,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-multimedia/x264/x264_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "f0538ba987afb3e4c6d9817378634a799b668b2e06200df177b2e1c36adedb14"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV 'r550-2jnpr1' does not match recipe filename version '0.5.3'",
+            "range": {
+              "end": {
+                "byte": 257,
+                "column": 3,
+                "line": 9
+              },
+              "start": {
+                "byte": 255,
+                "column": 1,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/vpnc/vpnc_0.5.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "2268b821f9cfa155c47ae51029459d812b4cd2b15413b4f2ab8ac99a8870c796"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '20251101' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 475,
+                "column": 3,
+                "line": 9
+              },
+              "start": {
+                "byte": 473,
+                "column": 1,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/mobile-broadband-provider-info/mobile-broadband-provider-info_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "9e593a68e4ee65d6c969d311b08d250fd2f560c1bfbc2484bad7a54c9a4f4b0f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.28' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 434,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 432,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-graphics/igt-gpu-tools/igt-gpu-tools_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "09dcf38694ea31a9539ad05895d036404aa2f030e69faa54ca45b80438101fb4"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '0.1+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 346,
+                "column": 3,
+                "line": 11
+              },
+              "start": {
+                "byte": 344,
+                "column": 1,
+                "line": 11
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/dbus-wait/dbus-wait_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "09f2cb93e5666a92b40e488ec7627db8f7fb11c13cfb67a63fa0960695f34d2c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '2.1' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 522,
+                "column": 3,
+                "line": 14
+              },
+              "start": {
+                "byte": 520,
+                "column": 1,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/luajit/luajit_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0a391ccb9fd5fd73f2f2caf277c1bc0b7c63c7ebd56dce47f00f0dd4d595bd12"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '+git' does not match recipe filename version '3.3.8'",
+            "range": {
+              "end": {
+                "byte": 528,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 526,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-core/glfw/glfw_3.3.8.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0be5090a5bdbd4e567bcc5e1b078b15b8daeacd59db03280869881142283bebb"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.1.2+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 732,
+                "column": 3,
+                "line": 19
+              },
+              "start": {
+                "byte": 730,
+                "column": 1,
+                "line": 19
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/utouch/utouch-frame_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0ce3ec08882d33671c2d0814c237c988266cb0dec1219aa8e63333d79805b0f8"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '0.29.2+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 535,
+                "column": 3,
+                "line": 12
+              },
+              "start": {
+                "byte": 533,
+                "column": 1,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/pkgconfig/pkgconfig_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0dcf9998b5f9cf9a3f87c4d70c2c3041161e1e2ed3fbb7c3660156666ff7047b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '7.91+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 438,
+                "column": 3,
+                "line": 13
+              },
+              "start": {
+                "byte": 436,
+                "column": 1,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-devtools/ltrace/ltrace_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0f9385ab9d7fa2d66824321dbb5d149bc1407cd4ddbf29dc63094ae09038c812"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '0.3.0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 834,
+                "column": 3,
+                "line": 15
+              },
+              "start": {
+                "byte": 832,
+                "column": 1,
+                "line": 15
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/openthread/ot-br-posix_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "0ffc2b97af5976255562d609e3d7ac78f8eeff89f9ccc5c9dd441d723fe3c3b5"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.0.2' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 252,
+                "column": 3,
+                "line": 6
+              },
+              "start": {
+                "byte": 250,
+                "column": 1,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/spitools/spitools_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "1185687eff8c0e03311ccd09f57eaecad8dd7e420e751e2aeca57aa04ab9987b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "PV '1.3.0+git' does not match recipe filename version 'git'",
+            "range": {
+              "end": {
+                "byte": 408,
+                "column": 3,
+                "line": 11
+              },
+              "start": {
+                "byte": 406,
+                "column": 1,
+                "line": 11
+              }
+            },
+            "rule_id": "BBT021",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-connectivity/libimobiledevice/libimobiledevice_git.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "11df92fb40f2ad395b86e14eb8e988b22fc3be16daaa8bf3168f7133b67eceda"
+        }
+      ],
+      "total_findings": 182
+    },
+    "BBT022": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 132,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 125,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-core/images/meta-networking-image-ptest-all.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "666373417ab1e388dd38901e0ba91cff231ff0a1239172e47a66fdc720e9eddd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 90,
+                "column": 8,
+                "line": 3
+              },
+              "start": {
+                "byte": 83,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/lib/bblayers/templates/example.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "dc0405f0d53da189ca185d654bcffbb54f0b8b815021f243c5301f7f8c59c773"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 124,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 117,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-core/images/meta-oe-image-ptest-all.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "9687b8bcb151ad002b0daf0f03858d5b9932ac8cd156f64eac3f9e5a74c4bc3c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 119,
+                "column": 8,
+                "line": 6
+              },
+              "start": {
+                "byte": 112,
+                "column": 1,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/images/core-image-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "2c06e9ece84917402b2bdaf378f67de2577dfd5e519f6bbaa0299aaa51fbce5f"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 364,
+                "column": 8,
+                "line": 5
+              },
+              "start": {
+                "byte": 357,
+                "column": 1,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/testexport-tarball.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "001e0261b5402d52396b26582da164b94fc3e1879342c8952f5b3d5c004ad04e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 463,
+                "column": 8,
+                "line": 7
+              },
+              "start": {
+                "byte": 456,
+                "column": 1,
+                "line": 7
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/buildtools-extended-tarball.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "05733098c73198b84097f20ebb3f809cde49f40e379eeb8e306292204bf4bc92"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 46,
+                "column": 8,
+                "line": 2
+              },
+              "start": {
+                "byte": 39,
+                "column": 1,
+                "line": 2
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/meta-world-pkgdata.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0991ff249b09bfad2ae8f5008893bab0487ce7f0fc6efcfc41b25b7535f92163"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 356,
+                "column": 8,
+                "line": 6
+              },
+              "start": {
+                "byte": 349,
+                "column": 1,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/buildtools-make-tarball.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "0fcfb28249db26da20fc0ea8c796347bdf7a2df297e392c49aa01e9f7c436f5d"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 112,
+                "column": 8,
+                "line": 4
+              },
+              "start": {
+                "byte": 105,
+                "column": 1,
+                "line": 4
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/images/core-image-ptest-all.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "110918b632af58dd24e7fb44cb8e70821d1fcb44032b362da1bfc027fbfc8c0e"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 143,
+                "column": 8,
+                "line": 3
+              },
+              "start": {
+                "byte": 136,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/systemd/systemd-compat-units.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "25b42e1b807e79b065b0a31fafa4e431c53111f8e36d882f61c879bea075a766"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 172,
+                "column": 8,
+                "line": 5
+              },
+              "start": {
+                "byte": 165,
+                "column": 1,
+                "line": 5
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/signing-keys.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "269909d9fcd3d818542a4118a84f1b3a29e9802565e488c4672412b6a315e185"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "non-CLOSED recipe is missing LIC_FILES_CHKSUM",
+            "range": {
+              "end": {
+                "byte": 69,
+                "column": 8,
+                "line": 3
+              },
+              "start": {
+                "byte": 62,
+                "column": 1,
+                "line": 3
+              }
+            },
+            "rule_id": "BBT022",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/meta/wic-tools.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "27532d9b6c5cab4c1e0283244bda4cf2e9c781a17e7e8af1541c971a01a04737"
+        }
+      ],
+      "total_findings": 47
+    },
+    "BBT023": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'https://downloads.isc.org/isc/dhcp/4.4.3-P1/dhcp-4.4.3-P1.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 456,
+                "column": 76,
+                "line": 13
+              },
+              "start": {
+                "byte": 392,
+                "column": 12,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-connectivity/dhcp/dhcp-relay_4.4.3p1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "6e8bf3ccd5f0b044db6a0e7218a1eac32fec3fd9fc6ca464eee11dbc4c6e39aa"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'https://archive.docbook.org/xml/4.1.2/docbkx412.zip;name=payload412;subdir=docbook-4.1.2' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 1265,
+                "column": 100,
+                "line": 28
+              },
+              "start": {
+                "byte": 1177,
+                "column": 12,
+                "line": 28
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/docbook-xml/docbook-xml-dtd4_4.5.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "44feccf186d53eb72456d40bf9feb5d656eeaea3a17712f52f9c470d471e27c1"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://downloads.sourceforge.net/espeak/espeak-1.48.04-source.zip' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 272,
+                "column": 77,
+                "line": 6
+              },
+              "start": {
+                "byte": 207,
+                "column": 12,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/espeak/espeak_1.48.04.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "ea967f104bdacffe72c4d4ec82b515d9b6e9621762121c0f99ce4c56c37d2179"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://downloads.yoctoproject.org/mirror/sources/pseudo-prebuilt-2.33.tar.xz;subdir=git/prebuilt;name=prebuilt' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 328,
+                "column": 115,
+                "line": 8
+              },
+              "start": {
+                "byte": 218,
+                "column": 5,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/pseudo/pseudo_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "90a7fdd3035af290c8a8b9451adfaa44a4c836b17c0658f46998e7a9ff184bfd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://fedorahosted.org/liberation-fonts/export/807b6dfd069b998cd9b4d3158da98817ef23c79d/F-9/liberation-fonts-ttf-3.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 422,
+                "column": 134,
+                "line": 10
+              },
+              "start": {
+                "byte": 300,
+                "column": 12,
+                "line": 10
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/ttf-fonts/ttf-liberation_0.2.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "52c25d6ef1f22efa5062bb75a3a67e930f2d99bb919e67379531fb28805c84de"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://ftp.netfilter.org/pub/libnetfilter_acct/libnetfilter_acct-1.0.3.tar.bz2' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 485,
+                "column": 90,
+                "line": 9
+              },
+              "start": {
+                "byte": 407,
+                "column": 12,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-networking/recipes-filter/libnetfilter/libnetfilter-acct_1.0.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "aa56abe4dcd66e46a6483a8b77674b935514e9f1900bb70782c19becee341d53"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://kr.archive.ubuntu.com/ubuntu/pool/universe/s/sizzle/sizzle_1.10.18.orig.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 318,
+                "column": 97,
+                "line": 6
+              },
+              "start": {
+                "byte": 233,
+                "column": 12,
+                "line": 6
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/libjs/libjs-sizzle_1.10.18.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "b08dce114814fdfe67be9486597e49567c64628a353c1160df4b5d962c7d08cc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://launchpad.net/openbox-xdgmenu/trunk/0.3/+download/openbox-xdgmenu-0.3.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 374,
+                "column": 88,
+                "line": 13
+              },
+              "start": {
+                "byte": 291,
+                "column": 5,
+                "line": 13
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/dynamic-layers/gnome-layer/recipes-graphics/openbox/openbox-xdgmenu_0.3.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "5b77eb4d330539f11bb1cdb7c23005b2a0b6e629a439f1d077315572be1110e2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://levien.com/type/myfonts/Inconsolata.otf' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 279,
+                "column": 58,
+                "line": 8
+              },
+              "start": {
+                "byte": 233,
+                "column": 12,
+                "line": 8
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/ttf-fonts/ttf-inconsolata_20100526.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "9d2826fce8c39bc34efa4b9ef50333b20846ca2b0121bdf6e74a586e75f61074"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://osdn.dl.sourceforge.jp/anthy/37536/anthy-9100h.tar.gz' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 415,
+                "column": 72,
+                "line": 9
+              },
+              "start": {
+                "byte": 355,
+                "column": 12,
+                "line": 9
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-support/anthy/anthy_9100h.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "d3284d42fd9f66edf548225d9ee0671f393ae7c849ba775a45e27e67174ebaa0"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://osdn.dl.sourceforge.jp/efont/10087/sazanami-20040629.tar.bz2' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 478,
+                "column": 79,
+                "line": 12
+              },
+              "start": {
+                "byte": 411,
+                "column": 12,
+                "line": 12
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/ttf-fonts/ttf-sazanami_20040629.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "b26194a400bac8a8b6a626e0149e04a66061543ac84365d7884cad3ab307f9cd"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "remote source URI 'http://pkgs.fedoraproject.org/repo/pkgs/paratype-pt-sans-fonts/PTSans.zip/c3f5a0e20a75cf628387510a720924a7/PTSans.zip' is missing a valid md5sum or sha256sum",
+            "range": {
+              "end": {
+                "byte": 528,
+                "column": 129,
+                "line": 14
+              },
+              "start": {
+                "byte": 411,
+                "column": 12,
+                "line": 14
+              }
+            },
+            "rule_id": "BBT023",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-graphics/ttf-fonts/ttf-pt-sans_1.1.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "cca95056741275bf429f9cdc14dcb179da830de7aff8c8b2d9abcb123e2cd294"
+        }
+      ],
+      "total_findings": 38
+    },
+    "BBT026": {
+      "required_samples": 12,
+      "samples": [
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:jack-dev:remove is scoped to undeclared package 'jack-dev'",
+            "range": {
+              "end": {
+                "byte": 1828,
+                "column": 25,
+                "line": 48
+              },
+              "start": {
+                "byte": 1804,
+                "column": 1,
+                "line": 48
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta-oe/recipes-multimedia/jack/jack_1.9.22.bb",
+              "repository": "meta-openembedded"
+            }
+          },
+          "fingerprint": "e506d107ffec71e89b55d771d668daa94136b5dba4dfc4ca8a8098b94861e0f6"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RRECOMMENDS:alsa-state is scoped to undeclared package 'alsa-state'",
+            "range": {
+              "end": {
+                "byte": 1831,
+                "column": 23,
+                "line": 54
+              },
+              "start": {
+                "byte": 1809,
+                "column": 1,
+                "line": 54
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-bsp/alsa-state/alsa-state.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "1ed6fe4ed2c44e62b63e582742af634a0c2fc54689ee426babc206fee9abe1c3"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILES:libavahi-compat-libdnssd is scoped to undeclared package 'libavahi-compat-libdnssd'",
+            "range": {
+              "end": {
+                "byte": 4962,
+                "column": 31,
+                "line": 112
+              },
+              "start": {
+                "byte": 4932,
+                "column": 1,
+                "line": 112
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-connectivity/avahi/avahi_0.8.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "a449d00c946841f0a7715e2f25f40b493cd46dcfdf06d1b7ff95da92b483ffdf"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILES:mtd-utils-jffs2 is scoped to undeclared package 'mtd-utils-jffs2'",
+            "range": {
+              "end": {
+                "byte": 3383,
+                "column": 22,
+                "line": 72
+              },
+              "start": {
+                "byte": 3362,
+                "column": 1,
+                "line": 72
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/mtd/mtd-utils_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "e07a747e0be24a01e2d0da9dc60d35c7b79e4ef51237aaa14f6066104f0aa23b"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "FILES:mtd-utils-ubifs is scoped to undeclared package 'mtd-utils-ubifs'",
+            "range": {
+              "end": {
+                "byte": 3494,
+                "column": 22,
+                "line": 73
+              },
+              "start": {
+                "byte": 3473,
+                "column": 1,
+                "line": 73
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/mtd/mtd-utils_git.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "fedcfd8b8ac211ecc38dcb3e715bac93f5f96a3430def79b669d5bb01f34f655"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RCONFLICTS:libkmod2 is scoped to undeclared package 'libkmod2'",
+            "range": {
+              "end": {
+                "byte": 2237,
+                "column": 20,
+                "line": 46
+              },
+              "start": {
+                "byte": 2218,
+                "column": 1,
+                "line": 46
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-kernel/kmod/kmod_31.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "39ae47ae55aad783aea6093c914b7a5c60224158203c35b0f0e89a545b84dd4c"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:e2fsprogs is scoped to undeclared package 'e2fsprogs'",
+            "range": {
+              "end": {
+                "byte": 2956,
+                "column": 19,
+                "line": 85
+              },
+              "start": {
+                "byte": 2938,
+                "column": 1,
+                "line": 85
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-devtools/e2fsprogs/e2fsprogs_1.47.0.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "17aee2318c63fd7c9fccec31eaf48078204939fd31bea05b4f3fca8be013c9a2"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-base-acpi is scoped to undeclared package 'packagegroup-base-acpi'",
+            "range": {
+              "end": {
+                "byte": 7266,
+                "column": 32,
+                "line": 144
+              },
+              "start": {
+                "byte": 7235,
+                "column": 1,
+                "line": 144
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "511081f160bf22d48602133849e0d72f9a6d9c7cc5ad982a2ea765628d2d69bc"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-base-alsa is scoped to undeclared package 'packagegroup-base-alsa'",
+            "range": {
+              "end": {
+                "byte": 7810,
+                "column": 32,
+                "line": 165
+              },
+              "start": {
+                "byte": 7779,
+                "column": 1,
+                "line": 165
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "7a2175781bb08318db518a701205832dce074f4a255f8d00f0359b7ee176b335"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-base-bluetooth is scoped to undeclared package 'packagegroup-base-bluetooth'",
+            "range": {
+              "end": {
+                "byte": 8702,
+                "column": 37,
+                "line": 191
+              },
+              "start": {
+                "byte": 8666,
+                "column": 1,
+                "line": 191
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "30b03cb74cd26b1d8a3e0fee89cc6d8f57e3557c28ef66dd38e952bf3d656919"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-base-ext2 is scoped to undeclared package 'packagegroup-base-ext2'",
+            "range": {
+              "end": {
+                "byte": 7374,
+                "column": 32,
+                "line": 148
+              },
+              "start": {
+                "byte": 7343,
+                "column": 1,
+                "line": 148
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "8ce99564df2f7e398e58cd6f4f8cacf6e900cf882ebbea87c20dfaeca0811c10"
+        },
+        {
+          "finding": {
+            "fingerprint_version": 1,
+            "fixable": false,
+            "fixes": [],
+            "help": null,
+            "message": "RDEPENDS:packagegroup-base-3g is scoped to undeclared package 'packagegroup-base-3g'",
+            "range": {
+              "end": {
+                "byte": 11827,
+                "column": 30,
+                "line": 291
+              },
+              "start": {
+                "byte": 11798,
+                "column": 1,
+                "line": 291
+              }
+            },
+            "rule_id": "BBT026",
+            "severity": "warning",
+            "source": {
+              "path": "meta/recipes-core/packagegroups/packagegroup-base.bb",
+              "repository": "poky"
+            }
+          },
+          "fingerprint": "488338ecd6c629031b7b327027ae0c692fbf2e4c6344a85de7f05e27a48492e1"
+        }
+      ],
+      "total_findings": 46
+    }
+  },
+  "schema": 1,
+  "source_state": "formatted"
+}

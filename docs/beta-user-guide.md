@@ -36,6 +36,11 @@ work:
 These decisions govern the adoption documentation and interface; they do not
 expand the compatibility promises in the beta support contract.
 
+The [adoption pilot protocol](adoption-pilots.md) provides prepared lint-review
+packets, observation forms, and an evaluator for the evidence needed to revisit
+these decisions. Real-user observations and the new per-finding assessments
+remain pending.
+
 ## Before you adopt it
 
 The beta contract covers Yocto Project 5.0 LTS (Scarthgap) with BitBake 2.8

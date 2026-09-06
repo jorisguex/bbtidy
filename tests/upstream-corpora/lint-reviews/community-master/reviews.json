@@ -1,0 +1,857 @@
+{
+  "corpus_id": "community-master",
+  "findings_sha256": "29b8c8fb93d4dedcb4c5c806b11aeac5f89ab2137ab1621aa9e4e523d24ae191",
+  "rules": {
+    "BBT001": {
+      "reviewer": null,
+      "samples": {
+        "07913b39d77ed5cbe22f60b75c06eb72a734f5ee43f62f5cd76107d16c17ba37": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0895a6e8a32289ca799f8fb9136c05e0310040d2e9b7ae302635a5b6d655112b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0923e67c0bda28d2c293f7b0a43aed9e0ec68e20e5464d6f0938329f2569de4a": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0cd2a6b00d4d4007c21392783dd23529eabf51a67985264c11bfa21231b349fc": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "13b40074395682de3364453753fcd4948f6363cc00a578b67f9213f569efe82a": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1a2710ed86f9f68ef101a3e42c6ec55756cacb2e60df857d1c2e2eb0205f3ff3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "3131e3aeb648710a982c300fdcc6367ce2fd576a3cc773c14c019e2fe92378c5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "3331291ed96528a5627bb4e5b37ed457155965ddc4fb88c1eb99a511ebee9682": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "33ea0345436dead7231934894cddfedefb2e297613199ad434c70b8ea173f151": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "3948cb6c29cb5ec56d4d69909986ab7faf469421bbba514a43179dc47f505f9a": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "4e630ee9ccc99fd3928217d6ada073f57bdb65369340d6cc8f650a18aef16e8d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "6b2a954dda198efebca08d8509a3bb3ef12b0376c0693dc0e1fc90d4730206a5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT002": {
+      "reviewer": null,
+      "samples": {
+        "2a19d02067f4cde65284820e78aa8da8ba1a9e4578b5ef670df35d9e2da078cc": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT003": {
+      "reviewer": null,
+      "samples": {
+        "1725358cf2853eb3fc4075753398c08192ff652503166183e42c5872d9fa30e3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "6f3a96c7ed2a46c27d49fc2f66d577cd939b56516ef775b2b43785f570487596": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "8d542eb588e98ddeed27c1255d26179b96c0f7e1ce134bede9d4ba233919df3f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "e89a093ef372950ec6d8d8cc0ba8a807a0d66f0f253de9c7cb9d416e560729b5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f927d9f320ae71b71fa877f3840caa6edd11397e914a491846026872f814ea9b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT005": {
+      "reviewer": null,
+      "samples": {
+        "e97f193d68062e0a82a365b11ee4eacd053152c5269e44ca069d1d17e8cb1b65": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT006": {
+      "reviewer": null,
+      "samples": {
+        "0f416143777a0dc4af5693fb676bbfc3371da19cb35489ea800d7164b40ceb67": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "111d7eb8491c17f4cba33d8331e4c33fa7be8decee564bc5194fb0338bc111a4": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "231a4422bfc659594d86fee7c39827e2c955be0ffbc5033283c1f66cfe3afe7c": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "49494f53624e8ea52be542ddfe37aa35d5ab511c7bb1cbd7535d2192041aa55e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "530ee0748102d363c050578e3a92449f4607372025647ff489e2832bf3499789": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "58073bb85ca3db0579a04c94e4ea80219334c4a16110907619bd9f65cd761993": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "771ef0b5cf39901803c41fce59a718ebca5cb89d2cf0d9377614ce0cd81ee4cb": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "b72fce4f207a9b0f3d53287069a6c274b2bfde2c340238360e96d3e996bfd13f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT007": {
+      "reviewer": null,
+      "samples": {
+        "0ea2e23f5bef2759f104a1e967dba2e4eb98f0ee3d22ab07bf77a627653b4f24": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "248a1f70f10aa6000e60279840ad95970adc5ed3d4779dac9bfd383a39e84810": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "35ecfdb5e9320b7a19ca5b5d95aaaae1d396f4848d9d5fd5f2d514cef709d9e6": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "377e1a64fb65e8861cf611001051dd9c00f1068dbe79bf54f5624346e0ddc540": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "434677107a48944720af3615056f7e7c4932626c6dfcaef44c67afeb3f0ef70f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "5194557ee7140669ce12e8b91a05d31512349f118fd060da69f37ca56e27d212": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "63335474621d85ed9b8b93e6a19f307cf9f91af8bd3bb19e28ded86d6aae0119": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "6838e473ba9c8ca4f744859d6e1e972fc1f50cbe6fff224926a1353c1abaff26": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7368190c238f4fcc4e2b569f5bc8f6dc3fe954719d8a65844f71c3ab58671b21": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7da38397252920e64e91d54cbc74de072788d99a8357e83d180a4c488113d4a6": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7ea6bc6d346fe34331ffabef28854518434c054171dd449dec68f65408532143": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "8a7796f65bc0da57913acd6a806da7f478e8c2bb79c5fdce2cef4c1d0836a2ea": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "94385afaab6f53d6687d6049cc4f216c2404f861d29940d20c42caf6519b8ec5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "9e4d000be393ba553998fd6185f617ce284ccf0a6c378231a4d3c939b28f60d3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "a2b8cf9bf25dc4e1e52220662cfe7562a65774c9db2fa20c598574b94f3a776e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "c2765b024f83b9f941600ea5a4937dd604c20a0ee33168b0e40296f31f5f5fe9": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d6bb723af81de27bdb06cecb238c338643db42340a7ed790072aaf724a502c2a": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "e22de1488edd41cc15a20bdb964da9c916f14b3fbaeec3f8b00ef94b4e1f5d3d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "eda017f043e69bd23adf0cdd95aeaba6875cf862a9aadf0b47cf50fe1de113a9": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f3ab1b7a522bc2067ed7ab79b390ece39b6aeddefe4a33dccd0ffdcc581243ba": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT011": {
+      "reviewer": null,
+      "samples": {
+        "009739ea4273807e76a1fcd9eea2b97d61907f24c7b05e242824fdbebfb3a042": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "04bc2954817ae8634d4154e480e354b2501ae2abd31ddcf3182af17aa7ecf4d0": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0b256dfbced405d670ad6987196a75e04ad5b18d8634873b680ccceaff3e722f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0b712164101bcbe1b244c5ab6999d8056322b2b085b04fa0f60543ccdb2e3e68": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1584dacfef7202b64a2944556327cc6275c6f407fad521560323bcee11b34d0f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "24053b6f49cac2fdcf5279d7d223a1ce2b1dbc8cf48b9783bcc47e334f5c2839": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "25f3ffe7f02d3bf1aeac59b52cf7c24649350d6b89124bb25b9f396fbb6cf40b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "2940ccdd58862e8607124c84e633fc4113b9d4aa860f903bebe6872d384d6f12": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "2a34c9940a170d0df5409401063e6d3d6265ab3379210ea97ff02edeb5a3ae05": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "6b6f0ecd2e86315f22f62d2baa8f29480f207dd91085d565ff1ce6a66cb6a095": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d507528d58033470ae1e2d3f45d23f542b75f91f27fdd03b67fdeca9ed734a2d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "ff6ec965e030fdfc10c56d14a1bf74d23c154202c55066f3efa57fc7b03e7b03": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT012": {
+      "reviewer": null,
+      "samples": {
+        "057345abc3e61b15449b06dc4ce232bb0ebfc9558b18c37c2e48b6c90b8269cb": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "06678da8af59a8b437fc698656c5da630e86016dc9ff4b9b1abd6483ea6fa64e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "088f98dfba12b288a4da3493b9da077be32bc4317326fd40b56cd72f2d1a7d73": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0926219a9a1123e02addcd6314197934773071c5a0e90ef47d6dd5108dc83f02": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "094050c35d2ffda1c509c2c72b4ce294271d522c26880be25bc079e1cea3d441": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0ca0146137f4dc4d77a7d844788004debdc77e3d4e9e219f51bf27036d06e8e3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0df8ed3e1aafa2b6f3dabd82c5c9141ed234a35fafeb92566b2cc180d27183f4": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "11e7bda485ba518ddc66b10c5194c702f946321f439f942825fe54264ff37522": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "125025d7ab05bd800404ce8e21ef479a85f65ce8fa386fcc67afab6dd18f2f1f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "14d5ea9ff777481e2913ffd05d61fdd6712edb8c41a48c6781d30865f9da83a2": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "150b5f926e05aca8b7604f551f5a36e909508bf32b61a2b130027fcb809cc5e5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1817c7f6fea50f64d823031af6f76f56dbe213770d5fdd736d0c24ee48f5eb90": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1cedfd7e8b5fba6cbac7770ed8c82350175d55596d080ed72afa5ddada718666": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1de78f0f46a9f8d42b703d47fb7a5627711ad19c5333c094bba4fc722ae94cfe": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "588d2c62943fe1085aea07050c2d9138f1540f024f5a3546c4042531ff3e5d4e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "5fe1edfa77401f3efa79177a8cdd7d6e747d7d74204f10c6643e3212e9c0e0bc": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "76f8527bb045948ea84a9b3fe25091556bb74664bb1a6c8d2b7cf020ef99e11e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7f4c32277c7b37d8d73ffaf175a976b10b3c9cda042c6a6b16851866040ced34": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d325f1a82d717c0cbb6f4cc8436edc50bc1a528ad32100bc3cf91f7d6006a996": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f190c6b76597301d7291d87793889d5527c8224ede21b3fae8402105b1329be9": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT013": {
+      "reviewer": null,
+      "samples": {
+        "0075608db860f15fc5719fbafa5908511f9b7ce05c7991b18747c025e7b73daa": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "108247dab08746b2c2c22193e63da6d9a6d0eae7420c1f5f7f4bbc4168f05d81": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "206eb14ada2a05af1bc5ec87d4e2f2f11f656bdff694e51c6ec9459df566d136": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "26f633eab91ddb425b2a517cb6a8b424fd3428213b4edd3436c88bfc170ea2ad": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "45527b4c099e66b50666c06e42a702a7d317349c3fd5555dd27718a98594a36d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "45729f03e2b18179bb3d6829569707993597b1c7065a3577be7b2f0b05d019bc": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "55a09bababaa047384df79876a1ad3d5ac48581dc1fe28158b3336739335e3d0": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f0a8768b3dabf0a32cb17635c7b9684b6cd7f56c2e2d1a4d8241ded7a8ad4330": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT014": {
+      "reviewer": null,
+      "samples": {
+        "1ad29c0a1659db4bef8f2d1a577ae56a4dd7db86286a6b9f1a2f71dd4e8d51ba": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1db49d88d46ddfc402bddafa93e0fe56a11e59b19980bca39d0568da67bf9c34": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7b44a831025b578967d0d62b606f9f1ca7ea825d6ed670f14e04eb9c393aadd5": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d7a06d7fffa9628a8568d5b2c077d7e77fa5c0bafd43b966473cd5ba31b5ba27": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT015": {
+      "reviewer": null,
+      "samples": {
+        "4a4730ca620af300d98a35bb3c337dd8cd7b3fb454f43e1d23630e2b4153e2f9": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d14d82f494032c34e43e1f16ecc6311a2968a34fb21cd65b8cc8a28a220fdede": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d2b6c9db7673d6535b3d68fb178503298c54d930f74d7d8d2602403e6f573ea0": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT016": {
+      "reviewer": null,
+      "samples": {
+        "0c17760d578ab893587e2c6746d45a663532cdde3e7df5eb48c5a621c966e30b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1ef9116d490ed9b7650554564df92cc205e8e87f1d6f5f3ac41f2ce120ead8ba": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1fce54e36e5207870e9fe2615f3b3261b6838fdced3882a36ed004e0a9e835c8": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "286ecc5e5a372ce555c095597e165f4fe6a2ca458f5fc253d4501abdc8327c26": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "3d049e3db1c9185f7db76e5edd07f6489b2d2f0b0828bc1a100fc632c94fd204": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "469b7f35928403a1e3cbc830aa771424a27c4dbf59ebd7c207db68bdb8d03bf9": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "4f027e1066ef2a28d37d896f3169da539f4fc580b53fb38ecb4eb883ef11ae27": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "93d852b18f505578b2e377c0a459471efce5d82ffd3bd4400783f0bcab9c6730": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "bcc4557ef355d196852fbbedfa9a55c274bb6274a6159dbbc069cc4e17f96231": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "bd320b37775fd8c2f68eb2bcbd7787ffe691faf77411901044c072ee2d9d6c2d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "c69f60fdf87a56830e4d95e87250642df6ae8060b9af7dd05e8605e42eeb95f3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "e88997c696ec42d33176d33f909e3dd668d14e37bdfcf59002ecd5b8dbfbde4f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT017": {
+      "reviewer": null,
+      "samples": {
+        "8241b626b635faad4434a6aab7987e7386fb74ae373b4e5b4305a8b1bd15a193": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT021": {
+      "reviewer": null,
+      "samples": {
+        "088e01ea0e7c592477bdb414a8aee26b484623d78b52ef7a4242c59b5589b812": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "4a3d2627eb389243a60802ad541751327b6b9289c51b7c2dc78fee658202f04e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "6860bf916e674bb1fe04a0a274617b61596a02775a4a1b979afe7a80d942755e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7aa5d63f9bb522e6df85e2a216145a1388418b670037790540ac80e62b1f1698": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7d10cd8114d56d08f531934a37d0e7ca6d328219d4ab79ca4dd6022dd34002d3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7fb25b26f791e9fa04cc7e9746f176b227af6bed289f44266b49cb77154f3b3d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "8063c1eed3ecf2d833dbb46ce13278c491e92be8d678d30eb9ebeeac4b05a775": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "95e913e9d94dc1e5652352c04b68a10512e97506830e5b0e28ec6b0fee67d157": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "965a9626e147d5f6c45e2ae2e2690b31cc83b4932c92d144c8e5b1d20310c69b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "b409ac71c6385ad8db9367b90bca8c77aae8d7188f4f7d14e6f26c6ae76a898c": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "c493def74db78e9017e5150d8ac0f6d69cef469877e36a25e2ff1fa2d26a83e3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "e30cb7a5194fecea19bd169e18aa513d9cdd41a0f5593e03f0f3351a306f400c": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT022": {
+      "reviewer": null,
+      "samples": {
+        "0c248d524591758b7b765d8916961ef889f646f6609e4d5f774da0393a23fee3": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1342e7372409c0342142768c5ed17424720e6df1efe192eae41b0a375b20f4f6": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1d8a9ed7106c1b367fc17bece1f5a99e461992c43ec9f95b6534f75f0b4cba47": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "2c235e0a3826174b45cdd7f037531514bd97458d48c90acbca27dea6dbb6b018": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "475ac6acb545e96fd98fe680d21e5b772d5d7bb0f378c26241173073c6697f69": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "c47d31568cd2dbfeb39c72402b2b1cb3b3c8c2236aa274edd922259e19ae465c": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f10730f4035bf0881e49dd0b5d6887e1d7c9c1594904eff91f315ebd8272ff76": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "ffcffe95551a4c34eae4ecacaf047254e6880713725cd66283f559619d19bd30": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT023": {
+      "reviewer": null,
+      "samples": {
+        "0357d602b595bbffd99fc4c5c3c49810509083c1106bf2a76c9978f734b07b32": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "0f55cf3ef6cbfb99fa4855eaa603526e1d1ec5b7ad3959b6aad21d4ef9d6146b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "2dcae647437d922f32e7a0629297b39a960bbd01e3ff55fe533024bfe628ba9e": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "7b251ba09829a7bd449acf6a756a087f364a70cada5b03edcb819212f1df6b8c": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "a949f345d6bb5b9922e5d560b45ef9597d0af579397babfba8647345ae84548a": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "f2723224b055311cdd6255580c41ee4cb284acb486d25268ae0ffa5837233789": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT024": {
+      "reviewer": null,
+      "samples": {
+        "78d8e226bd9392f1952ae06173f3e76c8abc72b6b075d6d70fe359057dbf7f6b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "9f007c3ed30e5f561ed6755a8987ebc81ffb54f12ba169d27aa02f0a095afc5b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "bcdd22fe5e73eddaf48a3d352e3051b4f1158d9ec0203b03030c1467f508a7a7": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "d673a76f5da9ed50d75238330f4fad307be167278ffccbbd7d20f52d2243b252": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "fa1f0165d8bfb627b27f60dc1057b6ec7fbc96505145995e77ec03b2a715a257": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT026": {
+      "reviewer": null,
+      "samples": {
+        "766687bac8f67987bcde8f63be59bf91083f04bd6f12438b24568b612a094d21": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT028": {
+      "reviewer": null,
+      "samples": {
+        "88e711a1c5c402a6f4c9b5dcd7a39be075726c4a5ef5f7da660e50118d0711db": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "9de29148d7c032a77487dcd7b4baf3689ad546d5571e44085d418d2d31e359bf": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "e8564f506ca0eb175d14be74e5b4a17a4b6e6825673652908896c687cdae07d6": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    },
+    "BBT032": {
+      "reviewer": null,
+      "samples": {
+        "04e8e122914d226f62c4f3dd20550d0d043b7d7e8dd83169bf49796f7a1d9b6b": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "10428e9bc43b809d6bf4d0529b39140b529700cf51d6cd92dce6321e4e447b83": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "1a6ca1527d03989799c0cb44d262d69c23c2c4971eb64629e3f99936af998608": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "3f9e6d7dafac22792aed1c8cc3c6276449f77cfcb83bc1056753193d45001cad": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "426abf77d7d10b36340cefef827b0473cb657c9977db235818f9dc4699888cc7": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "93512004970d461cf80d6bcd07fad50bcafee55cb631dd1cdce4ff88c13a0296": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "c71e990a8ab333f8375ef43b1bf09bedaa43fcf51bf8c993491133cf79e8ea9f": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        },
+        "dd4c0b46860eb14a17100f15d766bc417f678db4e64aef7cc037d14fd645cf0d": {
+          "actionability": null,
+          "correctness": null,
+          "notes": ""
+        }
+      }
+    }
+  },
+  "schema": 1
+}

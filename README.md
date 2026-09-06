@@ -179,6 +179,7 @@ and supported BitBake parsing. Detailed evidence lives in:
 - [BitBake execution and scalability](docs/bitbake-execution.md)
 - [Performance evidence and budgets](tests/performance/README.md)
 - [Upstream lint-quality baselines](tests/upstream-corpora/lint-baselines/README.md)
+- [Adoption pilots and prepared human-review packets](docs/adoption-pilots.md)
 
 The evidence proves the documented compatibility properties; it does not prove
 identical task hashes, packages, runtime behavior, or complete builds.
