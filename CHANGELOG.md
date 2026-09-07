@@ -37,6 +37,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Performance measurements now use per-command CPU usage and native child RSS, exercise and
+  verify real formatting writes on every repetition, and use a full 1 MiB
+  shell fixture. Runner evidence records the active Rust compiler and a new
+  measurement contract; all native Linux baselines are recalibrated together.
 - Corrected the pilot actionability threshold to require at least 70%, reject
   invalid pilot metrics, and distinguish failed observations from missing data.
   Review sampling now reserves space for smaller repositories and never

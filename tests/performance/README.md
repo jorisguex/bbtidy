@@ -40,16 +40,19 @@ Timing and memory budgets are populated and blocking for 33 workloads on
 
 | Workloads | Coverage | Reference runs |
 | --- | --- | --- |
-| 24 synthetic | Six fixtures × format-check, format, JSON, SARIF | Two runs per case, 6–13 samples per run |
+| 24 synthetic | Six fixtures × format-check, format, JSON, SARIF | Two runs per case, at least three samples per run |
 | 3 pinned offline | Yocto 5.0, Yocto 6.0, pinned community | Two runs, three samples per run |
 | 4 BitBake | Yocto 5.0/6.0 cold and warm | Two runs, one cold/two warm samples per run |
 | 2 full semantic | Yocto 5.0 and 6.0 | Two runs, one sample per run |
 
-Each baseline is the median of the per-run medians, giving each runner equal
-weight. [The reference manifest](references/manifest.json) records the exact
+Baselines use the median of the per-run medians, except for the six actual-write
+wall-time budgets: those use the maximum of the per-run medians, an explicit
+conservative envelope for hosted filesystem variability. All memory baselines
+retain median aggregation. [The reference manifest](references/manifest.json) records the exact
 source commits, GitHub run URLs, artifact IDs, and SHA-256 hashes of the raw
-JSON files retained beside it. Synthetic references come from commits
-`c1e0567` and `8cfd07b`; pinned references come from `21a7b25` and `8cfd07b`.
+JSON files retained beside it. The current references use measurement contract
+2 and the compiler reported by `rustc --version`; CI builds the release binary
+with that compiler. The manifest identifies the exact measured source commit.
 Their corpus identities match within every workload. The Python tests reproduce
 the checked-in baselines from these files and verify that injected regressions
 fail. Empty or disabled required baselines fail policy validation.
@@ -58,7 +61,7 @@ Blocking comparisons require both the configured relative and absolute
 regression thresholds. Structural command/query/strategy/output invariants
 remain blocking, including the common BitBake checks when a workload has its
 own timing rules. Failed raw samples fail comparisons even if the summary
-claims success. A different runner, mode, or corpus requires explicit new
+claims success. A different runner, mode, corpus, or measurement contract requires explicit new
 reference measurements. The two generic synthetic policies remain unpopulated
 templates for new cases; all current CI cases have individual blocking rules.
 
@@ -75,7 +78,7 @@ python3 -m unittest discover -s tests -p 'test_performance.py'
 ```
 
 The updater checks raw-sample aggregates, hashes, successful outcomes, distinct
-runs, and matching input identities before writing anything. It preserves
+runs, matching input identities, measurement contracts, and compilers before writing anything. It preserves
 existing relative/absolute thresholds and structural rules, and prints the
 before/after values. Review those changes together with the evidence. Refreshes
 are refused in CI unless `BBTIDY_ALLOW_PERFORMANCE_UPDATE=1` is explicitly set.
@@ -100,16 +103,54 @@ Release evidence should contain `performance/manifest.json`, `budgets.json`,
 `summary.json`, the synthetic and pinned offline records, BitBake cold/warm
 records for each supported release, raw samples, and any failure artifacts.
 Hosted-runner timing is reference evidence, not a universal user guarantee.
-These initial references include only two independent runners per workload;
+These references include only two independent runners per workload;
 retain more runs when evaluating a suspected regression. Small synthetic wall
-times include process startup and measurement overhead. The `format` fixtures
-are already formatted, so they measure the no-change `--write` path. The
-historical `shell-body-1m` fixture name currently represents about 180 KB of
-shell source; its byte count and digest, rather than its name, define it.
-RSS is the existing procfs/process-tree plus child-rusage high-water estimate;
-rusage may carry an earlier child's peak into later samples. Memory budgets
-therefore detect large regressions, not precise allocation changes. Use the
-Criterion suite below for in-process scaling investigations.
+times include process startup and measurement overhead. The shell fixture is
+exactly 1 MiB of valid source, including its closing brace. Write workloads add
+an unformatted assignment, so their input is slightly larger than the named
+fixture size. Recorded source-byte counts and digests identify the exact input.
+
+The contract 2 calibration retains all 66 workload records, including a write
+run whose 1 KiB median was 210.7 ms versus 3.7 ms on the other runner. Genuine
+writes now include transaction synchronization; the evidence does not isolate
+the cause of that runner variation. The write envelope preserves this slower
+observation without changing the 15% plus 50 ms regression margins or discarding
+samples. It is a regression ceiling, not an estimate of typical latency, and
+is less sensitive to small write regressions. Use same-runner Criterion evidence
+for fine-grained formatter changes. The per-metric `reference_aggregation`
+setting and generated provenance make this exception reproducible and reviewable.
+
+Every `format` repetition starts with the same unformatted bytes, restored
+outside the timer. Expected output is prepared with a read-only formatting
+preview outside the timer; each measured write must reproduce those bytes.
+The sample records `bbtidy.files_changed`, and the synthetic write budgets
+require one changed file. A clean/no-op input is rejected for this operation;
+use `format-check` for already-formatted input. Source corpus identity is
+captured before measurement, including for BitBake-generated configuration.
+
+The POSIX runner launches commands with `posix_spawnp` and a new session.
+On Linux, GNU `/usr/bin/time` reports the measured command's peak RSS from a
+small native launcher, excluding the Python harness's pre-exec heap. This is
+combined with procfs samples of the command's descendants, excluding the time
+launcher itself. macOS uses the measured child's `wait4` RSS directly.
+Neither path carries an earlier command's peak into a later sample.
+Commands use explicit input paths; the runner rejects working-directory
+overrides. CPU usage comes from per-command `wait4`, including the small Linux
+launcher overhead and reaped descendants. Output is captured in temporary files to avoid pipe deadlocks;
+wall time ends when the waiter reaps the command, before output reading and
+sampler cleanup. Temporary-file capture is part of this measurement contract.
+On timeout the process group receives TERM, then KILL after a grace period,
+even when its leader has already exited. Linux requires GNU `/usr/bin/time`.
+Linux and macOS support this harness;
+the reference budgets are calibrated on Linux only.
+
+RSS remains a high-water estimate, not an allocation profile: procfs sampling
+can miss brief overlapping descendant peaks, and `wait4` does not report a
+simultaneous process-tree total. Use the Criterion suite below for in-process
+scaling investigations. Contract 1 references remain in Git history and must
+not be mixed with contract 2 results. A contract migration deliberately rejects
+the old comparisons while native raw samples are collected on temporary
+branches; only successful raw samples can populate the replacement baselines.
 
 Synthetic comparisons and raw samples are uploaded together by performance CI.
 Pinned offline, cold/warm, and semantic budgets are enforced by the upstream

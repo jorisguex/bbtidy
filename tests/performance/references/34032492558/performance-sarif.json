@@ -1,0 +1,5499 @@
+{
+  "kind": "bbtidy-performance-suite",
+  "records": [
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
+        "source_bytes": 1027
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 3.974789999986683,
+        "resolution_ms": 0,
+        "rule_ms": 2.3095079999961854,
+        "serialization_ms": 2.3095079999961854,
+        "sort_ms": 0,
+        "source_read_ms": 0.01823499999886735,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.08485900001176105
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 43,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.3040000000000003,
+            "wall_ms": 2.5053950000000214,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5185536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7769999999999999,
+            "user_cpu_ms": 1.4469999999999998,
+            "wall_ms": 2.4004379999951198,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.469,
+            "user_cpu_ms": 0.7739999999999999,
+            "wall_ms": 2.3764620000008563,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7699999999999999,
+            "user_cpu_ms": 1.4349999999999998,
+            "wall_ms": 2.3589000000043825,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.175,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.377574999997023,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.784,
+            "user_cpu_ms": 1.441,
+            "wall_ms": 2.393394999998577,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5279999999999998,
+            "user_cpu_ms": 0.651,
+            "wall_ms": 2.385619999998312,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.699,
+            "user_cpu_ms": 1.498,
+            "wall_ms": 2.3744789999966542,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.522,
+            "user_cpu_ms": 0.6479999999999999,
+            "wall_ms": 2.352638999994383,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5379999999999998,
+            "user_cpu_ms": 0.669,
+            "wall_ms": 2.402701999997703,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5099999999999998,
+            "user_cpu_ms": 0.646,
+            "wall_ms": 2.294699000003675,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.552,
+            "user_cpu_ms": 0.651,
+            "wall_ms": 2.382002999993915,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.525,
+            "user_cpu_ms": 0.647,
+            "wall_ms": 2.3642209999934494,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.768,
+            "user_cpu_ms": 1.424,
+            "wall_ms": 2.3873429999952123,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.559,
+            "user_cpu_ms": 0.651,
+            "wall_ms": 2.396821000004934,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5120000,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.533,
+            "user_cpu_ms": 0.6579999999999999,
+            "wall_ms": 2.367777000003457,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.065,
+            "user_cpu_ms": 0.715,
+            "wall_ms": 2.9957550000005995,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5120000,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.581,
+            "user_cpu_ms": 0.749,
+            "wall_ms": 2.5243500000016184,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.768,
+            "user_cpu_ms": 1.5279999999999998,
+            "wall_ms": 2.454810000003249,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.219,
+            "wall_ms": 2.3670050000106357,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.768,
+            "user_cpu_ms": 1.423,
+            "wall_ms": 2.343150000001515,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.766,
+            "user_cpu_ms": 1.426,
+            "wall_ms": 2.354571000012129,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.501,
+            "user_cpu_ms": 0.6449999999999999,
+            "wall_ms": 2.2936879999946314,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.544,
+            "user_cpu_ms": 0.694,
+            "wall_ms": 2.380000000002269,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5136384,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7699999999999999,
+            "user_cpu_ms": 1.4249999999999998,
+            "wall_ms": 2.338611999988416,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.527,
+            "user_cpu_ms": 0.647,
+            "wall_ms": 2.352297000001613,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.509,
+            "user_cpu_ms": 0.703,
+            "wall_ms": 2.393243999989636,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5091328,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.522,
+            "user_cpu_ms": 0.6479999999999999,
+            "wall_ms": 2.3490820000091617,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.515,
+            "user_cpu_ms": 0.646,
+            "wall_ms": 2.3632279999930006,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.524,
+            "user_cpu_ms": 0.647,
+            "wall_ms": 2.337971000002881,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5119999999999998,
+            "user_cpu_ms": 0.6619999999999999,
+            "wall_ms": 2.3504449999904864,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5111808,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.762,
+            "user_cpu_ms": 1.414,
+            "wall_ms": 2.339884999997821,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5120000,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7549999999999999,
+            "user_cpu_ms": 1.398,
+            "wall_ms": 2.292245999996112,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.514,
+            "user_cpu_ms": 0.665,
+            "wall_ms": 2.385369999998943,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.1719999999999997,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.3457650000011654,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.1839999999999997,
+            "wall_ms": 2.3319200000031515,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.162,
+            "wall_ms": 2.3048990000091862,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5316608,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.757,
+            "user_cpu_ms": 1.41,
+            "wall_ms": 2.308906999999749,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.529,
+            "user_cpu_ms": 0.646,
+            "wall_ms": 2.351866999987351,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.1969999999999996,
+            "wall_ms": 2.395840000005478,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.1449999999999996,
+            "wall_ms": 2.2850119999873186,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.767,
+            "user_cpu_ms": 1.426,
+            "wall_ms": 2.3341540000103578,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.504,
+            "user_cpu_ms": 0.6489999999999999,
+            "wall_ms": 2.3095079999961854,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 30,
+        "trivia_nodes": 27,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 27319.0,
+          "source_bytes": 1027.0
+        },
+        "peak_rss_bytes": 5124096.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 3.974789999986683,
+          "resolution_ms": 0.0,
+          "rule_ms": 2.3095079999961854,
+          "serialization_ms": 2.3095079999961854,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.01823499999886735,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.08485900001176105
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5320704.0,
+            "median": 5124096.0,
+            "min": 4993024.0,
+            "p90": 5320704.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 2.175,
+            "median": 1.504,
+            "min": 0.0,
+            "p90": 1.559
+          },
+          "user_cpu_ms": {
+            "max": 2.3040000000000003,
+            "median": 0.715,
+            "min": 0.0,
+            "p90": 2.162
+          },
+          "wall_ms": {
+            "max": 2.9957550000005995,
+            "median": 2.3632279999930006,
+            "min": 2.2850119999873186,
+            "p90": 2.402701999997703
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 30.0,
+          "trivia_nodes": 27.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 1.504,
+        "user_cpu_ms": 0.715,
+        "wall_ms": 2.3632279999930006,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-1k-sarif"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
+        "source_bytes": 10241
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 2.680553000004693,
+        "resolution_ms": 0,
+        "rule_ms": 2.4698200000017323,
+        "serialization_ms": 2.4698200000017323,
+        "sort_ms": 0,
+        "source_read_ms": 0.021931000006247814,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.09903599999461221
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 40,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.789,
+            "user_cpu_ms": 1.575,
+            "wall_ms": 2.540210000006482,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.382,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.5509699999872737,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.588,
+            "user_cpu_ms": 0.722,
+            "wall_ms": 2.4738560000088228,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.929,
+            "user_cpu_ms": 0.38699999999999996,
+            "wall_ms": 2.4945349999967448,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.575,
+            "user_cpu_ms": 0.715,
+            "wall_ms": 2.425375000001395,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5197824,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.794,
+            "user_cpu_ms": 1.518,
+            "wall_ms": 2.483753999996452,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.8049999999999999,
+            "user_cpu_ms": 1.5659999999999998,
+            "wall_ms": 2.532395000002907,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.581,
+            "user_cpu_ms": 0.717,
+            "wall_ms": 2.5272649999976693,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.3449999999999998,
+            "wall_ms": 2.4835539999941147,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.8089999999999999,
+            "user_cpu_ms": 1.525,
+            "wall_ms": 2.477381999995032,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.4259999999999997,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.5709969999923032,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.3309999999999995,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.4737059999893063,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.314,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.4994829999940293,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7959999999999999,
+            "user_cpu_ms": 1.514,
+            "wall_ms": 2.883478000001105,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.86,
+            "user_cpu_ms": 2.058,
+            "wall_ms": 3.124104999997712,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.0410000000000001,
+            "user_cpu_ms": 1.875,
+            "wall_ms": 3.0854350000026898,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5769999999999997,
+            "user_cpu_ms": 0.6349999999999999,
+            "wall_ms": 2.3952490000027638,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.8089999999999999,
+            "user_cpu_ms": 1.487,
+            "wall_ms": 2.511545999993814,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.578,
+            "user_cpu_ms": 0.638,
+            "wall_ms": 2.394436999992422,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.276,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.413664999991738,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5066752,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.2819999999999996,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.4560439999987693,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.259,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.424355000002265,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5185536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.279,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.440825999997287,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.231,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.4123729999985244,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 4993024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5919999999999999,
+            "user_cpu_ms": 0.6529999999999999,
+            "wall_ms": 2.411319999993111,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.6309999999999998,
+            "user_cpu_ms": 0.643,
+            "wall_ms": 2.446505999998294,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7969999999999999,
+            "user_cpu_ms": 1.45,
+            "wall_ms": 2.409295999996175,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.27,
+            "wall_ms": 2.4817620000021634,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.628,
+            "user_cpu_ms": 0.6479999999999999,
+            "wall_ms": 2.476111999996533,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.596,
+            "user_cpu_ms": 0.638,
+            "wall_ms": 2.4018320000038784,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.478,
+            "user_cpu_ms": 0.8069999999999999,
+            "wall_ms": 2.472835999995482,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.276,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.417851999993559,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5316608,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.472,
+            "user_cpu_ms": 0.7999999999999999,
+            "wall_ms": 2.412471999988952,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.6759999999999999,
+            "user_cpu_ms": 1.581,
+            "wall_ms": 2.3992079999999305,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5185536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.254,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.4296039999995855,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.683,
+            "user_cpu_ms": 1.571,
+            "wall_ms": 2.401231000007442,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.8059999999999999,
+            "user_cpu_ms": 1.458,
+            "wall_ms": 2.4538799999902494,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.6119999999999999,
+            "user_cpu_ms": 0.652,
+            "wall_ms": 2.4029349999921124,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.605,
+            "user_cpu_ms": 0.656,
+            "wall_ms": 2.461615000001416,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.4729999999999999,
+            "user_cpu_ms": 0.799,
+            "wall_ms": 2.4698200000017323,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 301,
+        "trivia_nodes": 298,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 27319.0,
+          "source_bytes": 10241.0
+        },
+        "peak_rss_bytes": 5154816.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 2.680553000004693,
+          "resolution_ms": 0.0,
+          "rule_ms": 2.4698200000017323,
+          "serialization_ms": 2.4698200000017323,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.021931000006247814,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.09903599999461221
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5320704.0,
+            "median": 5154816.0,
+            "min": 4993024.0,
+            "p90": 5320704.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 2.4259999999999997,
+            "median": 1.5795,
+            "min": 0.0,
+            "p90": 2.2819999999999996
+          },
+          "user_cpu_ms": {
+            "max": 2.3449999999999998,
+            "median": 0.6855,
+            "min": 0.0,
+            "p90": 1.581
+          },
+          "wall_ms": {
+            "max": 3.124104999997712,
+            "median": 2.465717500001574,
+            "min": 2.394436999992422,
+            "p90": 2.5509699999872737
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 301.0,
+          "trivia_nodes": 298.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 1.5795,
+        "user_cpu_ms": 0.6855,
+        "wall_ms": 2.465717500001574,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-10k-sarif"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
+        "source_bytes": 102415
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 3.498589000002994,
+        "resolution_ms": 0,
+        "rule_ms": 3.154303000002301,
+        "serialization_ms": 3.154303000002301,
+        "sort_ms": 0,
+        "source_read_ms": 0.02472600000658076,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.07927899999060628
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 32,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5562368,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.638,
+            "user_cpu_ms": 1.4839999999999998,
+            "wall_ms": 3.2776239999918744,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7959999999999999,
+            "user_cpu_ms": 2.2489999999999997,
+            "wall_ms": 3.2389920000071015,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.598,
+            "user_cpu_ms": 1.451,
+            "wall_ms": 3.187304999997309,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5839999999999999,
+            "user_cpu_ms": 1.441,
+            "wall_ms": 3.166034999992462,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.798,
+            "user_cpu_ms": 2.251,
+            "wall_ms": 3.218072999999322,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5496832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.385,
+            "user_cpu_ms": 0.647,
+            "wall_ms": 3.1834680000031312,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5517312,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.8639999999999999,
+            "user_cpu_ms": 1.189,
+            "wall_ms": 3.212062000002902,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.8499999999999999,
+            "user_cpu_ms": 1.1769999999999998,
+            "wall_ms": 3.17097399999966,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5369856,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.0959999999999996,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.237189000003582,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5505024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.6789999999999999,
+            "user_cpu_ms": 2.373,
+            "wall_ms": 3.2044669999891084,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5697536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.0269999999999997,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.166114999999081,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5505024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.861,
+            "user_cpu_ms": 1.1769999999999998,
+            "wall_ms": 3.2242749999937814,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5693440,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7949999999999999,
+            "user_cpu_ms": 2.245,
+            "wall_ms": 3.1827760000027183,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5496832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.573,
+            "user_cpu_ms": 1.4449999999999998,
+            "wall_ms": 3.1997490000037487,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7919999999999999,
+            "user_cpu_ms": 2.241,
+            "wall_ms": 3.1745109999974375,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.573,
+            "user_cpu_ms": 1.4449999999999998,
+            "wall_ms": 3.1524900000050593,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5697536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.642,
+            "user_cpu_ms": 1.476,
+            "wall_ms": 3.301347999993709,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5365760,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7969999999999999,
+            "user_cpu_ms": 2.254,
+            "wall_ms": 3.197223000000804,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.0309999999999997,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.2482590000029177,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5505024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.6619999999999999,
+            "user_cpu_ms": 2.363,
+            "wall_ms": 3.2183529999940674,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5566464,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.085,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.2525170000070602,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.034,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.210458000012295,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5697536,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.67,
+            "user_cpu_ms": 2.364,
+            "wall_ms": 3.172067000008383,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.1769999999999998,
+            "user_cpu_ms": 1.851,
+            "wall_ms": 3.200780000000236,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5496832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.173,
+            "user_cpu_ms": 1.894,
+            "wall_ms": 3.2128729999953975,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 3.032,
+            "wall_ms": 3.1763740000059215,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.58,
+            "user_cpu_ms": 1.4369999999999998,
+            "wall_ms": 3.2014009999983273,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5693440,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 0.7879999999999999,
+            "user_cpu_ms": 2.226,
+            "wall_ms": 3.1569180000019514,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5505024,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5999999999999999,
+            "user_cpu_ms": 1.4569999999999999,
+            "wall_ms": 3.2320990000016536,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5500928,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5899999999999999,
+            "user_cpu_ms": 1.4449999999999998,
+            "wall_ms": 3.216328999997131,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.38,
+            "user_cpu_ms": 0.6569999999999999,
+            "wall_ms": 3.2213890000036827,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5632000,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.5769999999999997,
+            "user_cpu_ms": 1.4349999999999998,
+            "wall_ms": 3.154303000002301,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 3012,
+        "trivia_nodes": 3009,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 27319.0,
+          "source_bytes": 102415.0
+        },
+        "peak_rss_bytes": 5505024.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 3.498589000002994,
+          "resolution_ms": 0.0,
+          "rule_ms": 3.154303000002301,
+          "serialization_ms": 3.154303000002301,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.02472600000658076,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.07927899999060628
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5697536.0,
+            "median": 5505024.0,
+            "min": 5365760.0,
+            "p90": 5693440.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 3.0959999999999996,
+            "median": 1.5819999999999999,
+            "min": 0.0,
+            "p90": 3.0309999999999997
+          },
+          "user_cpu_ms": {
+            "max": 3.032,
+            "median": 1.448,
+            "min": 0.0,
+            "p90": 2.363
+          },
+          "wall_ms": {
+            "max": 3.301347999993709,
+            "median": 3.202933999993718,
+            "min": 3.1524900000050593,
+            "p90": 3.2482590000029177
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 3012.0,
+          "trivia_nodes": 3009.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 1.5819999999999999,
+        "user_cpu_ms": 1.448,
+        "wall_ms": 3.202933999993718,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-100k-sarif"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
+        "source_bytes": 1048601
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 16.08931100000177,
+        "resolution_ms": 0,
+        "rule_ms": 11.56738400000279,
+        "serialization_ms": 11.56738400000279,
+        "sort_ms": 0,
+        "source_read_ms": 0.07825699999841618,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.08487899999920501
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 9,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9908224,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.2630000000000001,
+            "user_cpu_ms": 10.241999999999999,
+            "wall_ms": 11.678283999998484,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9908224,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 4.917999999999999,
+            "user_cpu_ms": 6.300999999999999,
+            "wall_ms": 11.372889000000441,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9842688,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 2.7929999999999997,
+            "user_cpu_ms": 8.353,
+            "wall_ms": 11.286310000002686,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9621504,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 4.558999999999999,
+            "user_cpu_ms": 6.792999999999999,
+            "wall_ms": 11.524743999999032,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9707520,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 3.9429999999999996,
+            "user_cpu_ms": 7.608999999999999,
+            "wall_ms": 11.778399999997191,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9711616,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 1.9449999999999998,
+            "user_cpu_ms": 9.446,
+            "wall_ms": 11.572811999997157,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9908224,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 4.936999999999999,
+            "user_cpu_ms": 6.640999999999999,
+            "wall_ms": 11.733629000005408,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9908224,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 5.745,
+            "user_cpu_ms": 5.477,
+            "wall_ms": 11.4028139999931,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 27319,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 27319,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9842688,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 27319,
+            "system_cpu_ms": 4.872999999999999,
+            "user_cpu_ms": 6.513,
+            "wall_ms": 11.56738400000279,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 30841,
+        "trivia_nodes": 30838,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 27319.0,
+          "source_bytes": 1048601.0
+        },
+        "peak_rss_bytes": 9842688.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 16.08931100000177,
+          "resolution_ms": 0.0,
+          "rule_ms": 11.56738400000279,
+          "serialization_ms": 11.56738400000279,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.07825699999841618,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.08487899999920501
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 9908224.0,
+            "median": 9842688.0,
+            "min": 9621504.0,
+            "p90": 9908224.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 5.745,
+            "median": 4.558999999999999,
+            "min": 1.2630000000000001,
+            "p90": 5.745
+          },
+          "user_cpu_ms": {
+            "max": 10.241999999999999,
+            "median": 6.792999999999999,
+            "min": 5.477,
+            "p90": 10.241999999999999
+          },
+          "wall_ms": {
+            "max": 11.778399999997191,
+            "median": 11.56738400000279,
+            "min": 11.286310000002686,
+            "p90": 11.778399999997191
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 30841.0,
+          "trivia_nodes": 30838.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 4.558999999999999,
+        "user_cpu_ms": 6.792999999999999,
+        "wall_ms": 11.56738400000279,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-1024k-sarif"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
+        "source_bytes": 25906
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 2.3025259999940317,
+        "resolution_ms": 0,
+        "rule_ms": 2.953075999997168,
+        "serialization_ms": 2.953075999997168,
+        "sort_ms": 0,
+        "source_read_ms": 0.018173999990267475,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.08108199999412591
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 34,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7699999999999998,
+            "user_cpu_ms": 1.0839999999999999,
+            "wall_ms": 2.9979600000018536,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.049,
+            "user_cpu_ms": 1.728,
+            "wall_ms": 2.920603999996274,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.086,
+            "user_cpu_ms": 0.6809999999999999,
+            "wall_ms": 2.9060980000110703,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5361664,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7249999999999999,
+            "user_cpu_ms": 1.044,
+            "wall_ms": 2.937607000006892,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.6679999999999999,
+            "user_cpu_ms": 2.11,
+            "wall_ms": 2.920044000006783,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7389999999999999,
+            "user_cpu_ms": 1.05,
+            "wall_ms": 2.9680339999913485,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.757,
+            "wall_ms": 2.9409029999953873,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.085,
+            "user_cpu_ms": 0.6849999999999999,
+            "wall_ms": 2.9208859999982906,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.82,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.996215999999663,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.0579999999999998,
+            "user_cpu_ms": 1.738,
+            "wall_ms": 2.9879209999990053,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.674,
+            "user_cpu_ms": 2.0820000000000003,
+            "wall_ms": 2.9355229999907806,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7319999999999998,
+            "user_cpu_ms": 1.0559999999999998,
+            "wall_ms": 2.9578839999970796,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.7979999999999996,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 3.025471999990259,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7369999999999999,
+            "user_cpu_ms": 1.0399999999999998,
+            "wall_ms": 2.9208349999976235,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.718,
+            "user_cpu_ms": 1.0399999999999998,
+            "wall_ms": 2.902851999991185,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.0989999999999998,
+            "user_cpu_ms": 0.691,
+            "wall_ms": 2.9317159999919795,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5316608,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.8139999999999996,
+            "wall_ms": 2.945361000001867,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.808,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.9574240000016516,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5267456,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.7239999999999998,
+            "user_cpu_ms": 1.051,
+            "wall_ms": 2.9155750000029457,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.134,
+            "user_cpu_ms": 0.716,
+            "wall_ms": 3.0288430000098288,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.7929999999999997,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.939561000005142,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.049,
+            "user_cpu_ms": 1.7319999999999998,
+            "wall_ms": 2.9319259999880387,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5128192,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.4249999999999998,
+            "user_cpu_ms": 1.3629999999999998,
+            "wall_ms": 2.9690260000023727,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.6789999999999999,
+            "user_cpu_ms": 2.113,
+            "wall_ms": 2.9350119999946855,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.753,
+            "user_cpu_ms": 1.059,
+            "wall_ms": 2.988723000001414,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.714,
+            "user_cpu_ms": 1.042,
+            "wall_ms": 2.9329280000069957,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.727,
+            "user_cpu_ms": 1.05,
+            "wall_ms": 2.9185909999966952,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5337088,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.6789999999999999,
+            "user_cpu_ms": 2.1069999999999998,
+            "wall_ms": 2.918510999990076,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.763,
+            "wall_ms": 2.931134999997198,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.727,
+            "user_cpu_ms": 1.055,
+            "wall_ms": 2.957795000000374,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.784,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.926024999993615,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 0.678,
+            "user_cpu_ms": 2.105,
+            "wall_ms": 2.924191000005294,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 1.05,
+            "user_cpu_ms": 1.7289999999999999,
+            "wall_ms": 2.9757479999972247,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5320704,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 2.78,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.953075999997168,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 1,
+        "total_nodes": 1,
+        "trivia_nodes": 0,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 25493.0,
+          "source_bytes": 25906.0
+        },
+        "peak_rss_bytes": 5320704.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 2.3025259999940317,
+          "resolution_ms": 0.0,
+          "rule_ms": 2.953075999997168,
+          "serialization_ms": 2.953075999997168,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.018173999990267475,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.08108199999412591
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5361664.0,
+            "median": 5320704.0,
+            "min": 5124096.0,
+            "p90": 5320704.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 2.82,
+            "median": 1.726,
+            "min": 0.0,
+            "p90": 2.7929999999999997
+          },
+          "user_cpu_ms": {
+            "max": 2.8139999999999996,
+            "median": 1.053,
+            "min": 0.0,
+            "p90": 2.113
+          },
+          "wall_ms": {
+            "max": 3.0288430000098288,
+            "median": 2.9365649999988364,
+            "min": 2.902851999991185,
+            "p90": 2.996215999999663
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 1.0,
+          "total_nodes": 1.0,
+          "trivia_nodes": 0.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 1.726,
+        "user_cpu_ms": 1.053,
+        "wall_ms": 2.9365649999988364,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "continued-1000-sarif"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "6010ba5b8455ea6a81157130f6c42df4ffd9bc4e00e94166b44eb1e7c54793a9",
+        "source_bytes": 1048576
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 13.200654000002032,
+        "resolution_ms": 0,
+        "rule_ms": 22.062969000003818,
+        "serialization_ms": 22.062969000003818,
+        "sort_ms": 0,
+        "source_read_ms": 0.0824849999929711,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.08504900000616544
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16770748416,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 5,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10346496,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 5.321,
+            "user_cpu_ms": 16.989,
+            "wall_ms": 22.465783999990663,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10104832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 3.761,
+            "user_cpu_ms": 18.326999999999998,
+            "wall_ms": 22.249548000004893,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10104832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 3.739,
+            "user_cpu_ms": 18.196,
+            "wall_ms": 22.088665000012497,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10432512,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 3.017,
+            "user_cpu_ms": 18.77,
+            "wall_ms": 21.95904199999177,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 25493,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 25493,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10432512,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 25493,
+            "system_cpu_ms": 6.7669999999999995,
+            "user_cpu_ms": 15.154,
+            "wall_ms": 22.062969000003818,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 1,
+        "total_nodes": 1,
+        "trivia_nodes": 0,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 25493.0,
+          "source_bytes": 1048576.0
+        },
+        "peak_rss_bytes": 10346496.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 13.200654000002032,
+          "resolution_ms": 0.0,
+          "rule_ms": 22.062969000003818,
+          "serialization_ms": 22.062969000003818,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.0824849999929711,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.08504900000616544
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 10432512.0,
+            "median": 10346496.0,
+            "min": 10104832.0,
+            "p90": 10432512.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 6.7669999999999995,
+            "median": 3.761,
+            "min": 3.017,
+            "p90": 6.7669999999999995
+          },
+          "user_cpu_ms": {
+            "max": 18.77,
+            "median": 18.196,
+            "min": 15.154,
+            "p90": 18.77
+          },
+          "wall_ms": {
+            "max": 22.465783999990663,
+            "median": 22.088665000012497,
+            "min": 21.95904199999177,
+            "p90": 22.465783999990663
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 1.0,
+          "total_nodes": 1.0,
+          "trivia_nodes": 0.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 3.761,
+        "user_cpu_ms": 18.196,
+        "wall_ms": 22.088665000012497,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "shell-body-1m-sarif"
+    }
+  ],
+  "runner": {
+    "architecture": "x86_64",
+    "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+    "bitbake": null,
+    "class": "github-ubuntu-24.04-x86_64",
+    "cpu": "x86_64",
+    "logical_cores": 4,
+    "measurement_contract": 2,
+    "memory_bytes": 16770748416,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "resource_backends": {
+      "cgroup": true,
+      "cpu": "wait4",
+      "gnu_time": true,
+      "io": "procfs",
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
+    },
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+  },
+  "schema": 1
+}

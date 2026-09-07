@@ -3,7 +3,7 @@
     "method": "median",
     "p90": "nearest-rank"
   },
-  "commit": "21a7b25f7220876e663c13626a68e64e582f5c68",
+  "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
   "corpus": {
     "files": 683,
     "id": "formatted",
@@ -21,15 +21,15 @@
     "index_ms": 0,
     "method": "operation-level timing; unavailable subphases are zero and labelled",
     "override_ms": 0,
-    "parse_ms": 96.70639400019354,
+    "parse_ms": 99.54607200006649,
     "resolution_ms": 0,
-    "rule_ms": 425.14409799969144,
-    "serialization_ms": 425.14409799969144,
+    "rule_ms": 279.3584409998857,
+    "serialization_ms": 279.3584409998857,
     "sort_ms": 0,
-    "source_read_ms": 11.271372999999585,
+    "source_read_ms": 5.320942000025752,
     "suppression_ms": 0,
     "transaction_ms": 0,
-    "traversal_ms": 21.90699599987056
+    "traversal_ms": 11.787588000061078
   },
   "runner": {
     "architecture": "x86_64",
@@ -38,18 +38,21 @@
     "class": "github-ubuntu-24.04-x86_64",
     "cpu": "x86_64",
     "logical_cores": 4,
-    "memory_bytes": 16765411328,
+    "measurement_contract": 2,
+    "memory_bytes": 16764362752,
     "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
     "resource_backends": {
       "cgroup": true,
-      "cpu": "rusage",
+      "cpu": "wait4",
       "gnu_time": true,
       "io": "procfs",
-      "memory": "procfs+rusage",
-      "process_tree": "procfs"
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
     },
-    "rust": "unknown",
-    "source_commit": "21a7b25f7220876e663c13626a68e64e582f5c68"
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
   },
   "sample_count": 3,
   "samples": [
@@ -70,14 +73,14 @@
           "source_bytes": 5603933
         },
         "exit_code": 0,
-        "peak_rss_bytes": 30552064,
+        "peak_rss_bytes": 30277632,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 625298,
-        "system_cpu_ms": 151.78,
-        "user_cpu_ms": 270.60699999999997,
-        "wall_ms": 433.5651420001341,
+        "system_cpu_ms": 40.777,
+        "user_cpu_ms": 244.629,
+        "wall_ms": 285.62534399998185,
         "written_bytes": 0
       }
     },
@@ -98,14 +101,14 @@
           "source_bytes": 5603933
         },
         "exit_code": 0,
-        "peak_rss_bytes": 30552064,
+        "peak_rss_bytes": 30539776,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 625298,
-        "system_cpu_ms": 146.43499999999995,
-        "user_cpu_ms": 279.83099999999996,
-        "wall_ms": 439.883233999808,
+        "system_cpu_ms": 53.760999999999996,
+        "user_cpu_ms": 232.557,
+        "wall_ms": 286.58854200011774,
         "written_bytes": 0
       }
     },
@@ -126,14 +129,14 @@
           "source_bytes": 5603933
         },
         "exit_code": 0,
-        "peak_rss_bytes": 30715904,
+        "peak_rss_bytes": 30711808,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 625298,
-        "system_cpu_ms": 137.979,
-        "user_cpu_ms": 278.958,
-        "wall_ms": 425.14409799969144,
+        "system_cpu_ms": 53.858999999999995,
+        "user_cpu_ms": 225.244,
+        "wall_ms": 279.3584409998857,
         "written_bytes": 0
       }
     }
@@ -155,7 +158,7 @@
       "output_bytes": 625298.0,
       "source_bytes": 5603933.0
     },
-    "peak_rss_bytes": 30552064.0,
+    "peak_rss_bytes": 30539776.0,
     "phases": {
       "baseline_ms": 0.0,
       "body_ms": 0.0,
@@ -164,23 +167,23 @@
       "exclusion_ms": 0.0,
       "index_ms": 0.0,
       "override_ms": 0.0,
-      "parse_ms": 96.70639400019354,
+      "parse_ms": 99.54607200006649,
       "resolution_ms": 0.0,
-      "rule_ms": 425.14409799969144,
-      "serialization_ms": 425.14409799969144,
+      "rule_ms": 279.3584409998857,
+      "serialization_ms": 279.3584409998857,
       "sort_ms": 0.0,
-      "source_read_ms": 11.271372999999585,
+      "source_read_ms": 5.320942000025752,
       "suppression_ms": 0.0,
       "transaction_ms": 0.0,
-      "traversal_ms": 21.90699599987056
+      "traversal_ms": 11.787588000061078
     },
     "read_bytes": 0.0,
     "sample_ranges": {
       "peak_rss_bytes": {
-        "max": 30715904.0,
-        "median": 30552064.0,
-        "min": 30552064.0,
-        "p90": 30715904.0
+        "max": 30711808.0,
+        "median": 30539776.0,
+        "min": 30277632.0,
+        "p90": 30711808.0
       },
       "read_bytes": {
         "max": 0.0,
@@ -189,22 +192,22 @@
         "p90": 0.0
       },
       "system_cpu_ms": {
-        "max": 151.78,
-        "median": 146.43499999999995,
-        "min": 137.979,
-        "p90": 151.78
+        "max": 53.858999999999995,
+        "median": 53.760999999999996,
+        "min": 40.777,
+        "p90": 53.858999999999995
       },
       "user_cpu_ms": {
-        "max": 279.83099999999996,
-        "median": 278.958,
-        "min": 270.60699999999997,
-        "p90": 279.83099999999996
+        "max": 244.629,
+        "median": 232.557,
+        "min": 225.244,
+        "p90": 244.629
       },
       "wall_ms": {
-        "max": 439.883233999808,
-        "median": 433.5651420001341,
-        "min": 425.14409799969144,
-        "p90": 439.883233999808
+        "max": 286.58854200011774,
+        "median": 285.62534399998185,
+        "min": 279.3584409998857,
+        "p90": 286.58854200011774
       },
       "written_bytes": {
         "max": 0.0,
@@ -222,9 +225,9 @@
       "unknown_bytes": 0.0,
       "unknown_nodes": 0.0
     },
-    "system_cpu_ms": 146.43499999999995,
-    "user_cpu_ms": 278.958,
-    "wall_ms": 433.5651420001341,
+    "system_cpu_ms": 53.760999999999996,
+    "user_cpu_ms": 232.557,
+    "wall_ms": 285.62534399998185,
     "written_bytes": 0.0
   },
   "version": "bbtidy 0.1.0-alpha.5",

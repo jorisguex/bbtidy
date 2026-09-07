@@ -3,7 +3,7 @@
     "method": "median",
     "p90": "nearest-rank"
   },
-  "commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+  "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
   "corpus": {
     "files": 2,
     "id": "bbtidy-cold-build",
@@ -21,15 +21,15 @@
     "index_ms": 0,
     "method": "operation-level timing; unavailable subphases are zero and labelled",
     "override_ms": 0,
-    "parse_ms": 16.08082600000671,
+    "parse_ms": 3.1450489999542697,
     "resolution_ms": 0,
-    "rule_ms": 152669.63023100005,
-    "serialization_ms": 152669.63023100005,
+    "rule_ms": 154528.89499499998,
+    "serialization_ms": 154528.89499499998,
     "sort_ms": 0,
-    "source_read_ms": 0.08153200008109707,
+    "source_read_ms": 0.04089700007625652,
     "suppression_ms": 0,
     "transaction_ms": 0,
-    "traversal_ms": 0.2461280000716215
+    "traversal_ms": 0.1407340000696422
   },
   "runner": {
     "architecture": "x86_64",
@@ -38,18 +38,21 @@
     "class": "github-ubuntu-24.04-x86_64",
     "cpu": "x86_64",
     "logical_cores": 4,
-    "memory_bytes": 16769748992,
+    "measurement_contract": 2,
+    "memory_bytes": 16765411328,
     "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
     "resource_backends": {
       "cgroup": true,
-      "cpu": "rusage",
+      "cpu": "wait4",
       "gnu_time": true,
       "io": "procfs",
-      "memory": "procfs+rusage",
-      "process_tree": "procfs"
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
     },
-    "rust": "unknown",
-    "source_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
   },
   "sample_count": 1,
   "samples": [
@@ -70,8 +73,8 @@
           "commands_succeeded": 3,
           "commands_timed_out": 0,
           "elapsed_ms_by_phase": {
-            "parse": 146316,
-            "recipe_environment": 2781,
+            "parse": 148428,
+            "recipe_environment": 2553,
             "version": 244
           },
           "fallback_recipe_count": 0,
@@ -97,9 +100,9 @@
           },
           "max_stderr_bytes": 330,
           "max_stdout_bytes": 4889845,
-          "operation_elapsed_ms": 152622,
+          "operation_elapsed_ms": 154491,
           "peak_live_processes": 1,
-          "postprocess_ms": 545,
+          "postprocess_ms": 544,
           "recipe_queries_completed": 2698,
           "recipe_queries_scheduled": 2698,
           "stderr_bytes_by_phase": {
@@ -113,8 +116,8 @@
             "version": 38
           },
           "strategy": "tinfoil-cache-batch",
-          "tinfoil_parse_ms": 1599,
-          "tinfoil_prepare_ms": 757,
+          "tinfoil_parse_ms": 1570,
+          "tinfoil_prepare_ms": 614,
           "total_commands": 3,
           "total_stderr_bytes": 330,
           "total_stdout_bytes": 4890076,
@@ -143,8 +146,8 @@
             "commands_succeeded": 3,
             "commands_timed_out": 0,
             "elapsed_ms_by_phase": {
-              "parse": 146316,
-              "recipe_environment": 2781,
+              "parse": 148428,
+              "recipe_environment": 2553,
               "version": 244
             },
             "fallback_recipe_count": 0,
@@ -170,9 +173,9 @@
             },
             "max_stderr_bytes": 330,
             "max_stdout_bytes": 4889845,
-            "operation_elapsed_ms": 152622,
+            "operation_elapsed_ms": 154491,
             "peak_live_processes": 1,
-            "postprocess_ms": 545,
+            "postprocess_ms": 544,
             "recipe_queries_completed": 2698,
             "recipe_queries_scheduled": 2698,
             "stderr_bytes_by_phase": {
@@ -186,8 +189,8 @@
               "version": 38
             },
             "strategy": "tinfoil-cache-batch",
-            "tinfoil_parse_ms": 1599,
-            "tinfoil_prepare_ms": 757,
+            "tinfoil_parse_ms": 1570,
+            "tinfoil_prepare_ms": 614,
             "total_commands": 3,
             "total_stderr_bytes": 330,
             "total_stdout_bytes": 4890076,
@@ -200,14 +203,14 @@
           "source_bytes": 13309
         },
         "exit_code": 0,
-        "peak_rss_bytes": 288518144,
+        "peak_rss_bytes": 287936512,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1729577,
-        "system_cpu_ms": 2818.0190000000002,
-        "user_cpu_ms": 3689.306,
-        "wall_ms": 152669.63023100005,
+        "system_cpu_ms": 2850.1929999999998,
+        "user_cpu_ms": 3650.493,
+        "wall_ms": 154528.89499499998,
         "written_bytes": 221184
       }
     }
@@ -237,8 +240,8 @@
       "commands_succeeded": 3.0,
       "commands_timed_out": 0.0,
       "elapsed_ms_by_phase": {
-        "parse": 146316,
-        "recipe_environment": 2781,
+        "parse": 148428,
+        "recipe_environment": 2553,
         "version": 244
       },
       "fallback_recipe_count": 0.0,
@@ -264,9 +267,9 @@
       },
       "max_stderr_bytes": 330.0,
       "max_stdout_bytes": 4889845.0,
-      "operation_elapsed_ms": 152622.0,
+      "operation_elapsed_ms": 154491.0,
       "peak_live_processes": 1.0,
-      "postprocess_ms": 545.0,
+      "postprocess_ms": 544.0,
       "recipe_queries_completed": 2698.0,
       "recipe_queries_scheduled": 2698.0,
       "stderr_bytes_by_phase": {
@@ -280,14 +283,14 @@
         "version": 38
       },
       "strategy": "tinfoil-cache-batch",
-      "tinfoil_parse_ms": 1599.0,
-      "tinfoil_prepare_ms": 757.0,
+      "tinfoil_parse_ms": 1570.0,
+      "tinfoil_prepare_ms": 614.0,
       "total_commands": 3.0,
       "total_stderr_bytes": 330.0,
       "total_stdout_bytes": 4890076.0,
       "workspace_environment_parse_ms": 0.0
     },
-    "peak_rss_bytes": 288518144.0,
+    "peak_rss_bytes": 287936512.0,
     "phases": {
       "baseline_ms": 0.0,
       "body_ms": 0.0,
@@ -296,23 +299,23 @@
       "exclusion_ms": 0.0,
       "index_ms": 0.0,
       "override_ms": 0.0,
-      "parse_ms": 16.08082600000671,
+      "parse_ms": 3.1450489999542697,
       "resolution_ms": 0.0,
-      "rule_ms": 152669.63023100005,
-      "serialization_ms": 152669.63023100005,
+      "rule_ms": 154528.89499499998,
+      "serialization_ms": 154528.89499499998,
       "sort_ms": 0.0,
-      "source_read_ms": 0.08153200008109707,
+      "source_read_ms": 0.04089700007625652,
       "suppression_ms": 0.0,
       "transaction_ms": 0.0,
-      "traversal_ms": 0.2461280000716215
+      "traversal_ms": 0.1407340000696422
     },
     "read_bytes": 0.0,
     "sample_ranges": {
       "peak_rss_bytes": {
-        "max": 288518144.0,
-        "median": 288518144.0,
-        "min": 288518144.0,
-        "p90": 288518144.0
+        "max": 287936512.0,
+        "median": 287936512.0,
+        "min": 287936512.0,
+        "p90": 287936512.0
       },
       "read_bytes": {
         "max": 0.0,
@@ -321,22 +324,22 @@
         "p90": 0.0
       },
       "system_cpu_ms": {
-        "max": 2818.0190000000002,
-        "median": 2818.0190000000002,
-        "min": 2818.0190000000002,
-        "p90": 2818.0190000000002
+        "max": 2850.1929999999998,
+        "median": 2850.1929999999998,
+        "min": 2850.1929999999998,
+        "p90": 2850.1929999999998
       },
       "user_cpu_ms": {
-        "max": 3689.306,
-        "median": 3689.306,
-        "min": 3689.306,
-        "p90": 3689.306
+        "max": 3650.493,
+        "median": 3650.493,
+        "min": 3650.493,
+        "p90": 3650.493
       },
       "wall_ms": {
-        "max": 152669.63023100005,
-        "median": 152669.63023100005,
-        "min": 152669.63023100005,
-        "p90": 152669.63023100005
+        "max": 154528.89499499998,
+        "median": 154528.89499499998,
+        "min": 154528.89499499998,
+        "p90": 154528.89499499998
       },
       "written_bytes": {
         "max": 221184.0,
@@ -347,9 +350,9 @@
     },
     "status": "success",
     "structural": {},
-    "system_cpu_ms": 2818.0190000000002,
-    "user_cpu_ms": 3689.306,
-    "wall_ms": 152669.63023100005,
+    "system_cpu_ms": 2850.1929999999998,
+    "user_cpu_ms": 3650.493,
+    "wall_ms": 154528.89499499998,
     "written_bytes": 221184.0
   },
   "version": "bbtidy 0.1.0-alpha.5",

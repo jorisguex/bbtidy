@@ -3,7 +3,7 @@
     "method": "median",
     "p90": "nearest-rank"
   },
-  "commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+  "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
   "corpus": {
     "files": 3733,
     "id": "bbtidy-performance-source",
@@ -21,15 +21,15 @@
     "index_ms": 0,
     "method": "operation-level timing; unavailable subphases are zero and labelled",
     "override_ms": 0,
-    "parse_ms": 261.3816250000127,
+    "parse_ms": 247.69959799994012,
     "resolution_ms": 0,
-    "rule_ms": 1795.5807609999965,
-    "serialization_ms": 1795.5807609999965,
+    "rule_ms": 1800.2870819999544,
+    "serialization_ms": 1800.2870819999544,
     "sort_ms": 0,
-    "source_read_ms": 62.24356399991393,
+    "source_read_ms": 56.19269599992549,
     "suppression_ms": 0,
     "transaction_ms": 0,
-    "traversal_ms": 201.30054499998096
+    "traversal_ms": 195.43066800008546
   },
   "runner": {
     "architecture": "x86_64",
@@ -38,18 +38,21 @@
     "class": "github-ubuntu-24.04-x86_64",
     "cpu": "x86_64",
     "logical_cores": 4,
-    "memory_bytes": 16769736704,
+    "measurement_contract": 2,
+    "memory_bytes": 16765411328,
     "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
     "resource_backends": {
       "cgroup": true,
-      "cpu": "rusage",
+      "cpu": "wait4",
       "gnu_time": true,
       "io": "procfs",
-      "memory": "procfs+rusage",
-      "process_tree": "procfs"
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
     },
-    "rust": "unknown",
-    "source_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
   },
   "sample_count": 3,
   "samples": [
@@ -70,15 +73,15 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60243968,
+        "peak_rss_bytes": 60178432,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 739.927,
-        "user_cpu_ms": 1038.8980000000001,
-        "wall_ms": 1791.9780539999692,
-        "written_bytes": 0
+        "system_cpu_ms": 729.2259999999999,
+        "user_cpu_ms": 1078.413,
+        "wall_ms": 1807.9288269999552,
+        "written_bytes": 1912832
       }
     },
     {
@@ -98,15 +101,15 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60235776,
+        "peak_rss_bytes": 60305408,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 724.191,
-        "user_cpu_ms": 1058.2789999999998,
-        "wall_ms": 1796.2364730000218,
-        "written_bytes": 0
+        "system_cpu_ms": 709.358,
+        "user_cpu_ms": 1085.066,
+        "wall_ms": 1794.7033149999925,
+        "written_bytes": 1912832
       }
     },
     {
@@ -126,14 +129,14 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60039168,
+        "peak_rss_bytes": 60174336,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 692.701,
-        "user_cpu_ms": 1087.5310000000002,
-        "wall_ms": 1795.5807609999965,
+        "system_cpu_ms": 739.0989999999999,
+        "user_cpu_ms": 1060.7009999999998,
+        "wall_ms": 1800.2870819999544,
         "written_bytes": 0
       }
     }
@@ -155,7 +158,7 @@
       "output_bytes": 1911382.0,
       "source_bytes": 8152935.0
     },
-    "peak_rss_bytes": 60235776.0,
+    "peak_rss_bytes": 60178432.0,
     "phases": {
       "baseline_ms": 0.0,
       "body_ms": 0.0,
@@ -164,23 +167,23 @@
       "exclusion_ms": 0.0,
       "index_ms": 0.0,
       "override_ms": 0.0,
-      "parse_ms": 261.3816250000127,
+      "parse_ms": 247.69959799994012,
       "resolution_ms": 0.0,
-      "rule_ms": 1795.5807609999965,
-      "serialization_ms": 1795.5807609999965,
+      "rule_ms": 1800.2870819999544,
+      "serialization_ms": 1800.2870819999544,
       "sort_ms": 0.0,
-      "source_read_ms": 62.24356399991393,
+      "source_read_ms": 56.19269599992549,
       "suppression_ms": 0.0,
       "transaction_ms": 0.0,
-      "traversal_ms": 201.30054499998096
+      "traversal_ms": 195.43066800008546
     },
     "read_bytes": 0.0,
     "sample_ranges": {
       "peak_rss_bytes": {
-        "max": 60243968.0,
-        "median": 60235776.0,
-        "min": 60039168.0,
-        "p90": 60243968.0
+        "max": 60305408.0,
+        "median": 60178432.0,
+        "min": 60174336.0,
+        "p90": 60305408.0
       },
       "read_bytes": {
         "max": 0.0,
@@ -189,28 +192,28 @@
         "p90": 0.0
       },
       "system_cpu_ms": {
-        "max": 739.927,
-        "median": 724.191,
-        "min": 692.701,
-        "p90": 739.927
+        "max": 739.0989999999999,
+        "median": 729.2259999999999,
+        "min": 709.358,
+        "p90": 739.0989999999999
       },
       "user_cpu_ms": {
-        "max": 1087.5310000000002,
-        "median": 1058.2789999999998,
-        "min": 1038.8980000000001,
-        "p90": 1087.5310000000002
+        "max": 1085.066,
+        "median": 1078.413,
+        "min": 1060.7009999999998,
+        "p90": 1085.066
       },
       "wall_ms": {
-        "max": 1796.2364730000218,
-        "median": 1795.5807609999965,
-        "min": 1791.9780539999692,
-        "p90": 1796.2364730000218
+        "max": 1807.9288269999552,
+        "median": 1800.2870819999544,
+        "min": 1794.7033149999925,
+        "p90": 1807.9288269999552
       },
       "written_bytes": {
-        "max": 0.0,
-        "median": 0.0,
+        "max": 1912832.0,
+        "median": 1912832.0,
         "min": 0.0,
-        "p90": 0.0
+        "p90": 1912832.0
       }
     },
     "status": "success",
@@ -222,10 +225,10 @@
       "unknown_bytes": 0.0,
       "unknown_nodes": 0.0
     },
-    "system_cpu_ms": 724.191,
-    "user_cpu_ms": 1058.2789999999998,
-    "wall_ms": 1795.5807609999965,
-    "written_bytes": 0.0
+    "system_cpu_ms": 729.2259999999999,
+    "user_cpu_ms": 1078.413,
+    "wall_ms": 1800.2870819999544,
+    "written_bytes": 1912832.0
   },
   "version": "bbtidy 0.1.0-alpha.5",
   "workload": "yocto-6.0-offline"

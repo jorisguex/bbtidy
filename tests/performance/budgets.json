@@ -1,5 +1,6 @@
 {
   "policy": {
+    "measurement_contract": 2,
     "relative_and_absolute_required": true,
     "required_baselines": [
       "continued-1000-format",
@@ -94,39 +95,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24864768.0,
+        "baseline": 4567040.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
-          "source_bytes": 25906
+          "revision_digest": "a8e8ac9f1dabf736238438926b28dd86207c0b9f6407af2c8b05159d11ec9c0c",
+          "source_bytes": 25931
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 18
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 47
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.057713000004355,
+        "baseline": 4.205420000005233,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "continued-1000-format-check": {
@@ -137,7 +148,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24973312.0,
+        "baseline": 4403200.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -145,8 +156,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -154,19 +164,21 @@
           "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
           "source_bytes": 25906
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 100
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.172891999995272,
+        "baseline": 2.0120345000052,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -177,7 +189,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24854528.0,
+        "baseline": 5124096.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -185,8 +197,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -194,16 +205,18 @@
           "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
           "source_bytes": 25906
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 56
       },
       "wall_ms": {
-        "baseline": 12.739579250006017,
+        "baseline": 54.75358349999837,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -217,7 +230,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24836096.0,
+        "baseline": 5287936.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -225,8 +238,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -234,19 +246,21 @@
           "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
           "source_bytes": 25906
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 22
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 68
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 10.246274999992977,
+        "baseline": 2.9554484999998465,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -260,39 +274,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24598528.0,
+        "baseline": 5004288.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
-          "source_bytes": 102415
+          "revision_digest": "047da23a2328b487fa585079690e033761fd3b4a323be05539c0745c669cb36d",
+          "source_bytes": 102440
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 27
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.09823875002769,
+        "baseline": 37.07778000000417,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "recipe-100k-format-check": {
@@ -303,7 +327,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24614912.0,
+        "baseline": 4861952.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -311,8 +335,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -320,19 +343,21 @@
           "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
           "source_bytes": 102415
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 80
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.287892000017564,
+        "baseline": 2.504734500007544,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -343,7 +368,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24588288.0,
+        "baseline": 5550080.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -351,8 +376,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -360,16 +384,18 @@
           "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
           "source_bytes": 102415
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 51
       },
       "wall_ms": {
-        "baseline": 12.293035499986615,
+        "baseline": 51.51303025001752,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -383,7 +409,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24569856.0,
+        "baseline": 5509120.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -391,8 +417,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -400,19 +425,21 @@
           "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
           "source_bytes": 102415
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 21
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 63
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 10.482066249988264,
+        "baseline": 3.2210114999990935,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -426,39 +453,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24864768.0,
+        "baseline": 10301440.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
-          "source_bytes": 1048601
+          "revision_digest": "c9aba22301dd866fccb941822e5cc3573932794f74a2646342ccdc63c4f1ef03",
+          "source_bytes": 1048626
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 13
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 13.002347499998734,
+        "baseline": 13.449973000007276,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "recipe-1024k-format-check": {
@@ -469,7 +506,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24973312.0,
+        "baseline": 10235904.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -477,8 +514,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -486,19 +522,21 @@
           "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
           "source_bytes": 1048601
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 27
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.866154499988625,
+        "baseline": 7.676047499984406,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -509,7 +547,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24854528.0,
+        "baseline": 9940992.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -517,8 +555,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -526,16 +563,18 @@
           "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
           "source_bytes": 1048601
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 12
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 6
       },
       "wall_ms": {
-        "baseline": 16.791326249986582,
+        "baseline": 58.039820500031425,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -549,7 +588,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24836096.0,
+        "baseline": 9875456.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -557,8 +596,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -566,19 +604,21 @@
           "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
           "source_bytes": 1048601
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 15
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 18
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 14.373231750042237,
+        "baseline": 11.499833000002013,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -592,39 +632,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24598528.0,
+        "baseline": 4563968.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
-          "source_bytes": 10241
+          "revision_digest": "824617687d9629370d1fd53b4ceefb89bda0c80f12ff975b66a1bdba3f23c819",
+          "source_bytes": 10266
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 18
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 29
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.056991499989067,
+        "baseline": 90.49048800000037,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "recipe-10k-format-check": {
@@ -635,7 +685,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24614912.0,
+        "baseline": 4401152.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -643,8 +693,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -652,19 +701,21 @@
           "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
           "source_bytes": 10241
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 102
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.272824999996601,
+        "baseline": 1.963693000007538,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -675,7 +726,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24588288.0,
+        "baseline": 5222400.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -683,8 +734,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -692,16 +742,18 @@
           "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
           "source_bytes": 10241
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 64
       },
       "wall_ms": {
-        "baseline": 12.425178999983189,
+        "baseline": 53.97693600001929,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -715,7 +767,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24569856.0,
+        "baseline": 5170176.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -723,8 +775,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -732,19 +783,21 @@
           "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
           "source_bytes": 10241
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 21
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 81
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 10.289332000045448,
+        "baseline": 2.466765750000377,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -758,39 +811,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24598528.0,
+        "baseline": 4534272.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
-          "source_bytes": 1027
+          "revision_digest": "ef7fdf7e9453830db6437929c183a55a664b4b5291039ddd562f1635c1d2dcec",
+          "source_bytes": 1052
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 30
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.480834500038895,
+        "baseline": 210.6908449999878,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "recipe-1k-format-check": {
@@ -801,7 +864,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24614912.0,
+        "baseline": 4366336.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -809,8 +872,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -818,19 +880,21 @@
           "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
           "source_bytes": 1027
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 16
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 103
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.417197499985377,
+        "baseline": 1.9273127500127885,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -841,7 +905,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24588288.0,
+        "baseline": 5156864.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -849,8 +913,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -858,16 +921,18 @@
           "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
           "source_bytes": 1027
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 15
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 89
       },
       "wall_ms": {
-        "baseline": 15.042573500004153,
+        "baseline": 1.6080692499720328,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -881,7 +946,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24569856.0,
+        "baseline": 5124096.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -889,8 +954,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
@@ -898,19 +962,21 @@
           "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
           "source_bytes": 1027
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 21
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 84
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 10.266066000028218,
+        "baseline": 2.378346499995132,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -924,39 +990,49 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24864768.0,
+        "baseline": 9719808.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
       },
       "reference": {
-        "aggregation": "median of per-run medians",
+        "aggregation": {
+          "peak_rss_bytes": "median of per-run medians",
+          "wall_ms": "max of per-run medians"
+        },
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "9d9d95ff56ec084a6cf0f45075b463b1cb788abaf264e5c13b67b24d99ea3850",
-          "source_bytes": 190017
+          "revision_digest": "ccfff24fc6c8a3576e3086d097ccb8fbb029e4e85b1a1cf0e83101d81d9d6902",
+          "source_bytes": 1048601
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 18
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 12
+      },
+      "structural": {
+        "bbtidy.files_changed": {
+          "equals": 1
+        }
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.272351999953912,
+        "baseline": 66.44264799999178,
         "blocking": true,
         "max_ratio": 1.15,
-        "min_absolute_regression": 50
+        "min_absolute_regression": 50,
+        "reference_aggregation": "max of per-run medians"
       }
     },
     "shell-body-1m-format-check": {
@@ -967,7 +1043,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24973312.0,
+        "baseline": 6434816.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -975,28 +1051,29 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "9d9d95ff56ec084a6cf0f45075b463b1cb788abaf264e5c13b67b24d99ea3850",
-          "source_bytes": 190017
+          "revision_digest": "6010ba5b8455ea6a81157130f6c42df4ffd9bc4e00e94166b44eb1e7c54793a9",
+          "source_bytes": 1048576
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 32
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 12.12784200002659,
+        "baseline": 6.47743924999844,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -1007,7 +1084,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24854528.0,
+        "baseline": 10463232.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 33554432
@@ -1015,25 +1092,26 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "9d9d95ff56ec084a6cf0f45075b463b1cb788abaf264e5c13b67b24d99ea3850",
-          "source_bytes": 190017
+          "revision_digest": "6010ba5b8455ea6a81157130f6c42df4ffd9bc4e00e94166b44eb1e7c54793a9",
+          "source_bytes": 1048576
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 17
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 12
       },
       "wall_ms": {
-        "baseline": 12.248292249978476,
+        "baseline": 60.98038599996869,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 1000
@@ -1047,7 +1125,7 @@
         "max": 1099511627776
       },
       "peak_rss_bytes": {
-        "baseline": 24836096.0,
+        "baseline": 10291200.0,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 33554432
@@ -1055,28 +1133,29 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
-          "c1e0567bb193b4933154239b5e9c1fb69fb6240c"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 1,
           "id": "layer",
-          "revision_digest": "9d9d95ff56ec084a6cf0f45075b463b1cb788abaf264e5c13b67b24d99ea3850",
-          "source_bytes": 190017
+          "revision_digest": "6010ba5b8455ea6a81157130f6c42df4ffd9bc4e00e94166b44eb1e7c54793a9",
+          "source_bytes": 1048576
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33970977531",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971299726"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032489018",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032492558"
         ],
-        "sample_count": 20
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "sample_count": 10
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 11.322149499974898,
+        "baseline": 22.09752950000876,
         "blocking": true,
         "max_ratio": 1.15,
         "min_absolute_regression": 50
@@ -1130,7 +1209,7 @@
         "max": 20000
       },
       "peak_rss_bytes": {
-        "baseline": 288325632.0,
+        "baseline": 288251904.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1138,8 +1217,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 2,
@@ -1147,12 +1225,14 @@
           "revision_digest": "d89447adfaff9195848081da723417a957d3088607e5988c0d8b33bddc813421",
           "source_bytes": 13309
         },
+        "measurement_contract": 2,
         "mode": "cold",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 2
       },
       "structural": {
@@ -1198,7 +1278,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 152144.3903115,
+        "baseline": 154739.486443,
         "blocking": true,
         "max_ratio": 1.35,
         "min_absolute_regression": 60000
@@ -1212,7 +1292,7 @@
         "max": 20000
       },
       "peak_rss_bytes": {
-        "baseline": 288283648.0,
+        "baseline": 288329728.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1220,8 +1300,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 2,
@@ -1229,12 +1308,14 @@
           "revision_digest": "d89447adfaff9195848081da723417a957d3088607e5988c0d8b33bddc813421",
           "source_bytes": 13309
         },
+        "measurement_contract": 2,
         "mode": "warm",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 4
       },
       "structural": {
@@ -1280,7 +1361,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 11205.239240999987,
+        "baseline": 11260.496256250008,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 30000
@@ -1294,7 +1375,7 @@
         "max": 1000000
       },
       "peak_rss_bytes": {
-        "baseline": 56850432.0,
+        "baseline": 56952832.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 67108864
@@ -1302,8 +1383,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 3451,
@@ -1311,19 +1391,21 @@
           "revision_digest": "227bf7c2e214c87b87572c4e2b09cc26691c1612b8b5f65ef8d20e4fb3b92c90",
           "source_bytes": 8050911
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 6
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 1678.4293945000286,
+        "baseline": 1687.421661000002,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 2000
@@ -1331,7 +1413,7 @@
     },
     "yocto-5.0-semantic-full": {
       "peak_rss_bytes": {
-        "baseline": 68026368.0,
+        "baseline": 67842048.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1339,21 +1421,22 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
-          "files": 4,
+          "files": 2,
           "id": "bbtidy-semantic-build",
-          "revision_digest": "5c173d85fd84e51a19139d12210d15da0185967929b4811a868e991dd56a00df",
-          "source_bytes": 67316
+          "revision_digest": "d89447adfaff9195848081da723417a957d3088607e5988c0d8b33bddc813421",
+          "source_bytes": 13309
         },
+        "measurement_contract": 2,
         "mode": "cold",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 2
       },
       "structural": {
@@ -1399,7 +1482,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 430560.578421,
+        "baseline": 426782.1222545,
         "blocking": true,
         "max_ratio": 1.35,
         "min_absolute_regression": 60000
@@ -1413,7 +1496,7 @@
         "max": 20000
       },
       "peak_rss_bytes": {
-        "baseline": 343631872.0,
+        "baseline": 343257088.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1421,8 +1504,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 2,
@@ -1430,12 +1512,14 @@
           "revision_digest": "16f4aae723ea997e1e5980bf959721c522c3191f4907c797c66d3287fbe1371d",
           "source_bytes": 11991
         },
+        "measurement_contract": 2,
         "mode": "cold",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 2
       },
       "structural": {
@@ -1481,7 +1565,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 163176.53858800008,
+        "baseline": 164168.554094,
         "blocking": true,
         "max_ratio": 1.35,
         "min_absolute_regression": 60000
@@ -1495,7 +1579,7 @@
         "max": 20000
       },
       "peak_rss_bytes": {
-        "baseline": 343757824.0,
+        "baseline": 343374848.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1503,8 +1587,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 2,
@@ -1512,12 +1595,14 @@
           "revision_digest": "16f4aae723ea997e1e5980bf959721c522c3191f4907c797c66d3287fbe1371d",
           "source_bytes": 11991
         },
+        "measurement_contract": 2,
         "mode": "warm",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 4
       },
       "structural": {
@@ -1563,7 +1648,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 84651.76403375005,
+        "baseline": 85367.49815475,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 30000
@@ -1577,7 +1662,7 @@
         "max": 1000000
       },
       "peak_rss_bytes": {
-        "baseline": 60143616.0,
+        "baseline": 60176384.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 67108864
@@ -1585,8 +1670,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 3733,
@@ -1594,19 +1678,21 @@
           "revision_digest": "17205a203cc33ac8adfce691bc74cfe8e896fe9216132543ca1d21a7e2f38295",
           "source_bytes": 8152935
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 6
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 1801.7666890002033,
+        "baseline": 1809.886105999965,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 2000
@@ -1614,7 +1700,7 @@
     },
     "yocto-6.0-semantic-full": {
       "peak_rss_bytes": {
-        "baseline": 69197824.0,
+        "baseline": 68603904.0,
         "blocking": true,
         "max_ratio": 1.25,
         "min_absolute_regression": 268435456
@@ -1622,21 +1708,22 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
-          "files": 4,
+          "files": 2,
           "id": "bbtidy-semantic-build",
-          "revision_digest": "19528e0da1b0441d714a33a36f8c61bf21a3a01f4fdeb215b6640c5dd5ed2b92",
-          "source_bytes": 65998
+          "revision_digest": "16f4aae723ea997e1e5980bf959721c522c3191f4907c797c66d3287fbe1371d",
+          "source_bytes": 11991
         },
+        "measurement_contract": 2,
         "mode": "cold",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 2
       },
       "structural": {
@@ -1682,7 +1769,7 @@
         }
       },
       "wall_ms": {
-        "baseline": 641148.2389625001,
+        "baseline": 643694.3511060001,
         "blocking": true,
         "max_ratio": 1.35,
         "min_absolute_regression": 60000
@@ -1696,7 +1783,7 @@
         "max": 1000000
       },
       "peak_rss_bytes": {
-        "baseline": 30556160.0,
+        "baseline": 30537728.0,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 67108864
@@ -1704,8 +1791,7 @@
       "reference": {
         "aggregation": "median of per-run medians",
         "commits": [
-          "21a7b25f7220876e663c13626a68e64e582f5c68",
-          "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+          "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
         ],
         "corpus": {
           "files": 683,
@@ -1713,19 +1799,21 @@
           "revision_digest": "e971dc6d2a3de29cbab5de6b56d67339ca0000ece7a754b2384559791ea3637e",
           "source_bytes": 5603933
         },
+        "measurement_contract": 2,
         "mode": "offline",
-        "reason": "Initial repeated native Linux reference runs after write-safety hardening; preserve existing regression thresholds.",
+        "reason": "Recalibrate measurement contract 2: real repeated writes, full MiB shell input, isolated native child RSS and Rust 1.91.1.",
         "run_urls": [
-          "https://github.com/jorisguex/bbtidy/actions/runs/33949444432",
-          "https://github.com/jorisguex/bbtidy/actions/runs/33971300100"
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032332486",
+          "https://github.com/jorisguex/bbtidy/actions/runs/34032336315"
         ],
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
         "sample_count": 6
       },
       "structural.unknown_nodes": {
         "max": 1000000
       },
       "wall_ms": {
-        "baseline": 343.1933185000702,
+        "baseline": 354.4190934999847,
         "blocking": true,
         "max_ratio": 1.2,
         "min_absolute_regression": 2000

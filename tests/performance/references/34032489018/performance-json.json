@@ -1,0 +1,2111 @@
+{
+  "kind": "bbtidy-performance-suite",
+  "records": [
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "241098d549ea4d59c6e37a3c7f76c0c417ca9f100cfa63199eeab060cd4b7aca",
+        "source_bytes": 1027
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 3.3454389999860723,
+        "resolution_ms": 0,
+        "rule_ms": 101.29817999995794,
+        "serialization_ms": 101.29817999995794,
+        "sort_ms": 0,
+        "source_read_ms": 0.009154000053968048,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.04413899989685888
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 27,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.1139999999999999,
+            "user_cpu_ms": 0.615,
+            "wall_ms": 1.8567700000176046,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.559,
+            "wall_ms": 1.6901330000109738,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.606,
+            "user_cpu_ms": 1.008,
+            "wall_ms": 1.7322820000345018,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5386240,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.971,
+            "user_cpu_ms": 0.508,
+            "wall_ms": 1.5939579999439957,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.48,
+            "wall_ms": 1.654167000083362,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.378,
+            "wall_ms": 1.4887540000927402,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.5409999999999999,
+            "user_cpu_ms": 0.9159999999999999,
+            "wall_ms": 1.587220000033085,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.9299999999999999,
+            "user_cpu_ms": 0.49699999999999994,
+            "wall_ms": 1.5352440000242495,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5386240,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.539,
+            "user_cpu_ms": 0.892,
+            "wall_ms": 1.5637360000937406,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.909,
+            "user_cpu_ms": 0.512,
+            "wall_ms": 1.5528970000104891,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5210112,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.531,
+            "user_cpu_ms": 0.882,
+            "wall_ms": 1.532590000010714,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5058560,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.404,
+            "wall_ms": 1.5109590000292883,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.887,
+            "user_cpu_ms": 0.5,
+            "wall_ms": 1.520325999990746,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.4009999999999998,
+            "wall_ms": 1.543791000017336,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5058560,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.8159999999999998,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 1.96184899994023,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.5899999999999999,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 1.7114029999447666,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.975,
+            "user_cpu_ms": 0.5339999999999999,
+            "wall_ms": 1.63882399999693,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5111808,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.438,
+            "wall_ms": 1.5979749999814885,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.4469999999999998,
+            "wall_ms": 1.6039239999372512,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.502,
+            "user_cpu_ms": 0.943,
+            "wall_ms": 1.5561559999923702,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5058560,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.4289999999999998,
+            "wall_ms": 1.5983600000026854,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.523,
+            "user_cpu_ms": 0.919,
+            "wall_ms": 1.5770719999181892,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.923,
+            "user_cpu_ms": 0.49699999999999994,
+            "wall_ms": 1.551619999986542,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.49799999999999994,
+            "user_cpu_ms": 0.942,
+            "wall_ms": 1.5565960000003543,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5058560,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.337,
+            "user_cpu_ms": 1.062,
+            "wall_ms": 2.9047379999838085,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 2.077,
+            "user_cpu_ms": 0.0,
+            "wall_ms": 2.265583000053084,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1027
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1027
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.295,
+            "user_cpu_ms": 0.8619999999999999,
+            "wall_ms": 101.29817999995794,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 30,
+        "trivia_nodes": 27,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 2.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 12958.0,
+          "source_bytes": 1027.0
+        },
+        "peak_rss_bytes": 5124096.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 3.3454389999860723,
+          "resolution_ms": 0.0,
+          "rule_ms": 101.29817999995794,
+          "serialization_ms": 101.29817999995794,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.009154000053968048,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.04413899989685888
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5386240.0,
+            "median": 5124096.0,
+            "min": 5058560.0,
+            "p90": 5255168.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 2.077,
+            "median": 0.5409999999999999,
+            "min": 0.0,
+            "p90": 1.5899999999999999
+          },
+          "user_cpu_ms": {
+            "max": 1.559,
+            "median": 0.9159999999999999,
+            "min": 0.0,
+            "p90": 1.4469999999999998
+          },
+          "wall_ms": {
+            "max": 101.29817999995794,
+            "median": 1.5939579999439957,
+            "min": 1.4887540000927402,
+            "p90": 2.265583000053084
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 30.0,
+          "trivia_nodes": 27.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 0.5409999999999999,
+        "user_cpu_ms": 0.9159999999999999,
+        "wall_ms": 1.5939579999439957,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-1k-json"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "2cf6b7873c620e824cd357bf8df4334a05bb54291611521b61fc6a2755165a34",
+        "source_bytes": 10241
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 59.688633999940066,
+        "resolution_ms": 0,
+        "rule_ms": 106.30445000003874,
+        "serialization_ms": 106.30445000003874,
+        "sort_ms": 0,
+        "source_read_ms": 0.007330000016736449,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.034736999964479764
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 3,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 1.645,
+            "wall_ms": 160.39436100004423,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5255168,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.7549999999999999,
+            "user_cpu_ms": 1.21,
+            "wall_ms": 30.371124999987842,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 10241
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 10241
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5189632,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 1.121,
+            "user_cpu_ms": 0.6619999999999999,
+            "wall_ms": 106.30445000003874,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 301,
+        "trivia_nodes": 298,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 2.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 12958.0,
+          "source_bytes": 10241.0
+        },
+        "peak_rss_bytes": 5255168.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 59.688633999940066,
+          "resolution_ms": 0.0,
+          "rule_ms": 106.30445000003874,
+          "serialization_ms": 106.30445000003874,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.007330000016736449,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.034736999964479764
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5255168.0,
+            "median": 5255168.0,
+            "min": 5189632.0,
+            "p90": 5255168.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 1.121,
+            "median": 0.7549999999999999,
+            "min": 0.0,
+            "p90": 1.121
+          },
+          "user_cpu_ms": {
+            "max": 1.645,
+            "median": 1.21,
+            "min": 0.6619999999999999,
+            "p90": 1.645
+          },
+          "wall_ms": {
+            "max": 160.39436100004423,
+            "median": 106.30445000003874,
+            "min": 30.371124999987842,
+            "p90": 160.39436100004423
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 301.0,
+          "trivia_nodes": 298.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 0.7549999999999999,
+        "user_cpu_ms": 1.21,
+        "wall_ms": 106.30445000003874,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-10k-json"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "2c447e6ea601b0929e7bcd4cc4e02b75a879119c3e199487f8f6f73d1d89eea4",
+        "source_bytes": 102415
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 79.42321799998808,
+        "resolution_ms": 0,
+        "rule_ms": 100.91883300003701,
+        "serialization_ms": 100.91883300003701,
+        "sort_ms": 0,
+        "source_read_ms": 0.009479000027567963,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.03320199994050199
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 3,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5582848,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.6619999999999999,
+            "user_cpu_ms": 1.626,
+            "wall_ms": 104.13557500010029,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5451776,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.597,
+            "wall_ms": 84.63822700002765,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 102415
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 102415
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5779456,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 0.0,
+            "user_cpu_ms": 2.46,
+            "wall_ms": 100.91883300003701,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 3012,
+        "trivia_nodes": 3009,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 2.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 12958.0,
+          "source_bytes": 102415.0
+        },
+        "peak_rss_bytes": 5582848.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 79.42321799998808,
+          "resolution_ms": 0.0,
+          "rule_ms": 100.91883300003701,
+          "serialization_ms": 100.91883300003701,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.009479000027567963,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.03320199994050199
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5779456.0,
+            "median": 5582848.0,
+            "min": 5451776.0,
+            "p90": 5779456.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 0.6619999999999999,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.6619999999999999
+          },
+          "user_cpu_ms": {
+            "max": 2.597,
+            "median": 2.46,
+            "min": 1.626,
+            "p90": 2.597
+          },
+          "wall_ms": {
+            "max": 104.13557500010029,
+            "median": 100.91883300003701,
+            "min": 84.63822700002765,
+            "p90": 104.13557500010029
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 3012.0,
+          "trivia_nodes": 3009.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 0.0,
+        "user_cpu_ms": 2.46,
+        "wall_ms": 100.91883300003701,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-100k-json"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "6a6df534f43c0d4d241e12507e899371eeb514304636522467802e5b17a01155",
+        "source_bytes": 1048601
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 71.97023199989872,
+        "resolution_ms": 0,
+        "rule_ms": 109.52768900006049,
+        "serialization_ms": 109.52768900006049,
+        "sort_ms": 0,
+        "source_read_ms": 0.07119999997939885,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.046418000010817195
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 3,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10104832,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 2.856,
+            "user_cpu_ms": 5.285,
+            "wall_ms": 116.4525510000658,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 9842688,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 2.9139999999999997,
+            "user_cpu_ms": 5.62,
+            "wall_ms": 105.78154300003462,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 2,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 12958,
+            "source_bytes": 1048601
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 2,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 12958,
+              "source_bytes": 1048601
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10039296,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 12958,
+            "system_cpu_ms": 4.77,
+            "user_cpu_ms": 3.9459999999999997,
+            "wall_ms": 109.52768900006049,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 3,
+        "total_nodes": 30841,
+        "trivia_nodes": 30838,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 2.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 12958.0,
+          "source_bytes": 1048601.0
+        },
+        "peak_rss_bytes": 10039296.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 71.97023199989872,
+          "resolution_ms": 0.0,
+          "rule_ms": 109.52768900006049,
+          "serialization_ms": 109.52768900006049,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.07119999997939885,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.046418000010817195
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 10104832.0,
+            "median": 10039296.0,
+            "min": 9842688.0,
+            "p90": 10104832.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 4.77,
+            "median": 2.9139999999999997,
+            "min": 2.856,
+            "p90": 4.77
+          },
+          "user_cpu_ms": {
+            "max": 5.62,
+            "median": 5.285,
+            "min": 3.9459999999999997,
+            "p90": 5.62
+          },
+          "wall_ms": {
+            "max": 116.4525510000658,
+            "median": 109.52768900006049,
+            "min": 105.78154300003462,
+            "p90": 116.4525510000658
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 3.0,
+          "total_nodes": 30841.0,
+          "trivia_nodes": 30838.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 2.9139999999999997,
+        "user_cpu_ms": 5.285,
+        "wall_ms": 109.52768900006049,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "recipe-1024k-json"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "8abc63a7cd92b42190ae00e50122188845f2019d0c2e5309140a774ed582577a",
+        "source_bytes": 25906
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 83.14921099997719,
+        "resolution_ms": 0,
+        "rule_ms": 98.97004799995557,
+        "serialization_ms": 98.97004799995557,
+        "sort_ms": 0,
+        "source_read_ms": 0.007814000014150224,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.034211000070172304
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 3,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 0.7689999999999999,
+            "user_cpu_ms": 1.4739999999999998,
+            "wall_ms": 107.61032499999601,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 1.539,
+            "user_cpu_ms": 0.7779999999999999,
+            "wall_ms": 107.84439400003976,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 25906
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 25906
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 5124096,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 0.794,
+            "user_cpu_ms": 1.6219999999999999,
+            "wall_ms": 98.97004799995557,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 1,
+        "total_nodes": 1,
+        "trivia_nodes": 0,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 11632.0,
+          "source_bytes": 25906.0
+        },
+        "peak_rss_bytes": 5124096.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 83.14921099997719,
+          "resolution_ms": 0.0,
+          "rule_ms": 98.97004799995557,
+          "serialization_ms": 98.97004799995557,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.007814000014150224,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.034211000070172304
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 5124096.0,
+            "median": 5124096.0,
+            "min": 5124096.0,
+            "p90": 5124096.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 1.539,
+            "median": 0.794,
+            "min": 0.7689999999999999,
+            "p90": 1.539
+          },
+          "user_cpu_ms": {
+            "max": 1.6219999999999999,
+            "median": 1.4739999999999998,
+            "min": 0.7779999999999999,
+            "p90": 1.6219999999999999
+          },
+          "wall_ms": {
+            "max": 107.84439400003976,
+            "median": 107.61032499999601,
+            "min": 98.97004799995557,
+            "p90": 107.84439400003976
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 1.0,
+          "total_nodes": 1.0,
+          "trivia_nodes": 0.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 0.794,
+        "user_cpu_ms": 1.4739999999999998,
+        "wall_ms": 107.61032499999601,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "continued-1000-json"
+    },
+    {
+      "aggregation": {
+        "method": "median",
+        "p90": "nearest-rank"
+      },
+      "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
+      "corpus": {
+        "files": 1,
+        "id": "layer",
+        "revision_digest": "6010ba5b8455ea6a81157130f6c42df4ffd9bc4e00e94166b44eb1e7c54793a9",
+        "source_bytes": 1048576
+      },
+      "kind": "bbtidy-performance",
+      "mode": "offline",
+      "phase_timings": {
+        "baseline_ms": 0,
+        "body_ms": 0,
+        "config_ms": 0,
+        "diff_ms": 0,
+        "exclusion_ms": 0,
+        "index_ms": 0,
+        "method": "operation-level timing; unavailable subphases are zero and labelled",
+        "override_ms": 0,
+        "parse_ms": 18.311932000074194,
+        "resolution_ms": 0,
+        "rule_ms": 55.283325999994304,
+        "serialization_ms": 55.283325999994304,
+        "sort_ms": 0,
+        "source_read_ms": 0.07753800002774369,
+        "suppression_ms": 0,
+        "transaction_ms": 0,
+        "traversal_ms": 0.055103000022427295
+      },
+      "runner": {
+        "architecture": "x86_64",
+        "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+        "bitbake": null,
+        "class": "github-ubuntu-24.04-x86_64",
+        "cpu": "x86_64",
+        "logical_cores": 4,
+        "measurement_contract": 2,
+        "memory_bytes": 16765378560,
+        "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "resource_backends": {
+          "cgroup": true,
+          "cpu": "wait4",
+          "gnu_time": true,
+          "io": "procfs",
+          "memory": "procfs+gnu-time-child",
+          "output_capture": "temporary-files",
+          "process_tree": "procfs",
+          "spawn": "posix_spawnp-setsid"
+        },
+        "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+        "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+      },
+      "sample_count": 3,
+      "samples": [
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10493952,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 4.634,
+            "user_cpu_ms": 12.203999999999999,
+            "wall_ms": 127.56949599997824,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 11005952,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 3.799,
+            "user_cpu_ms": 13.162999999999998,
+            "wall_ms": 109.7008529999357,
+            "written_bytes": 0
+          }
+        },
+        {
+          "bbtidy": {
+            "diagnostics": 0,
+            "files_discovered": 1,
+            "files_parsed": 1,
+            "output_bytes": 11632,
+            "source_bytes": 1048576
+          },
+          "result": {
+            "bbtidy": {
+              "diagnostics": 0,
+              "files_discovered": 1,
+              "files_parsed": 1,
+              "output_bytes": 11632,
+              "source_bytes": 1048576
+            },
+            "exit_code": 0,
+            "peak_rss_bytes": 10481664,
+            "read_bytes": 0,
+            "status": "success",
+            "stderr_bytes": 0,
+            "stdout_bytes": 11632,
+            "system_cpu_ms": 2.706,
+            "user_cpu_ms": 14.6,
+            "wall_ms": 55.283325999994304,
+            "written_bytes": 0
+          }
+        }
+      ],
+      "schema": 1,
+      "structural": {
+        "files": 1,
+        "structured_nodes": 1,
+        "total_nodes": 1,
+        "trivia_nodes": 0,
+        "unknown_bytes": 0,
+        "unknown_nodes": 0
+      },
+      "summary": {
+        "bbtidy": {
+          "diagnostics": 0.0,
+          "files_discovered": 1.0,
+          "files_parsed": 1.0,
+          "output_bytes": 11632.0,
+          "source_bytes": 1048576.0
+        },
+        "peak_rss_bytes": 10493952.0,
+        "phases": {
+          "baseline_ms": 0.0,
+          "body_ms": 0.0,
+          "config_ms": 0.0,
+          "diff_ms": 0.0,
+          "exclusion_ms": 0.0,
+          "index_ms": 0.0,
+          "override_ms": 0.0,
+          "parse_ms": 18.311932000074194,
+          "resolution_ms": 0.0,
+          "rule_ms": 55.283325999994304,
+          "serialization_ms": 55.283325999994304,
+          "sort_ms": 0.0,
+          "source_read_ms": 0.07753800002774369,
+          "suppression_ms": 0.0,
+          "transaction_ms": 0.0,
+          "traversal_ms": 0.055103000022427295
+        },
+        "read_bytes": 0.0,
+        "sample_ranges": {
+          "peak_rss_bytes": {
+            "max": 11005952.0,
+            "median": 10493952.0,
+            "min": 10481664.0,
+            "p90": 11005952.0
+          },
+          "read_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          },
+          "system_cpu_ms": {
+            "max": 4.634,
+            "median": 3.799,
+            "min": 2.706,
+            "p90": 4.634
+          },
+          "user_cpu_ms": {
+            "max": 14.6,
+            "median": 13.162999999999998,
+            "min": 12.203999999999999,
+            "p90": 14.6
+          },
+          "wall_ms": {
+            "max": 127.56949599997824,
+            "median": 109.7008529999357,
+            "min": 55.283325999994304,
+            "p90": 127.56949599997824
+          },
+          "written_bytes": {
+            "max": 0.0,
+            "median": 0.0,
+            "min": 0.0,
+            "p90": 0.0
+          }
+        },
+        "status": "success",
+        "structural": {
+          "files": 1.0,
+          "structured_nodes": 1.0,
+          "total_nodes": 1.0,
+          "trivia_nodes": 0.0,
+          "unknown_bytes": 0.0,
+          "unknown_nodes": 0.0
+        },
+        "system_cpu_ms": 3.799,
+        "user_cpu_ms": 13.162999999999998,
+        "wall_ms": 109.7008529999357,
+        "written_bytes": 0.0
+      },
+      "version": "bbtidy 0.1.0-alpha.5",
+      "workload": "shell-body-1m-json"
+    }
+  ],
+  "runner": {
+    "architecture": "x86_64",
+    "bbtidy_version": "bbtidy 0.1.0-alpha.5",
+    "bitbake": null,
+    "class": "github-ubuntu-24.04-x86_64",
+    "cpu": "x86_64",
+    "logical_cores": 4,
+    "measurement_contract": 2,
+    "memory_bytes": 16765378560,
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "resource_backends": {
+      "cgroup": true,
+      "cpu": "wait4",
+      "gnu_time": true,
+      "io": "procfs",
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
+    },
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
+  },
+  "schema": 1
+}

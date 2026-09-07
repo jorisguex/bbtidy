@@ -78,10 +78,19 @@ def populate(budget_path: Path, manifest_path: Path, reason: str) -> dict:
             raise BudgetError(f"{workload} reference modes, corpora, measurement contracts, or compilers differ")
         rules = workload_rules(workload, budget)
         changes[workload] = {}
+        aggregations = {}
         for metric in ("wall_ms", "peak_rss_bytes"):
             if metric not in rules:
                 raise BudgetError(f"{workload} needs an explicit {metric} policy")
-            baseline = statistics.median(record["summary"][metric] for _, record in references)
+            aggregation = rules[metric].get("reference_aggregation", "median of per-run medians")
+            values = [record["summary"][metric] for _, record in references]
+            if aggregation == "median of per-run medians":
+                baseline = statistics.median(values)
+            elif aggregation == "max of per-run medians" and metric == "wall_ms":
+                baseline = max(values)
+            else:
+                raise BudgetError(f"unsupported reference aggregation for {workload}.{metric}: {aggregation}")
+            aggregations[metric] = aggregation
             if baseline <= 0:
                 raise BudgetError(f"{workload}.{metric} reference must be positive")
             changes[workload][metric] = {"before": rules[metric].get("baseline"), "after": baseline}
@@ -98,6 +107,8 @@ def populate(budget_path: Path, manifest_path: Path, reason: str) -> dict:
         if first["runner"].get("measurement_contract") is not None:
             rules["reference"]["measurement_contract"] = first["runner"]["measurement_contract"]
             rules["reference"]["rust"] = first["runner"]["rust"]
+        if len(set(aggregations.values())) > 1:
+            rules["reference"]["aggregation"] = aggregations
         budget["workloads"][workload] = rules
 
     required = set(budget["policy"].get("required_baselines", [])) | grouped.keys()

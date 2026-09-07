@@ -3,12 +3,12 @@
     "method": "median",
     "p90": "nearest-rank"
   },
-  "commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9",
+  "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
   "corpus": {
     "files": 2,
     "id": "bbtidy-cold-build",
-    "revision_digest": "d89447adfaff9195848081da723417a957d3088607e5988c0d8b33bddc813421",
-    "source_bytes": 13309
+    "revision_digest": "16f4aae723ea997e1e5980bf959721c522c3191f4907c797c66d3287fbe1371d",
+    "source_bytes": 11991
   },
   "kind": "bbtidy-performance",
   "mode": "warm",
@@ -21,15 +21,15 @@
     "index_ms": 0,
     "method": "operation-level timing; unavailable subphases are zero and labelled",
     "override_ms": 0,
-    "parse_ms": 15.64188899999408,
+    "parse_ms": 3.554591000010987,
     "resolution_ms": 0,
-    "rule_ms": 11581.645542999922,
-    "serialization_ms": 11581.645542999922,
+    "rule_ms": 14354.993381999975,
+    "serialization_ms": 14354.993381999975,
     "sort_ms": 0,
-    "source_read_ms": 0.0586989999646903,
+    "source_read_ms": 0.04378199992061127,
     "suppression_ms": 0,
     "transaction_ms": 0,
-    "traversal_ms": 2.0452879999766083
+    "traversal_ms": 1.730597999994643
   },
   "runner": {
     "architecture": "x86_64",
@@ -38,18 +38,21 @@
     "class": "github-ubuntu-24.04-x86_64",
     "cpu": "x86_64",
     "logical_cores": 4,
-    "memory_bytes": 16769748992,
+    "measurement_contract": 2,
+    "memory_bytes": 16765411328,
     "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
     "resource_backends": {
       "cgroup": true,
-      "cpu": "rusage",
+      "cpu": "wait4",
       "gnu_time": true,
       "io": "procfs",
-      "memory": "procfs+rusage",
-      "process_tree": "procfs"
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
     },
-    "rust": "unknown",
-    "source_commit": "8cfd07b198523095a3f6b7f45c9654c82dad37e9"
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
   },
   "sample_count": 2,
   "samples": [
@@ -70,14 +73,14 @@
           "commands_succeeded": 3,
           "commands_timed_out": 0,
           "elapsed_ms_by_phase": {
-            "parse": 5057,
-            "recipe_environment": 2435,
-            "version": 244
+            "parse": 149685,
+            "recipe_environment": 3560,
+            "version": 264
           },
           "fallback_recipe_count": 0,
           "fallback_recipe_percentage": 0,
-          "helper_recipe_count": 2698,
-          "largest_output_bytes": 4889878,
+          "helper_recipe_count": 2935,
+          "largest_output_bytes": 7455304,
           "largest_output_phase": "recipe_environment",
           "last_failure_kind": null,
           "last_failure_phase": null,
@@ -95,36 +98,36 @@
               "secs": 7200
             }
           },
-          "max_stderr_bytes": 33,
-          "max_stdout_bytes": 4889845,
-          "operation_elapsed_ms": 11010,
+          "max_stderr_bytes": 330,
+          "max_stdout_bytes": 7454974,
+          "operation_elapsed_ms": 157304,
           "peak_live_processes": 1,
-          "postprocess_ms": 545,
-          "recipe_queries_completed": 2698,
-          "recipe_queries_scheduled": 2698,
+          "postprocess_ms": 562,
+          "recipe_queries_completed": 2935,
+          "recipe_queries_scheduled": 2935,
           "stderr_bytes_by_phase": {
             "parse": 0,
-            "recipe_environment": 33,
+            "recipe_environment": 330,
             "version": 0
           },
           "stdout_bytes_by_phase": {
-            "parse": 65,
-            "recipe_environment": 4889845,
-            "version": 38
+            "parse": 193,
+            "recipe_environment": 7454974,
+            "version": 39
           },
           "strategy": "tinfoil-cache-batch",
-          "tinfoil_parse_ms": 1569,
-          "tinfoil_prepare_ms": 569,
+          "tinfoil_parse_ms": 1930,
+          "tinfoil_prepare_ms": 1303,
           "total_commands": 3,
-          "total_stderr_bytes": 33,
-          "total_stdout_bytes": 4889948,
+          "total_stderr_bytes": 330,
+          "total_stdout_bytes": 7455206,
           "workspace_environment_parse_ms": 0
         },
-        "diagnostics": 2402,
+        "diagnostics": 2673,
         "files_discovered": 2,
         "files_parsed": 2,
-        "output_bytes": 1729570,
-        "source_bytes": 13309
+        "output_bytes": 1934492,
+        "source_bytes": 11991
       },
       "result": {
         "bbtidy": {
@@ -143,14 +146,14 @@
             "commands_succeeded": 3,
             "commands_timed_out": 0,
             "elapsed_ms_by_phase": {
-              "parse": 5057,
-              "recipe_environment": 2435,
-              "version": 244
+              "parse": 149685,
+              "recipe_environment": 3560,
+              "version": 264
             },
             "fallback_recipe_count": 0,
             "fallback_recipe_percentage": 0,
-            "helper_recipe_count": 2698,
-            "largest_output_bytes": 4889878,
+            "helper_recipe_count": 2935,
+            "largest_output_bytes": 7455304,
             "largest_output_phase": "recipe_environment",
             "last_failure_kind": null,
             "last_failure_phase": null,
@@ -168,47 +171,47 @@
                 "secs": 7200
               }
             },
-            "max_stderr_bytes": 33,
-            "max_stdout_bytes": 4889845,
-            "operation_elapsed_ms": 11010,
+            "max_stderr_bytes": 330,
+            "max_stdout_bytes": 7454974,
+            "operation_elapsed_ms": 157304,
             "peak_live_processes": 1,
-            "postprocess_ms": 545,
-            "recipe_queries_completed": 2698,
-            "recipe_queries_scheduled": 2698,
+            "postprocess_ms": 562,
+            "recipe_queries_completed": 2935,
+            "recipe_queries_scheduled": 2935,
             "stderr_bytes_by_phase": {
               "parse": 0,
-              "recipe_environment": 33,
+              "recipe_environment": 330,
               "version": 0
             },
             "stdout_bytes_by_phase": {
-              "parse": 65,
-              "recipe_environment": 4889845,
-              "version": 38
+              "parse": 193,
+              "recipe_environment": 7454974,
+              "version": 39
             },
             "strategy": "tinfoil-cache-batch",
-            "tinfoil_parse_ms": 1569,
-            "tinfoil_prepare_ms": 569,
+            "tinfoil_parse_ms": 1930,
+            "tinfoil_prepare_ms": 1303,
             "total_commands": 3,
-            "total_stderr_bytes": 33,
-            "total_stdout_bytes": 4889948,
+            "total_stderr_bytes": 330,
+            "total_stdout_bytes": 7455206,
             "workspace_environment_parse_ms": 0
           },
-          "diagnostics": 2402,
+          "diagnostics": 2673,
           "files_discovered": 2,
           "files_parsed": 2,
-          "output_bytes": 1729570,
-          "source_bytes": 13309
+          "output_bytes": 1934492,
+          "source_bytes": 11991
         },
         "exit_code": 0,
-        "peak_rss_bytes": 288301056,
+        "peak_rss_bytes": 343130112,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
-        "stdout_bytes": 1729570,
-        "system_cpu_ms": 2741.4610000000002,
-        "user_cpu_ms": 3764.945,
-        "wall_ms": 11068.787617999988,
-        "written_bytes": 221184
+        "stdout_bytes": 1934492,
+        "system_cpu_ms": 3384.6629999999996,
+        "user_cpu_ms": 4029.764,
+        "wall_ms": 157347.17770700002,
+        "written_bytes": 335872
       }
     },
     {
@@ -228,14 +231,14 @@
           "commands_succeeded": 3,
           "commands_timed_out": 0,
           "elapsed_ms_by_phase": {
-            "parse": 5185,
-            "recipe_environment": 2767,
+            "parse": 6695,
+            "recipe_environment": 3584,
             "version": 254
           },
           "fallback_recipe_count": 0,
           "fallback_recipe_percentage": 0,
-          "helper_recipe_count": 2698,
-          "largest_output_bytes": 4889878,
+          "helper_recipe_count": 2935,
+          "largest_output_bytes": 7455304,
           "largest_output_phase": "recipe_environment",
           "last_failure_kind": null,
           "last_failure_phase": null,
@@ -253,36 +256,36 @@
               "secs": 7200
             }
           },
-          "max_stderr_bytes": 33,
-          "max_stdout_bytes": 4889845,
-          "operation_elapsed_ms": 11531,
+          "max_stderr_bytes": 330,
+          "max_stdout_bytes": 7454974,
+          "operation_elapsed_ms": 14308,
           "peak_live_processes": 1,
-          "postprocess_ms": 547,
-          "recipe_queries_completed": 2698,
-          "recipe_queries_scheduled": 2698,
+          "postprocess_ms": 560,
+          "recipe_queries_completed": 2935,
+          "recipe_queries_scheduled": 2935,
           "stderr_bytes_by_phase": {
             "parse": 0,
-            "recipe_environment": 33,
+            "recipe_environment": 330,
             "version": 0
           },
           "stdout_bytes_by_phase": {
             "parse": 65,
-            "recipe_environment": 4889845,
-            "version": 38
+            "recipe_environment": 7454974,
+            "version": 39
           },
           "strategy": "tinfoil-cache-batch",
-          "tinfoil_parse_ms": 1568,
-          "tinfoil_prepare_ms": 785,
+          "tinfoil_parse_ms": 2000,
+          "tinfoil_prepare_ms": 1247,
           "total_commands": 3,
-          "total_stderr_bytes": 33,
-          "total_stdout_bytes": 4889948,
+          "total_stderr_bytes": 330,
+          "total_stdout_bytes": 7455078,
           "workspace_environment_parse_ms": 0
         },
-        "diagnostics": 2402,
+        "diagnostics": 2673,
         "files_discovered": 2,
         "files_parsed": 2,
-        "output_bytes": 1729570,
-        "source_bytes": 13309
+        "output_bytes": 1934488,
+        "source_bytes": 11991
       },
       "result": {
         "bbtidy": {
@@ -301,14 +304,14 @@
             "commands_succeeded": 3,
             "commands_timed_out": 0,
             "elapsed_ms_by_phase": {
-              "parse": 5185,
-              "recipe_environment": 2767,
+              "parse": 6695,
+              "recipe_environment": 3584,
               "version": 254
             },
             "fallback_recipe_count": 0,
             "fallback_recipe_percentage": 0,
-            "helper_recipe_count": 2698,
-            "largest_output_bytes": 4889878,
+            "helper_recipe_count": 2935,
+            "largest_output_bytes": 7455304,
             "largest_output_phase": "recipe_environment",
             "last_failure_kind": null,
             "last_failure_phase": null,
@@ -326,47 +329,47 @@
                 "secs": 7200
               }
             },
-            "max_stderr_bytes": 33,
-            "max_stdout_bytes": 4889845,
-            "operation_elapsed_ms": 11531,
+            "max_stderr_bytes": 330,
+            "max_stdout_bytes": 7454974,
+            "operation_elapsed_ms": 14308,
             "peak_live_processes": 1,
-            "postprocess_ms": 547,
-            "recipe_queries_completed": 2698,
-            "recipe_queries_scheduled": 2698,
+            "postprocess_ms": 560,
+            "recipe_queries_completed": 2935,
+            "recipe_queries_scheduled": 2935,
             "stderr_bytes_by_phase": {
               "parse": 0,
-              "recipe_environment": 33,
+              "recipe_environment": 330,
               "version": 0
             },
             "stdout_bytes_by_phase": {
               "parse": 65,
-              "recipe_environment": 4889845,
-              "version": 38
+              "recipe_environment": 7454974,
+              "version": 39
             },
             "strategy": "tinfoil-cache-batch",
-            "tinfoil_parse_ms": 1568,
-            "tinfoil_prepare_ms": 785,
+            "tinfoil_parse_ms": 2000,
+            "tinfoil_prepare_ms": 1247,
             "total_commands": 3,
-            "total_stderr_bytes": 33,
-            "total_stdout_bytes": 4889948,
+            "total_stderr_bytes": 330,
+            "total_stdout_bytes": 7455078,
             "workspace_environment_parse_ms": 0
           },
-          "diagnostics": 2402,
+          "diagnostics": 2673,
           "files_discovered": 2,
           "files_parsed": 2,
-          "output_bytes": 1729570,
-          "source_bytes": 13309
+          "output_bytes": 1934488,
+          "source_bytes": 11991
         },
         "exit_code": 0,
-        "peak_rss_bytes": 288346112,
+        "peak_rss_bytes": 343805952,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
-        "stdout_bytes": 1729570,
-        "system_cpu_ms": 2755.8920000000003,
-        "user_cpu_ms": 3869.502,
-        "wall_ms": 11581.645542999922,
-        "written_bytes": 221184
+        "stdout_bytes": 1934488,
+        "system_cpu_ms": 3263.678,
+        "user_cpu_ms": 4312.12,
+        "wall_ms": 14354.993381999975,
+        "written_bytes": 2158592
       }
     }
   ],
@@ -374,11 +377,11 @@
   "structural": {},
   "summary": {
     "bbtidy": {
-      "diagnostics": 2402.0,
+      "diagnostics": 2673.0,
       "files_discovered": 2.0,
       "files_parsed": 2.0,
-      "output_bytes": 1729570.0,
-      "source_bytes": 13309.0
+      "output_bytes": 1934490.0,
+      "source_bytes": 11991.0
     },
     "bitbake": {
       "cache_hits": 0.0,
@@ -395,14 +398,14 @@
       "commands_succeeded": 3.0,
       "commands_timed_out": 0.0,
       "elapsed_ms_by_phase": {
-        "parse": 5057,
-        "recipe_environment": 2435,
-        "version": 244
+        "parse": 149685,
+        "recipe_environment": 3560,
+        "version": 264
       },
       "fallback_recipe_count": 0.0,
       "fallback_recipe_percentage": 0.0,
-      "helper_recipe_count": 2698.0,
-      "largest_output_bytes": 4889878.0,
+      "helper_recipe_count": 2935.0,
+      "largest_output_bytes": 7455304.0,
       "largest_output_phase": "recipe_environment",
       "last_failure_kind": null,
       "last_failure_phase": null,
@@ -420,32 +423,32 @@
           "secs": 7200
         }
       },
-      "max_stderr_bytes": 33.0,
-      "max_stdout_bytes": 4889845.0,
-      "operation_elapsed_ms": 11270.5,
+      "max_stderr_bytes": 330.0,
+      "max_stdout_bytes": 7454974.0,
+      "operation_elapsed_ms": 85806.0,
       "peak_live_processes": 1.0,
-      "postprocess_ms": 546.0,
-      "recipe_queries_completed": 2698.0,
-      "recipe_queries_scheduled": 2698.0,
+      "postprocess_ms": 561.0,
+      "recipe_queries_completed": 2935.0,
+      "recipe_queries_scheduled": 2935.0,
       "stderr_bytes_by_phase": {
         "parse": 0,
-        "recipe_environment": 33,
+        "recipe_environment": 330,
         "version": 0
       },
       "stdout_bytes_by_phase": {
-        "parse": 65,
-        "recipe_environment": 4889845,
-        "version": 38
+        "parse": 193,
+        "recipe_environment": 7454974,
+        "version": 39
       },
       "strategy": "tinfoil-cache-batch",
-      "tinfoil_parse_ms": 1568.5,
-      "tinfoil_prepare_ms": 677.0,
+      "tinfoil_parse_ms": 1965.0,
+      "tinfoil_prepare_ms": 1275.0,
       "total_commands": 3.0,
-      "total_stderr_bytes": 33.0,
-      "total_stdout_bytes": 4889948.0,
+      "total_stderr_bytes": 330.0,
+      "total_stdout_bytes": 7455142.0,
       "workspace_environment_parse_ms": 0.0
     },
-    "peak_rss_bytes": 288323584.0,
+    "peak_rss_bytes": 343468032.0,
     "phases": {
       "baseline_ms": 0.0,
       "body_ms": 0.0,
@@ -454,23 +457,23 @@
       "exclusion_ms": 0.0,
       "index_ms": 0.0,
       "override_ms": 0.0,
-      "parse_ms": 15.64188899999408,
+      "parse_ms": 3.554591000010987,
       "resolution_ms": 0.0,
-      "rule_ms": 11581.645542999922,
-      "serialization_ms": 11581.645542999922,
+      "rule_ms": 14354.993381999975,
+      "serialization_ms": 14354.993381999975,
       "sort_ms": 0.0,
-      "source_read_ms": 0.0586989999646903,
+      "source_read_ms": 0.04378199992061127,
       "suppression_ms": 0.0,
       "transaction_ms": 0.0,
-      "traversal_ms": 2.0452879999766083
+      "traversal_ms": 1.730597999994643
     },
     "read_bytes": 0.0,
     "sample_ranges": {
       "peak_rss_bytes": {
-        "max": 288346112.0,
-        "median": 288323584.0,
-        "min": 288301056.0,
-        "p90": 288346112.0
+        "max": 343805952.0,
+        "median": 343468032.0,
+        "min": 343130112.0,
+        "p90": 343805952.0
       },
       "read_bytes": {
         "max": 0.0,
@@ -479,37 +482,37 @@
         "p90": 0.0
       },
       "system_cpu_ms": {
-        "max": 2755.8920000000003,
-        "median": 2748.6765000000005,
-        "min": 2741.4610000000002,
-        "p90": 2755.8920000000003
+        "max": 3384.6629999999996,
+        "median": 3324.1704999999997,
+        "min": 3263.678,
+        "p90": 3384.6629999999996
       },
       "user_cpu_ms": {
-        "max": 3869.502,
-        "median": 3817.2235,
-        "min": 3764.945,
-        "p90": 3869.502
+        "max": 4312.12,
+        "median": 4170.942,
+        "min": 4029.764,
+        "p90": 4312.12
       },
       "wall_ms": {
-        "max": 11581.645542999922,
-        "median": 11325.216580499955,
-        "min": 11068.787617999988,
-        "p90": 11581.645542999922
+        "max": 157347.17770700002,
+        "median": 85851.0855445,
+        "min": 14354.993381999975,
+        "p90": 157347.17770700002
       },
       "written_bytes": {
-        "max": 221184.0,
-        "median": 221184.0,
-        "min": 221184.0,
-        "p90": 221184.0
+        "max": 2158592.0,
+        "median": 1247232.0,
+        "min": 335872.0,
+        "p90": 2158592.0
       }
     },
     "status": "success",
     "structural": {},
-    "system_cpu_ms": 2748.6765000000005,
-    "user_cpu_ms": 3817.2235,
-    "wall_ms": 11325.216580499955,
-    "written_bytes": 221184.0
+    "system_cpu_ms": 3324.1704999999997,
+    "user_cpu_ms": 4170.942,
+    "wall_ms": 85851.0855445,
+    "written_bytes": 1247232.0
   },
   "version": "bbtidy 0.1.0-alpha.5",
-  "workload": "yocto-5.0-bitbake-warm"
+  "workload": "yocto-6.0-bitbake-warm"
 }

@@ -389,6 +389,32 @@ class PerformanceTests(unittest.TestCase):
                         ) + 1
                         self.assertEqual(compare_record(changed, budget)["status"], "failed")
 
+    def test_write_reference_envelope_preserves_slow_runs_and_memory_median(self):
+        import statistics
+        budget_path = Path("tests/performance/budgets.json")
+        budget = load_budgets(budget_path)
+        references = []
+        root = Path("tests/performance/references")
+        for entry in json.loads((root / "manifest.json").read_text())["evidence"]:
+            evidence = load_evidence(root / entry["path"])
+            references.extend(item for item in evidence.get("records", [evidence])
+                              if item["workload"] == "recipe-1k-format")
+        rules = budget["workloads"]["recipe-1k-format"]
+        self.assertGreaterEqual(len(references), 2)
+        self.assertEqual(rules["wall_ms"]["baseline"], max(item["summary"]["wall_ms"] for item in references))
+        self.assertEqual(rules["peak_rss_bytes"]["baseline"], statistics.median(item["summary"]["peak_rss_bytes"] for item in references))
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"BBTIDY_ALLOW_PERFORMANCE_UPDATE": "1"}):
+            target = Path(directory) / "budgets.json"
+            for metric, aggregation in (("wall_ms", "unsupported"), ("peak_rss_bytes", "max of per-run medians")):
+                changed = copy.deepcopy(budget)
+                changed["workloads"]["recipe-1k-format"][metric]["reference_aggregation"] = aggregation
+                target.write_text(json.dumps(changed))
+                before = target.read_bytes()
+                with self.assertRaisesRegex(BudgetError, "unsupported reference aggregation"):
+                    populate(target, root / "manifest.json", "reject unsupported calibration")
+                self.assertEqual(target.read_bytes(), before)
+
     def test_populated_baseline_rejects_changed_identity_and_failed_samples(self):
         budget = load_budgets(Path("tests/performance/budgets.json"))
         reference = reference_record("recipe-1k-json")

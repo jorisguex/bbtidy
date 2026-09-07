@@ -3,7 +3,7 @@
     "method": "median",
     "p90": "nearest-rank"
   },
-  "commit": "21a7b25f7220876e663c13626a68e64e582f5c68",
+  "commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29",
   "corpus": {
     "files": 3733,
     "id": "bbtidy-performance-source",
@@ -21,15 +21,15 @@
     "index_ms": 0,
     "method": "operation-level timing; unavailable subphases are zero and labelled",
     "override_ms": 0,
-    "parse_ms": 253.73456699981034,
+    "parse_ms": 248.65250499999547,
     "resolution_ms": 0,
-    "rule_ms": 1807.95261700041,
-    "serialization_ms": 1807.95261700041,
+    "rule_ms": 1807.6292929999909,
+    "serialization_ms": 1807.6292929999909,
     "sort_ms": 0,
-    "source_read_ms": 64.24829600018711,
+    "source_read_ms": 55.60415100001137,
     "suppression_ms": 0,
     "transaction_ms": 0,
-    "traversal_ms": 211.7102590000286
+    "traversal_ms": 192.84585999992032
   },
   "runner": {
     "architecture": "x86_64",
@@ -38,18 +38,21 @@
     "class": "github-ubuntu-24.04-x86_64",
     "cpu": "x86_64",
     "logical_cores": 4,
+    "measurement_contract": 2,
     "memory_bytes": 16765411328,
     "os": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
     "resource_backends": {
       "cgroup": true,
-      "cpu": "rusage",
+      "cpu": "wait4",
       "gnu_time": true,
       "io": "procfs",
-      "memory": "procfs+rusage",
-      "process_tree": "procfs"
+      "memory": "procfs+gnu-time-child",
+      "output_capture": "temporary-files",
+      "process_tree": "procfs",
+      "spawn": "posix_spawnp-setsid"
     },
-    "rust": "unknown",
-    "source_commit": "21a7b25f7220876e663c13626a68e64e582f5c68"
+    "rust": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "source_commit": "73b3b2b2498aadd041373230d4a0e91cd9c61f29"
   },
   "sample_count": 3,
   "samples": [
@@ -70,14 +73,14 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60051456,
+        "peak_rss_bytes": 60235776,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 743.564,
-        "user_cpu_ms": 1049.385,
-        "wall_ms": 1809.4499460003135,
+        "system_cpu_ms": 762.512,
+        "user_cpu_ms": 1056.649,
+        "wall_ms": 1819.4851299999755,
         "written_bytes": 0
       }
     },
@@ -98,15 +101,15 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60051456,
+        "peak_rss_bytes": 60022784,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 733.8109999999999,
-        "user_cpu_ms": 1060.727,
-        "wall_ms": 1803.9963090004676,
-        "written_bytes": 0
+        "system_cpu_ms": 721.0569999999999,
+        "user_cpu_ms": 1102.588,
+        "wall_ms": 1823.9753540000265,
+        "written_bytes": 1912832
       }
     },
     {
@@ -126,14 +129,14 @@
           "source_bytes": 8152935
         },
         "exit_code": 0,
-        "peak_rss_bytes": 60264448,
+        "peak_rss_bytes": 60174336,
         "read_bytes": 0,
         "status": "success",
         "stderr_bytes": 0,
         "stdout_bytes": 1911382,
-        "system_cpu_ms": 720.723,
-        "user_cpu_ms": 1079.082,
-        "wall_ms": 1807.95261700041,
+        "system_cpu_ms": 719.1659999999999,
+        "user_cpu_ms": 1088.0069999999998,
+        "wall_ms": 1807.6292929999909,
         "written_bytes": 0
       }
     }
@@ -155,7 +158,7 @@
       "output_bytes": 1911382.0,
       "source_bytes": 8152935.0
     },
-    "peak_rss_bytes": 60051456.0,
+    "peak_rss_bytes": 60174336.0,
     "phases": {
       "baseline_ms": 0.0,
       "body_ms": 0.0,
@@ -164,23 +167,23 @@
       "exclusion_ms": 0.0,
       "index_ms": 0.0,
       "override_ms": 0.0,
-      "parse_ms": 253.73456699981034,
+      "parse_ms": 248.65250499999547,
       "resolution_ms": 0.0,
-      "rule_ms": 1807.95261700041,
-      "serialization_ms": 1807.95261700041,
+      "rule_ms": 1807.6292929999909,
+      "serialization_ms": 1807.6292929999909,
       "sort_ms": 0.0,
-      "source_read_ms": 64.24829600018711,
+      "source_read_ms": 55.60415100001137,
       "suppression_ms": 0.0,
       "transaction_ms": 0.0,
-      "traversal_ms": 211.7102590000286
+      "traversal_ms": 192.84585999992032
     },
     "read_bytes": 0.0,
     "sample_ranges": {
       "peak_rss_bytes": {
-        "max": 60264448.0,
-        "median": 60051456.0,
-        "min": 60051456.0,
-        "p90": 60264448.0
+        "max": 60235776.0,
+        "median": 60174336.0,
+        "min": 60022784.0,
+        "p90": 60235776.0
       },
       "read_bytes": {
         "max": 0.0,
@@ -189,28 +192,28 @@
         "p90": 0.0
       },
       "system_cpu_ms": {
-        "max": 743.564,
-        "median": 733.8109999999999,
-        "min": 720.723,
-        "p90": 743.564
+        "max": 762.512,
+        "median": 721.0569999999999,
+        "min": 719.1659999999999,
+        "p90": 762.512
       },
       "user_cpu_ms": {
-        "max": 1079.082,
-        "median": 1060.727,
-        "min": 1049.385,
-        "p90": 1079.082
+        "max": 1102.588,
+        "median": 1088.0069999999998,
+        "min": 1056.649,
+        "p90": 1102.588
       },
       "wall_ms": {
-        "max": 1809.4499460003135,
-        "median": 1807.95261700041,
-        "min": 1803.9963090004676,
-        "p90": 1809.4499460003135
+        "max": 1823.9753540000265,
+        "median": 1819.4851299999755,
+        "min": 1807.6292929999909,
+        "p90": 1823.9753540000265
       },
       "written_bytes": {
-        "max": 0.0,
+        "max": 1912832.0,
         "median": 0.0,
         "min": 0.0,
-        "p90": 0.0
+        "p90": 1912832.0
       }
     },
     "status": "success",
@@ -222,9 +225,9 @@
       "unknown_bytes": 0.0,
       "unknown_nodes": 0.0
     },
-    "system_cpu_ms": 733.8109999999999,
-    "user_cpu_ms": 1060.727,
-    "wall_ms": 1807.95261700041,
+    "system_cpu_ms": 721.0569999999999,
+    "user_cpu_ms": 1088.0069999999998,
+    "wall_ms": 1819.4851299999755,
     "written_bytes": 0.0
   },
   "version": "bbtidy 0.1.0-alpha.5",
